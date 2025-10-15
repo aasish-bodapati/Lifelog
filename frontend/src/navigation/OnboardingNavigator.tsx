@@ -10,8 +10,6 @@ import SummaryScreen from '../screens/onboarding/SummaryScreen';
 
 const OnboardingNavigator: React.FC = () => {
   const { currentStep } = useOnboarding();
-  
-  console.log('OnboardingNavigator: currentStep:', currentStep);
 
   const renderCurrentScreen = () => {
     switch (currentStep) {

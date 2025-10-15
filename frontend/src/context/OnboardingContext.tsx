@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useReducer, useEffect } from 'react';
+import React, { createContext, useContext, useReducer, useEffect, useCallback } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { OnboardingContextType, OnboardingData, OnboardingStep } from '../types/onboarding';
 import { calculationService } from '../services/calculationService';
@@ -37,11 +37,9 @@ const onboardingReducer = (state: OnboardingState, action: OnboardingAction): On
       return { ...state, isLoading: action.payload };
     
     case 'NEXT_STEP':
-      const newStep = Math.min(state.currentStep + 1, state.totalSteps - 1);
-      console.log('OnboardingContext: NEXT_STEP reducer - old step:', state.currentStep, 'new step:', newStep);
       return {
         ...state,
-        currentStep: newStep,
+        currentStep: Math.min(state.currentStep + 1, state.totalSteps - 1),
       };
     
     case 'PREVIOUS_STEP':
@@ -149,9 +147,7 @@ export const OnboardingProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   }, []);
 
   const nextStep = () => {
-    console.log('OnboardingContext: nextStep called, current step:', state.currentStep);
     dispatch({ type: 'NEXT_STEP' });
-    console.log('OnboardingContext: nextStep dispatched');
   };
 
   const previousStep = () => {
@@ -212,7 +208,7 @@ export const OnboardingProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     }
   };
 
-  const checkOnboardingStatus = async () => {
+  const checkOnboardingStatus = useCallback(async () => {
     try {
       const isComplete = await AsyncStorage.getItem('onboardingComplete');
       if (isComplete === 'true') {
@@ -224,7 +220,7 @@ export const OnboardingProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     } catch (error) {
       console.error('Error checking onboarding status:', error);
     }
-  };
+  }, []);
 
   const restartOnboarding = async () => {
     try {
