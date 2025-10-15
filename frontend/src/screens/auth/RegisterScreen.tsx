@@ -47,8 +47,14 @@ const RegisterScreen: React.FC = () => {
         } else {
           errorMessage = error.response.data?.detail || errorMessage;
         }
+      } else if (error.response?.status === 422) {
+        errorMessage = 'Invalid input. Please check all fields and try again.';
+      } else if (error.response?.status === 500) {
+        errorMessage = 'Server error. Please try again later.';
       } else if (error.code === 'ERR_NETWORK') {
         errorMessage = 'Network error. Please check your connection and try again.';
+      } else if (error.code === 'ERR_TIMEOUT') {
+        errorMessage = 'Request timed out. Please try again.';
       }
       
       toastService.error('Registration Failed', errorMessage);

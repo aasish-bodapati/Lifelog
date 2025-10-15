@@ -29,12 +29,24 @@ const LoginScreen: React.FC = () => {
       toastService.success('Welcome back!', 'You have successfully logged in.');
     } catch (error: any) {
       console.error('Login error:', error);
-      let errorMessage = 'Invalid credentials';
+      let errorMessage = 'Login failed. Please try again.';
       
       if (error.response?.status === 401) {
-        errorMessage = 'Invalid email or password';
+        // Check if we have a specific error message from the backend
+        const backendMessage = error.response?.data?.detail;
+        if (backendMessage) {
+          errorMessage = backendMessage;
+        } else {
+          errorMessage = 'Invalid email or password. Please check your credentials.';
+        }
+      } else if (error.response?.status === 400) {
+        errorMessage = 'Invalid request. Please check your input.';
+      } else if (error.response?.status === 500) {
+        errorMessage = 'Server error. Please try again later.';
       } else if (error.code === 'ERR_NETWORK') {
-        errorMessage = 'Network error. Please check your connection.';
+        errorMessage = 'Network error. Please check your internet connection.';
+      } else if (error.code === 'ERR_TIMEOUT') {
+        errorMessage = 'Request timed out. Please try again.';
       }
       
       toastService.error('Login Failed', errorMessage);

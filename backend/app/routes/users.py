@@ -70,7 +70,7 @@ def login_user(login_data: UserLogin, db: Session = Depends(get_db)):
         print(f"Login failed: User not found for email {login_data.email}")
         raise HTTPException(
             status_code=401,
-            detail="Invalid credentials"
+            detail="Invalid email or password"
         )
     
     # Verify password
@@ -78,7 +78,7 @@ def login_user(login_data: UserLogin, db: Session = Depends(get_db)):
         print(f"Login failed: Invalid password for email {login_data.email}")
         raise HTTPException(
             status_code=401,
-            detail="Invalid credentials"
+            detail="Invalid email or password"
         )
     
     print(f"Login successful for user: {user.email}")
