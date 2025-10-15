@@ -5,63 +5,42 @@ Help users get to logging ASAP — ideally within 60 seconds. Capture just enoug
 
 ## 🧩 Step-by-Step Flow
 
-### Step 0: Welcome / Hook Screen
-**Purpose**: Create immediate emotional connection + clarity.
+### Step 1: Complete Profile & Goals (Combined)
+**Purpose**: Capture all essential information in one comprehensive screen.
 
-**Content**:
-- Short message: "Welcome to Lifelog — your day, simplified."
-- 1 CTA: "Let's get started"
-- Skip option: ❌ Not needed; short enough already.
-
-**Logic**: Moves to Step 1.
-
-### Step 1: Basic Profile
-**Purpose**: Minimal data for personalization.
-
+**Basic Information**:
 | Field | Example | Logic |
 |-------|---------|-------|
-| Name | Aasish | Display name only |
 | Age | 29 | Used for BMR calc |
 | Gender | M/F/Other | Used for BMR calc |
 | Height | 180 cm | Used for calorie/goal est. |
 | Weight | 70 kg | Used for progress baseline |
 
-**Logic**:
-- Once filled → store locally immediately (AsyncStorage)
-- Send to API after onboarding completes
-- Moves to Step 2
-
-### Step 2: Goal Setup
-**Purpose**: Clarify intent and set calorie/exercise targets.
-
-**Options**:
+**Goal Selection**:
 - ⚖️ Maintain weight
 - ⬆️ Gain muscle  
 - ⬇️ Lose fat
 
-**Logic**:
-- Each option modifies:
-  - `target_calories = BMR ± 300`
-  - `macros_ratio` (e.g. Gain: 40% carbs, 30% protein, 30% fat)
-  - `suggested_activity_level`
-- Moves to Step 3
+**Activity Level**:
+- Sedentary (1.2x BMR)
+- Lightly active (1.375x BMR)
+- Moderately active (1.55x BMR)
+- Very active (1.725x BMR)
+- Extra active (1.9x BMR)
 
-### Step 3: Activity Level
-**Purpose**: Tweak calculations to match real lifestyle.
-
-**Options** (radio buttons or slider):
-- Sedentary (office job)
-- Lightly active
-- Moderately active
-- Very active
+**Features**:
+- Real-time BMI calculation as user enters height/weight
+- Visual goal selection with descriptions
+- Activity level picker with multipliers displayed
+- All essential data captured in one screen
 
 **Logic**:
-- Store as multiplier (BMR * 1.2, 1.375, 1.55, 1.725)
-- This + Step 2 determines daily calorie target
-- Moves to Step 4
+- Store all data locally immediately (AsyncStorage)
+- Send to API after onboarding completes
+- Moves to Step 2
 
-### Step 4: Habit Preferences (Optional)
-**Purpose**: Give quick personalization for notifications or reminders.
+### Step 2: Preferences (Optional)
+**Purpose**: Customize notification and reminder settings.
 
 **Toggles**:
 - "Remind me to log meals"
@@ -71,15 +50,19 @@ Help users get to logging ASAP — ideally within 60 seconds. Capture just enoug
 **Logic**:
 - Store notification preferences locally + in backend user profile
 - Can be skipped
-- Moves to Step 5
+- Moves to Step 3
 
-### Step 5: Summary + Confirm
-**Purpose**: Give them a sense of clarity + motivation before using the app.
+### Step 3: Summary + Confirm
+**Purpose**: Show personalized targets and confirm setup.
 
-**Show personalized daily calorie goal + macro split**:
+**Display**:
 ```
-Your daily goal:
-2,350 kcal • 150g protein • 250g carbs • 80g fat
+Your personalized targets:
+Calories: 2,422 kcal
+Protein: 140g (realistic cap)
+Carbs: 357g
+Fat: 60g
+Hydration: 2.5L/day
 ```
 
 **CTA**: "Start Logging" → takes user to Dashboard.
@@ -227,12 +210,9 @@ function getMacroRatio(goal: string): {P: number, C: number, F: number} {
 src/
 ├── screens/
 │   └── onboarding/
-│       ├── WelcomeScreen.tsx
-│       ├── ProfileScreen.tsx
-│       ├── GoalScreen.tsx
-│       ├── ActivityScreen.tsx
-│       ├── PreferencesScreen.tsx
-│       └── SummaryScreen.tsx
+│       ├── Onboarding1Screen.tsx    # Combined: Profile + Goal + Activity
+│       ├── Onboarding2Screen.tsx    # Preferences
+│       └── Onboarding3Screen.tsx    # Summary
 ├── context/
 │   └── OnboardingContext.tsx
 ├── services/
@@ -256,7 +236,7 @@ src/
 ## 🎨 UI/UX Considerations
 
 ### Progress Indicator
-- Show current step (e.g., "Step 2 of 5")
+- Show current step (e.g., "Step 1 of 3")
 - Visual progress bar or dots
 - Allow back navigation within onboarding
 

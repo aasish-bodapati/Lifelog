@@ -19,8 +19,11 @@ Database Models - User, Workout, Exercise, Nutrition, BodyStats
 Frontend Structure - React Native app with navigation
 Expo Conversion - Converted from React Native CLI to Expo
 TypeScript Setup - Full TypeScript configuration
-Context Management - User and Log contexts for state
+Context Management - User, Log, and Onboarding contexts for state
 API Services - Complete service layer for backend communication
+Onboarding System - Streamlined 3-step flow with BMR/TDEE calculations
+Error Handling - Improved authentication with toast notifications
+Naming Conventions - Consistent "Workouts" → "Fitness" throughout
 🔧 Current Issue
 Expo is running but has a Babel plugin error:
 Missing react-native-worklets/plugin dependency
@@ -35,12 +38,14 @@ Body Stats: Weight, measurements, health metrics
 Analytics: Daily/weekly summaries and progress tracking
 RESTful API: Complete CRUD operations for all entities
 Frontend Features
-Authentication: Login/Register screens
+Authentication: Login/Register screens with improved error handling
+Onboarding: Streamlined 3-step flow (Profile+Goals, Preferences, Summary)
 Navigation: Bottom tab navigation with 5 main screens
-State Management: React Context for user and log data
+State Management: React Context for user, log, and onboarding data
 Offline-First: AsyncStorage with API sync
 TypeScript: Full type safety throughout
 Modern UI: Clean, professional design for busy professionals
+Toast Notifications: User-friendly feedback system
 🎯 Core Philosophy
 Speed over complexity: 1-tap logging, auto-fill defaults
 Offline-first: Local SQLite with API sync
