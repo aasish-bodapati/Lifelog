@@ -99,9 +99,11 @@ const Onboarding1Screen: React.FC = () => {
         )}
 
         <View style={styles.form}>
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Age, Height & Weight</Text>
-            <View style={styles.measurementsContainer}>
+          {/* Basic Information Section */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Basic Information</Text>
+            
+            <View style={styles.measurementsRow}>
               <View style={styles.measurementInput}>
                 <Text style={styles.measurementLabel}>Age</Text>
                 <TextInput
@@ -136,136 +138,127 @@ const Onboarding1Screen: React.FC = () => {
                 />
               </View>
             </View>
-          </View>
 
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Gender</Text>
-            <View style={styles.genderContainer}>
-              {[
-                { value: 'M', label: 'Male' },
-                { value: 'F', label: 'Female' },
-                { value: 'Other', label: 'Other' },
-              ].map((option) => (
-                <TouchableOpacity
-                  key={option.value}
-                  style={[
-                    styles.genderOption,
-                    profile.gender === option.value && styles.genderOptionSelected,
-                  ]}
-                  onPress={() => updateField('gender', option.value as 'M' | 'F' | 'Other')}
-                >
-                  <Text
+            <View style={styles.genderRow}>
+              <Text style={styles.genderLabel}>Gender</Text>
+              <View style={styles.genderContainer}>
+                {[
+                  { value: 'M', label: 'Male' },
+                  { value: 'F', label: 'Female' },
+                  { value: 'Other', label: 'Other' },
+                ].map((option) => (
+                  <TouchableOpacity
+                    key={option.value}
                     style={[
-                      styles.genderOptionText,
-                      profile.gender === option.value && styles.genderOptionTextSelected,
+                      styles.genderOption,
+                      profile.gender === option.value && styles.genderOptionSelected,
                     ]}
+                    onPress={() => updateField('gender', option.value as 'M' | 'F' | 'Other')}
                   >
-                    {option.label}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </View>
-
-          {profile.height && profile.weight && (
-            <View style={styles.bmiContainer}>
-              {(() => {
-                const bmi = calculationService.getBMICategory(profile as OnboardingProfile);
-                return (
-                  <View style={styles.bmiInfo}>
-                    <Text style={styles.bmiLabel}>BMI: {bmi.bmi}</Text>
-                    <Text style={[styles.bmiCategory, { color: bmi.color }]}>
-                      {bmi.category}
+                    <Text
+                      style={[
+                        styles.genderOptionText,
+                        profile.gender === option.value && styles.genderOptionTextSelected,
+                      ]}
+                    >
+                      {option.label}
                     </Text>
-                  </View>
-                );
-              })()}
+                  </TouchableOpacity>
+                ))}
+              </View>
             </View>
-          )}
 
-          {/* Goal Selection */}
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Your Goal</Text>
-            <View style={styles.goalsContainer}>
-              {calculationService.getGoalOptions().map((goal) => (
-                <TouchableOpacity
-                  key={goal.type}
-                  style={[
-                    styles.goalOption,
-                    selectedGoal?.type === goal.type && styles.goalOptionSelected,
-                  ]}
-                  onPress={() => handleGoalSelect(goal)}
-                >
-                  <View style={styles.goalContent}>
-                    <Text style={[
-                      styles.goalTitle,
-                      selectedGoal?.type === goal.type && styles.goalTitleSelected,
-                    ]}>
-                      {goal.type === 'maintain' ? '⚖️ Maintain Weight' :
-                       goal.type === 'gain' ? '⬆️ Gain Muscle' : '⬇️ Lose Fat'}
-                    </Text>
-                    <Text style={[
-                      styles.goalDescription,
-                      selectedGoal?.type === goal.type && styles.goalDescriptionSelected,
-                    ]}>
-                      {goal.description}
-                    </Text>
-                  </View>
-                  {selectedGoal?.type === goal.type && (
-                    <View style={styles.selectedIndicator}>
-                      <Text style={styles.selectedIndicatorText}>✓</Text>
-                    </View>
-                  )}
-                </TouchableOpacity>
-              ))}
-            </View>
-          </View>
-
-          {/* Activity Level Selection */}
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Activity Level</Text>
-            <View style={styles.activitiesContainer}>
-              {calculationService.getActivityOptions().map((activity) => (
-                <TouchableOpacity
-                  key={activity.level}
-                  style={[
-                    styles.activityOption,
-                    selectedActivity?.level === activity.level && styles.activityOptionSelected,
-                  ]}
-                  onPress={() => handleActivitySelect(activity)}
-                >
-                  <View style={styles.activityContent}>
-                    <View style={styles.activityHeader}>
-                      <Text style={[
-                        styles.activityTitle,
-                        selectedActivity?.level === activity.level && styles.activityTitleSelected,
-                      ]}>
-                        {activity.level === 'sedentary' ? 'Sedentary' :
-                         activity.level === 'light' ? 'Lightly Active' :
-                         activity.level === 'moderate' ? 'Moderately Active' :
-                         activity.level === 'active' ? 'Very Active' : 'Extra Active'}
-                      </Text>
-                      <Text style={[
-                        styles.activityMultiplier,
-                        selectedActivity?.level === activity.level && styles.activityMultiplierSelected,
-                      ]}>
-                        {activity.multiplier}x
+            {profile.height && profile.weight && (
+              <View style={styles.bmiContainer}>
+                {(() => {
+                  const bmi = calculationService.getBMICategory(profile as OnboardingProfile);
+                  return (
+                    <View style={styles.bmiInfo}>
+                      <Text style={styles.bmiLabel}>BMI: {bmi.bmi}</Text>
+                      <Text style={[styles.bmiCategory, { color: bmi.color }]}>
+                        {bmi.category}
                       </Text>
                     </View>
-                    <Text style={[
-                      styles.activityDescription,
-                      selectedActivity?.level === activity.level && styles.activityDescriptionSelected,
-                    ]}>
-                      {activity.description}
-                    </Text>
-                  </View>
-                  {selectedActivity?.level === activity.level && (
-                    <View style={styles.selectedIndicator}>
-                      <Text style={styles.selectedIndicatorText}>✓</Text>
-                    </View>
-                  )}
-                </TouchableOpacity>
-              ))}
+                  );
+                })()}
+              </View>
+            )}
+          </View>
+
+          {/* Goals and Activity Section */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Goals & Activity</Text>
+            
+            <View style={styles.twoColumnContainer}>
+              {/* Goals Column */}
+              <View style={styles.column}>
+                <Text style={styles.columnTitle}>Your Goal</Text>
+                <View style={styles.goalsContainer}>
+                  {calculationService.getGoalOptions().map((goal) => (
+                    <TouchableOpacity
+                      key={goal.type}
+                      style={[
+                        styles.compactOption,
+                        selectedGoal?.type === goal.type && styles.compactOptionSelected,
+                      ]}
+                      onPress={() => handleGoalSelect(goal)}
+                    >
+                      <Text style={[
+                        styles.compactTitle,
+                        selectedGoal?.type === goal.type && styles.compactTitleSelected,
+                      ]}>
+                        {goal.type === 'maintain' ? '⚖️ Maintain' :
+                         goal.type === 'gain' ? '⬆️ Gain Muscle' : '⬇️ Lose Fat'}
+                      </Text>
+                      {selectedGoal?.type === goal.type && (
+                        <View style={styles.compactIndicator}>
+                          <Text style={styles.compactIndicatorText}>✓</Text>
+                        </View>
+                      )}
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+
+              {/* Activity Column */}
+              <View style={styles.column}>
+                <Text style={styles.columnTitle}>Activity Level</Text>
+                <View style={styles.activitiesContainer}>
+                  {calculationService.getActivityOptions().map((activity) => (
+                    <TouchableOpacity
+                      key={activity.level}
+                      style={[
+                        styles.compactOption,
+                        selectedActivity?.level === activity.level && styles.compactOptionSelected,
+                      ]}
+                      onPress={() => handleActivitySelect(activity)}
+                    >
+                      <View style={styles.compactContent}>
+                        <Text style={[
+                          styles.compactTitle,
+                          selectedActivity?.level === activity.level && styles.compactTitleSelected,
+                        ]}>
+                          {activity.level === 'sedentary' ? 'Sedentary' :
+                           activity.level === 'light' ? 'Light' :
+                           activity.level === 'moderate' ? 'Moderate' :
+                           activity.level === 'active' ? 'Active' : 'Extra'}
+                        </Text>
+                        <Text style={[
+                          styles.compactMultiplier,
+                          selectedActivity?.level === activity.level && styles.compactMultiplierSelected,
+                        ]}>
+                          {activity.multiplier}x
+                        </Text>
+                      </View>
+                      {selectedActivity?.level === activity.level && (
+                        <View style={styles.compactIndicator}>
+                          <Text style={styles.compactIndicatorText}>✓</Text>
+                        </View>
+                      )}
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
             </View>
           </View>
         </View>
@@ -287,58 +280,91 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    paddingHorizontal: 24,
+    paddingHorizontal: 20,
   },
   header: {
-    paddingTop: 40,
-    marginBottom: 32,
+    paddingTop: 20,
+    marginBottom: 20,
+    alignItems: 'center',
   },
   title: {
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: 'bold',
     color: '#333333',
-    marginBottom: 8,
+    marginBottom: 6,
   },
   subtitle: {
-    fontSize: 16,
+    fontSize: 14,
     color: '#666666',
+    textAlign: 'center',
   },
   errorContainer: {
     backgroundColor: '#FFE6E6',
-    padding: 12,
+    padding: 10,
     borderRadius: 8,
-    marginBottom: 16,
+    marginBottom: 12,
   },
   errorText: {
     color: '#D32F2F',
-    fontSize: 14,
-    marginBottom: 4,
+    fontSize: 13,
+    marginBottom: 2,
   },
   form: {
     flex: 1,
   },
-  inputGroup: {
-    marginBottom: 24,
+  section: {
+    marginBottom: 20,
   },
-  label: {
-    fontSize: 16,
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#333333',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  measurementsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 8,
+    marginBottom: 12,
+  },
+  measurementInput: {
+    flex: 1,
+  },
+  measurementLabel: {
+    fontSize: 12,
     fontWeight: '600',
     color: '#333333',
-    marginBottom: 8,
+    marginBottom: 4,
+    textAlign: 'center',
   },
-  input: {
+  measurementField: {
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#E0E0E0',
     borderRadius: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    fontSize: 16,
+    paddingHorizontal: 8,
+    paddingVertical: 8,
+    fontSize: 14,
     color: '#333333',
+    textAlign: 'center',
+  },
+  genderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  genderLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#333333',
+    flex: 1,
   },
   genderContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    flex: 2,
+    gap: 6,
   },
   genderOption: {
     flex: 1,
@@ -346,9 +372,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#E0E0E0',
     borderRadius: 8,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    marginHorizontal: 4,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
     alignItems: 'center',
   },
   genderOptionSelected: {
@@ -356,179 +381,126 @@ const styles = StyleSheet.create({
     borderColor: '#007AFF',
   },
   genderOptionText: {
-    fontSize: 16,
+    fontSize: 13,
     color: '#333333',
     fontWeight: '500',
   },
   genderOptionTextSelected: {
     color: '#FFFFFF',
   },
-  measurementsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: 12,
-  },
-  measurementInput: {
-    flex: 1,
-  },
-  measurementLabel: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#333333',
-    marginBottom: 8,
-  },
-  measurementField: {
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 16,
-    color: '#333333',
-    textAlign: 'center',
-  },
   bmiContainer: {
-    marginTop: 16,
     backgroundColor: '#FFFFFF',
-    padding: 16,
+    padding: 12,
     borderRadius: 8,
     borderWidth: 1,
     borderColor: '#E0E0E0',
+    marginTop: 8,
   },
   bmiInfo: {
     alignItems: 'center',
   },
   bmiLabel: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '600',
     color: '#333333',
-    marginBottom: 4,
+    marginBottom: 2,
   },
   bmiCategory: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '500',
   },
-  goalsContainer: {
+  twoColumnContainer: {
+    flexDirection: 'row',
     gap: 12,
   },
-  goalOption: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 16,
-    borderWidth: 2,
-    borderColor: '#E0E0E0',
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  goalOptionSelected: {
-    borderColor: '#007AFF',
-    backgroundColor: '#F0F8FF',
-  },
-  goalContent: {
+  column: {
     flex: 1,
   },
-  goalTitle: {
-    fontSize: 16,
+  columnTitle: {
+    fontSize: 14,
     fontWeight: '600',
     color: '#333333',
-    marginBottom: 4,
+    marginBottom: 8,
+    textAlign: 'center',
   },
-  goalTitleSelected: {
-    color: '#007AFF',
-  },
-  goalDescription: {
-    fontSize: 14,
-    color: '#666666',
-    lineHeight: 20,
-  },
-  goalDescriptionSelected: {
-    color: '#007AFF',
+  goalsContainer: {
+    gap: 6,
   },
   activitiesContainer: {
-    gap: 12,
+    gap: 6,
   },
-  activityOption: {
+  compactOption: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 16,
-    borderWidth: 2,
+    borderRadius: 8,
+    padding: 10,
+    borderWidth: 1,
     borderColor: '#E0E0E0',
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
   },
-  activityOptionSelected: {
+  compactOptionSelected: {
     borderColor: '#007AFF',
     backgroundColor: '#F0F8FF',
   },
-  activityContent: {
+  compactContent: {
     flex: 1,
-  },
-  activityHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 4,
+    justifyContent: 'space-between',
   },
-  activityTitle: {
-    fontSize: 16,
+  compactTitle: {
+    fontSize: 13,
     fontWeight: '600',
     color: '#333333',
     flex: 1,
   },
-  activityTitleSelected: {
+  compactTitleSelected: {
     color: '#007AFF',
   },
-  activityMultiplier: {
-    fontSize: 14,
+  compactMultiplier: {
+    fontSize: 11,
     fontWeight: 'bold',
     color: '#666666',
     backgroundColor: '#F5F5F5',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    marginLeft: 6,
   },
-  activityMultiplierSelected: {
+  compactMultiplierSelected: {
     color: '#007AFF',
     backgroundColor: '#E3F2FD',
   },
-  activityDescription: {
-    fontSize: 14,
-    color: '#666666',
-    lineHeight: 20,
-  },
-  activityDescriptionSelected: {
-    color: '#007AFF',
-  },
-  selectedIndicator: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+  compactIndicator: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
     backgroundColor: '#007AFF',
     justifyContent: 'center',
     alignItems: 'center',
-    marginLeft: 12,
+    marginLeft: 8,
   },
-  selectedIndicatorText: {
+  compactIndicatorText: {
     color: '#FFFFFF',
-    fontSize: 16,
+    fontSize: 12,
     fontWeight: 'bold',
   },
   buttonContainer: {
-    paddingHorizontal: 24,
-    paddingBottom: 40,
-    paddingTop: 20,
+    paddingHorizontal: 20,
+    paddingBottom: 30,
+    paddingTop: 15,
   },
   primaryButton: {
     backgroundColor: '#007AFF',
-    paddingVertical: 16,
+    paddingVertical: 14,
     paddingHorizontal: 32,
-    borderRadius: 12,
+    borderRadius: 10,
     alignItems: 'center',
   },
   primaryButtonText: {
     color: '#FFFFFF',
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '600',
   },
 });
