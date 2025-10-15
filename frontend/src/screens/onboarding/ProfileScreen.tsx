@@ -49,7 +49,7 @@ const ProfileScreen: React.FC = () => {
     <SafeAreaView style={styles.container}>
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
-          <Text style={styles.title}>Your Profile</Text>
+          <Text style={styles.title}>Basic Information</Text>
           <Text style={styles.subtitle}>Tell us about yourself</Text>
         </View>
 
@@ -69,7 +69,7 @@ const ProfileScreen: React.FC = () => {
             <TextInput
               style={styles.input}
               value={profile.age?.toString() || ''}
-              onChangeText={(value) => updateField('age', parseInt(value) || 0)}
+              onChangeText={(value) => updateField('age', value ? parseInt(value) : undefined)}
               placeholder="Enter your age"
               keyboardType="numeric"
               maxLength={3}
@@ -110,7 +110,7 @@ const ProfileScreen: React.FC = () => {
             <TextInput
               style={styles.input}
               value={profile.height?.toString() || ''}
-              onChangeText={(value) => updateField('height', parseInt(value) || 0)}
+              onChangeText={(value) => updateField('height', value ? parseInt(value) : undefined)}
               placeholder="Enter your height"
               keyboardType="numeric"
               maxLength={3}
@@ -122,7 +122,7 @@ const ProfileScreen: React.FC = () => {
             <TextInput
               style={styles.input}
               value={profile.weight?.toString() || ''}
-              onChangeText={(value) => updateField('weight', parseInt(value) || 0)}
+              onChangeText={(value) => updateField('weight', value ? parseInt(value) : undefined)}
               placeholder="Enter your weight"
               keyboardType="numeric"
               maxLength={3}

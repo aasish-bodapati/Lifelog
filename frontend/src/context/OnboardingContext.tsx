@@ -94,7 +94,7 @@ export const OnboardingProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     const steps: OnboardingStep[] = [
       {
         id: 'profile',
-        title: 'Your Profile',
+        title: 'Basic Information',
         description: 'Tell us about yourself',
         isComplete: false,
         isOptional: false,

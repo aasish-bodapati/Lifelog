@@ -147,7 +147,10 @@ export const calculationService = {
   validateProfile(profile: Partial<OnboardingProfile>): { isValid: boolean; errors: string[] } {
     const errors: string[] = [];
     
-    if (!profile.age || profile.age < 13 || profile.age > 120) {
+    // Check if required fields are filled
+    if (!profile.age) {
+      errors.push('Age is required');
+    } else if (profile.age < 13 || profile.age > 120) {
       errors.push('Age must be between 13 and 120 years');
     }
     
@@ -155,11 +158,15 @@ export const calculationService = {
       errors.push('Please select your gender');
     }
     
-    if (!profile.height || profile.height < 100 || profile.height > 250) {
+    if (!profile.height) {
+      errors.push('Height is required');
+    } else if (profile.height < 100 || profile.height > 250) {
       errors.push('Height must be between 100 and 250 cm');
     }
     
-    if (!profile.weight || profile.weight < 30 || profile.weight > 300) {
+    if (!profile.weight) {
+      errors.push('Weight is required');
+    } else if (profile.weight < 30 || profile.weight > 300) {
       errors.push('Weight must be between 30 and 300 kg');
     }
     
