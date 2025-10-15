@@ -25,13 +25,19 @@ const ProfileScreen: React.FC = () => {
   const [errors, setErrors] = useState<string[]>([]);
 
   const handleNext = () => {
+    console.log('ProfileScreen: handleNext called');
+    console.log('ProfileScreen: current profile data:', profile);
+    
     const validation = calculationService.validateProfile(profile);
+    console.log('ProfileScreen: validation result:', validation);
     
     if (!validation.isValid) {
+      console.log('ProfileScreen: validation failed, setting errors');
       setErrors(validation.errors);
       return;
     }
 
+    console.log('ProfileScreen: validation passed, updating data and moving to next step');
     setErrors([]);
     updateData({ profile: profile as OnboardingProfile });
     nextStep();

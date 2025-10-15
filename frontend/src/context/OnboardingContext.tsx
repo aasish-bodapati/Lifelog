@@ -147,7 +147,9 @@ export const OnboardingProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   }, []);
 
   const nextStep = () => {
+    console.log('OnboardingContext: nextStep called, current step:', state.currentStep);
     dispatch({ type: 'NEXT_STEP' });
+    console.log('OnboardingContext: nextStep dispatched');
   };
 
   const previousStep = () => {
