@@ -1,6 +1,5 @@
 import React from 'react';
-import { createStackNavigator } from '@react-navigation/stack';
-import { OnboardingStackParamList } from '../types/onboarding';
+import { useOnboarding } from '../context/OnboardingContext';
 
 // Import onboarding screens
 import ProfileScreen from '../screens/onboarding/ProfileScreen';
@@ -9,24 +8,29 @@ import ActivityScreen from '../screens/onboarding/ActivityScreen';
 import PreferencesScreen from '../screens/onboarding/PreferencesScreen';
 import SummaryScreen from '../screens/onboarding/SummaryScreen';
 
-const Stack = createStackNavigator<OnboardingStackParamList>();
-
 const OnboardingNavigator: React.FC = () => {
-  return (
-    <Stack.Navigator
-      screenOptions={{
-        headerShown: false,
-        cardStyle: { backgroundColor: '#F8F9FA' },
-        gestureEnabled: false, // Disable swipe back during onboarding
-      }}
-    >
-      <Stack.Screen name="Profile" component={ProfileScreen} />
-      <Stack.Screen name="Goal" component={GoalScreen} />
-      <Stack.Screen name="Activity" component={ActivityScreen} />
-      <Stack.Screen name="Preferences" component={PreferencesScreen} />
-      <Stack.Screen name="Summary" component={SummaryScreen} />
-    </Stack.Navigator>
-  );
+  const { currentStep } = useOnboarding();
+  
+  console.log('OnboardingNavigator: currentStep:', currentStep);
+
+  const renderCurrentScreen = () => {
+    switch (currentStep) {
+      case 0:
+        return <ProfileScreen />;
+      case 1:
+        return <GoalScreen />;
+      case 2:
+        return <ActivityScreen />;
+      case 3:
+        return <PreferencesScreen />;
+      case 4:
+        return <SummaryScreen />;
+      default:
+        return <ProfileScreen />;
+    }
+  };
+
+  return renderCurrentScreen();
 };
 
 export default OnboardingNavigator;

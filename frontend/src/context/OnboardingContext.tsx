@@ -37,9 +37,11 @@ const onboardingReducer = (state: OnboardingState, action: OnboardingAction): On
       return { ...state, isLoading: action.payload };
     
     case 'NEXT_STEP':
+      const newStep = Math.min(state.currentStep + 1, state.totalSteps - 1);
+      console.log('OnboardingContext: NEXT_STEP reducer - old step:', state.currentStep, 'new step:', newStep);
       return {
         ...state,
-        currentStep: Math.min(state.currentStep + 1, state.totalSteps - 1),
+        currentStep: newStep,
       };
     
     case 'PREVIOUS_STEP':
