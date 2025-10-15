@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -6,16 +6,29 @@ import {
   ScrollView,
   TouchableOpacity,
   RefreshControl,
+  Modal,
 } from 'react-native';
 import { useUser } from '../../context/UserContext';
 import { useLog } from '../../context/LogContext';
 import { useSync } from '../../context/SyncContext';
 import SyncIndicator from '../../components/SyncIndicator';
+import FloatingActionButton from '../../components/FloatingActionButton';
+import QuickMealLogScreen from '../logging/QuickMealLogScreen';
+import QuickWorkoutLogScreen from '../logging/QuickWorkoutLogScreen';
+import QuickBodyStatLogScreen from '../logging/QuickBodyStatLogScreen';
+import RepeatYesterdayModal from '../../components/RepeatYesterdayModal';
+import { hapticService } from '../../services/hapticService';
 
 const HomeScreen: React.FC = () => {
   const { state: userState } = useUser();
   const { state: logState, syncAllData } = useLog();
   const { forceSync } = useSync();
+
+  // Quick logging modals
+  const [showMealLog, setShowMealLog] = useState(false);
+  const [showWorkoutLog, setShowWorkoutLog] = useState(false);
+  const [showBodyStatLog, setShowBodyStatLog] = useState(false);
+  const [showRepeatYesterday, setShowRepeatYesterday] = useState(false);
 
   useEffect(() => {
     if (userState.user) {
@@ -27,6 +40,35 @@ const HomeScreen: React.FC = () => {
     if (userState.user) {
       await syncAllData(userState.user.id);
       await forceSync();
+    }
+  };
+
+  // Quick logging handlers
+  const handleMealPress = () => {
+    hapticService.light();
+    setShowMealLog(true);
+  };
+
+  const handleWorkoutPress = () => {
+    hapticService.light();
+    setShowWorkoutLog(true);
+  };
+
+  const handleBodyStatPress = () => {
+    hapticService.light();
+    setShowBodyStatLog(true);
+  };
+
+  const handleRepeatYesterdayPress = () => {
+    hapticService.light();
+    setShowRepeatYesterday(true);
+  };
+
+  const handleLoggingSuccess = () => {
+    hapticService.success();
+    // Refresh data after successful logging
+    if (userState.user) {
+      syncAllData(userState.user.id);
     }
   };
 
@@ -95,6 +137,57 @@ const HomeScreen: React.FC = () => {
         </View>
         </View>
       </ScrollView>
+
+      {/* Floating Action Button */}
+      <FloatingActionButton
+        onMealPress={handleMealPress}
+        onWorkoutPress={handleWorkoutPress}
+        onBodyStatPress={handleBodyStatPress}
+        onRepeatYesterdayPress={handleRepeatYesterdayPress}
+      />
+
+      {/* Quick Logging Modals */}
+      <Modal
+        visible={showMealLog}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setShowMealLog(false)}
+      >
+        <QuickMealLogScreen
+          onClose={() => setShowMealLog(false)}
+          onSuccess={handleLoggingSuccess}
+        />
+      </Modal>
+
+      <Modal
+        visible={showWorkoutLog}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setShowWorkoutLog(false)}
+      >
+        <QuickWorkoutLogScreen
+          onClose={() => setShowWorkoutLog(false)}
+          onSuccess={handleLoggingSuccess}
+        />
+      </Modal>
+
+      <Modal
+        visible={showBodyStatLog}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setShowBodyStatLog(false)}
+      >
+        <QuickBodyStatLogScreen
+          onClose={() => setShowBodyStatLog(false)}
+          onSuccess={handleLoggingSuccess}
+        />
+      </Modal>
+
+      <RepeatYesterdayModal
+        visible={showRepeatYesterday}
+        onClose={() => setShowRepeatYesterday(false)}
+        onSuccess={handleLoggingSuccess}
+      />
     </View>
   );
 };
