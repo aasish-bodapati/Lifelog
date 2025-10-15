@@ -147,10 +147,6 @@ export const calculationService = {
   validateProfile(profile: Partial<OnboardingProfile>): { isValid: boolean; errors: string[] } {
     const errors: string[] = [];
     
-    if (!profile.name || profile.name.trim().length < 2) {
-      errors.push('Name must be at least 2 characters long');
-    }
-    
     if (!profile.age || profile.age < 13 || profile.age > 120) {
       errors.push('Age must be between 13 and 120 years');
     }

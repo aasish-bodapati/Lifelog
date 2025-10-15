@@ -1,6 +1,5 @@
 // Onboarding types
 export interface OnboardingProfile {
-  name: string;
   age: number;
   gender: 'M' | 'F' | 'Other';
   height: number; // in cm

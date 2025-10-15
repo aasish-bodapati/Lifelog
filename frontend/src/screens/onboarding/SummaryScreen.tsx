@@ -9,11 +9,13 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { useOnboarding } from '../../context/OnboardingContext';
+import { useUser } from '../../context/UserContext';
 import { calculationService } from '../../services/calculationService';
 import { toastService } from '../../services/toastService';
 
 const SummaryScreen: React.FC = () => {
   const { data, completeOnboarding, isLoading } = useOnboarding();
+  const { state: userState } = useUser();
   const [isCompleting, setIsCompleting] = useState(false);
 
   const handleComplete = async () => {
@@ -61,7 +63,7 @@ const SummaryScreen: React.FC = () => {
             <Text style={styles.sectionTitle}>Your Profile</Text>
             <View style={styles.profileInfo}>
               <Text style={styles.profileText}>
-                {data.profile.name}, {data.profile.age} years old
+                {userState.user?.name || 'User'}, {data.profile.age} years old
               </Text>
               <Text style={styles.profileText}>
                 {data.profile.height}cm, {data.profile.weight}kg

@@ -16,7 +16,6 @@ import { calculationService } from '../../services/calculationService';
 const ProfileScreen: React.FC = () => {
   const { nextStep, updateData, data } = useOnboarding();
   const [profile, setProfile] = useState<Partial<OnboardingProfile>>({
-    name: data.profile?.name || '',
     age: data.profile?.age || undefined,
     gender: data.profile?.gender || undefined,
     height: data.profile?.height || undefined,
@@ -65,17 +64,6 @@ const ProfileScreen: React.FC = () => {
         )}
 
         <View style={styles.form}>
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Name</Text>
-            <TextInput
-              style={styles.input}
-              value={profile.name}
-              onChangeText={(value) => updateField('name', value)}
-              placeholder="Enter your name"
-              autoCapitalize="words"
-            />
-          </View>
-
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Age</Text>
             <TextInput
