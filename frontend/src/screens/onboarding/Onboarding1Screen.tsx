@@ -143,9 +143,9 @@ const Onboarding1Screen: React.FC = () => {
               <Text style={styles.genderLabel}>Gender</Text>
               <View style={styles.genderOptions}>
                 {[
-                  { value: 'M', label: 'Male', icon: '👨' },
-                  { value: 'F', label: 'Female', icon: '👩' },
-                  { value: 'Other', label: 'Other', icon: '🧑' },
+                  { value: 'M', label: 'Male' },
+                  { value: 'F', label: 'Female' },
+                  { value: 'Other', label: 'Other' },
                 ].map((option) => (
                   <TouchableOpacity
                     key={option.value}
@@ -155,7 +155,6 @@ const Onboarding1Screen: React.FC = () => {
                     ]}
                     onPress={() => updateField('gender', option.value as 'M' | 'F' | 'Other')}
                   >
-                    <Text style={styles.genderIcon}>{option.icon}</Text>
                     <Text style={[
                       styles.genderText,
                       profile.gender === option.value && styles.genderTextSelected,
@@ -406,7 +405,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#E9ECEF',
     borderRadius: 8,
-    paddingVertical: 12,
+    paddingVertical: 14,
     paddingHorizontal: 8,
     alignItems: 'center',
   },
@@ -414,12 +413,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#007AFF',
     borderColor: '#007AFF',
   },
-  genderIcon: {
-    fontSize: 20,
-    marginBottom: 4,
-  },
   genderText: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '600',
     color: '#333333',
   },
