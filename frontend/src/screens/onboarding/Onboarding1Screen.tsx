@@ -65,18 +65,6 @@ const Onboarding1Screen: React.FC = () => {
 
         <View style={styles.form}>
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Age</Text>
-            <TextInput
-              style={styles.input}
-              value={profile.age?.toString() || ''}
-              onChangeText={(value) => updateField('age', value ? parseInt(value) : undefined)}
-              placeholder="Enter your age"
-              keyboardType="numeric"
-              maxLength={3}
-            />
-          </View>
-
-          <View style={styles.inputGroup}>
             <Text style={styles.label}>Gender</Text>
             <View style={styles.genderContainer}>
               {[
@@ -106,27 +94,42 @@ const Onboarding1Screen: React.FC = () => {
           </View>
 
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Height (cm)</Text>
-            <TextInput
-              style={styles.input}
-              value={profile.height?.toString() || ''}
-              onChangeText={(value) => updateField('height', value ? parseInt(value) : undefined)}
-              placeholder="Enter your height"
-              keyboardType="numeric"
-              maxLength={3}
-            />
-          </View>
-
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Weight (kg)</Text>
-            <TextInput
-              style={styles.input}
-              value={profile.weight?.toString() || ''}
-              onChangeText={(value) => updateField('weight', value ? parseInt(value) : undefined)}
-              placeholder="Enter your weight"
-              keyboardType="numeric"
-              maxLength={3}
-            />
+            <Text style={styles.label}>Age, Height & Weight</Text>
+            <View style={styles.measurementsContainer}>
+              <View style={styles.measurementInput}>
+                <Text style={styles.measurementLabel}>Age</Text>
+                <TextInput
+                  style={styles.measurementField}
+                  value={profile.age?.toString() || ''}
+                  onChangeText={(value) => updateField('age', value ? parseInt(value) : undefined)}
+                  placeholder="Age"
+                  keyboardType="numeric"
+                  maxLength={3}
+                />
+              </View>
+              <View style={styles.measurementInput}>
+                <Text style={styles.measurementLabel}>Height (cm)</Text>
+                <TextInput
+                  style={styles.measurementField}
+                  value={profile.height?.toString() || ''}
+                  onChangeText={(value) => updateField('height', value ? parseInt(value) : undefined)}
+                  placeholder="Height"
+                  keyboardType="numeric"
+                  maxLength={3}
+                />
+              </View>
+              <View style={styles.measurementInput}>
+                <Text style={styles.measurementLabel}>Weight (kg)</Text>
+                <TextInput
+                  style={styles.measurementField}
+                  value={profile.weight?.toString() || ''}
+                  onChangeText={(value) => updateField('weight', value ? parseInt(value) : undefined)}
+                  placeholder="Weight"
+                  keyboardType="numeric"
+                  maxLength={3}
+                />
+              </View>
+            </View>
           </View>
 
           {profile.height && profile.weight && (
@@ -238,6 +241,31 @@ const styles = StyleSheet.create({
   },
   genderOptionTextSelected: {
     color: '#FFFFFF',
+  },
+  measurementsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  measurementInput: {
+    flex: 1,
+  },
+  measurementLabel: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#333333',
+    marginBottom: 8,
+  },
+  measurementField: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 16,
+    color: '#333333',
+    textAlign: 'center',
   },
   bmiContainer: {
     marginTop: 16,
