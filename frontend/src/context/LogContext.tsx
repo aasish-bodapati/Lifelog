@@ -273,7 +273,7 @@ export const LogProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // Summary methods
   const loadDailySummary = async (userId: number, date: string) => {
     try {
-      const summary = await workoutService.getDailySummary(userId, date);
+      const summary = await fitnessService.getDailySummary(userId, date);
       dispatch({ type: 'SET_DAILY_SUMMARY', payload: summary });
     } catch (error) {
       console.error('Failed to load daily summary:', error);
