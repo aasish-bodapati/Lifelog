@@ -16,11 +16,9 @@ const WelcomeScreen: React.FC = () => {
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
         <View style={styles.logoContainer}>
-          <Image
-            source={require('../../../assets/icon.png')}
-            style={styles.logo}
-            resizeMode="contain"
-          />
+          <View style={styles.logoPlaceholder}>
+            <Text style={styles.logoText}>📱</Text>
+          </View>
         </View>
         
         <View style={styles.textContainer}>
@@ -71,9 +69,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 40,
   },
-  logo: {
+  logoPlaceholder: {
     width: 120,
     height: 120,
+    borderRadius: 60,
+    backgroundColor: '#007AFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  logoText: {
+    fontSize: 48,
   },
   textContainer: {
     alignItems: 'center',
