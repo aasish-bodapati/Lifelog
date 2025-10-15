@@ -17,7 +17,7 @@ const WelcomeScreen: React.FC = () => {
       <View style={styles.content}>
         <View style={styles.logoContainer}>
           <Image
-            source={require('../../assets/icon.png')}
+            source={require('../../../assets/icon.png')}
             style={styles.logo}
             resizeMode="contain"
           />
