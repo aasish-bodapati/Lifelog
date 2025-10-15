@@ -9,6 +9,10 @@ const ProfileScreen: React.FC = () => {
   const { state, logout } = useUser();
   const { data: onboardingData } = useOnboarding();
 
+  // Debug logging
+  console.log('ProfileScreen - onboardingData:', onboardingData);
+  console.log('ProfileScreen - user state:', state);
+
   const handleLogout = async () => {
     await logout();
   };

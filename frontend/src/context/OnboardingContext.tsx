@@ -117,19 +117,29 @@ export const OnboardingProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     dispatch({ type: 'SET_STEPS', payload: steps });
   }, []);
 
-  // Check if onboarding is complete on mount
+  // Check if onboarding is complete on mount and load saved data
   useEffect(() => {
-    const checkOnboardingStatus = async () => {
+    const loadOnboardingData = async () => {
       try {
         const isComplete = await AsyncStorage.getItem('onboardingComplete');
+        const savedData = await AsyncStorage.getItem('onboardingData');
+        
+        if (savedData) {
+          const parsedData = JSON.parse(savedData);
+          dispatch({ 
+            type: 'UPDATE_DATA', 
+            payload: parsedData 
+          });
+        }
+        
         if (isComplete === 'true') {
           dispatch({ type: 'COMPLETE_ONBOARDING' });
         }
       } catch (error) {
-        console.error('Error checking onboarding status:', error);
+        console.error('Error loading onboarding data:', error);
       }
     };
-    checkOnboardingStatus();
+    loadOnboardingData();
   }, []);
 
   const nextStep = () => {
@@ -197,7 +207,15 @@ export const OnboardingProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   const checkOnboardingStatus = useCallback(async () => {
     try {
       const isComplete = await AsyncStorage.getItem('onboardingComplete');
-      if (isComplete === 'true') {
+      const savedData = await AsyncStorage.getItem('onboardingData');
+      
+      if (isComplete === 'true' && savedData) {
+        // Load saved onboarding data
+        const parsedData = JSON.parse(savedData);
+        dispatch({ 
+          type: 'UPDATE_DATA', 
+          payload: parsedData 
+        });
         dispatch({ type: 'COMPLETE_ONBOARDING' });
       } else {
         // Reset onboarding state if not complete
