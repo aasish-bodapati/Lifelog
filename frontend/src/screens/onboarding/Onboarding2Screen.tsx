@@ -5,107 +5,116 @@ import {
   StyleSheet,
   TouchableOpacity,
   ScrollView,
+  Switch,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useOnboarding } from '../../context/OnboardingContext';
-import { OnboardingGoal } from '../../types/onboarding';
-import { calculationService } from '../../services/calculationService';
+import { OnboardingPreferences } from '../../types/onboarding';
 
 const Onboarding2Screen: React.FC = () => {
   const { nextStep, updateData, data } = useOnboarding();
-  const [selectedGoal, setSelectedGoal] = useState<OnboardingGoal | null>(
-    data.goal || null
-  );
-
-  const goalOptions = calculationService.getGoalOptions();
+  const [preferences, setPreferences] = useState<OnboardingPreferences>({
+    mealReminders: data.preferences?.mealReminders || false,
+    hydrationReminders: data.preferences?.hydrationReminders || false,
+    weeklyProgressReminders: data.preferences?.weeklyProgressReminders || false,
+  });
 
   const handleNext = () => {
-    if (!selectedGoal) {
-      return;
-    }
-
-    updateData({ goal: selectedGoal });
+    updateData({ preferences });
     nextStep();
   };
 
-  const handleGoalSelect = (goal: OnboardingGoal) => {
-    setSelectedGoal(goal);
+  const handleSkip = () => {
+    // Use default preferences (all false)
+    updateData({ preferences });
+    nextStep();
+  };
+
+  const togglePreference = (key: keyof OnboardingPreferences) => {
+    setPreferences(prev => ({
+      ...prev,
+      [key]: !prev[key]
+    }));
   };
 
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
-          <Text style={styles.title}>Your Goal</Text>
-          <Text style={styles.subtitle}>What do you want to achieve?</Text>
+          <Text style={styles.title}>Preferences</Text>
+          <Text style={styles.subtitle}>Customize your experience</Text>
+          <Text style={styles.optionalText}>(Optional - you can skip this step)</Text>
         </View>
 
-        <View style={styles.goalsContainer}>
-          {goalOptions.map((goal, index) => (
-            <TouchableOpacity
-              key={goal.type}
-              style={[
-                styles.goalOption,
-                selectedGoal?.type === goal.type && styles.goalOptionSelected,
-              ]}
-              onPress={() => handleGoalSelect(goal)}
-            >
-              <View style={styles.goalIcon}>
-                <Text style={styles.goalIconText}>
-                  {goal.type === 'maintain' ? '⚖️' : 
-                   goal.type === 'gain' ? '⬆️' : '⬇️'}
-                </Text>
-              </View>
-              <View style={styles.goalContent}>
-                <Text style={[
-                  styles.goalTitle,
-                  selectedGoal?.type === goal.type && styles.goalTitleSelected,
-                ]}>
-                  {goal.type === 'maintain' ? 'Maintain Weight' :
-                   goal.type === 'gain' ? 'Gain Muscle' : 'Lose Fat'}
-                </Text>
-                <Text style={[
-                  styles.goalDescription,
-                  selectedGoal?.type === goal.type && styles.goalDescriptionSelected,
-                ]}>
-                  {goal.description}
-                </Text>
-              </View>
-              {selectedGoal?.type === goal.type && (
-                <View style={styles.selectedIndicator}>
-                  <Text style={styles.selectedIndicatorText}>✓</Text>
-                </View>
-              )}
-            </TouchableOpacity>
-          ))}
+        <View style={styles.preferencesContainer}>
+          <View style={styles.preferenceItem}>
+            <View style={styles.preferenceContent}>
+              <Text style={styles.preferenceTitle}>Meal Reminders</Text>
+              <Text style={styles.preferenceDescription}>
+                Get notified to log your meals throughout the day
+              </Text>
+            </View>
+            <Switch
+              value={preferences.mealReminders}
+              onValueChange={() => togglePreference('mealReminders')}
+              trackColor={{ false: '#E0E0E0', true: '#007AFF' }}
+              thumbColor={preferences.mealReminders ? '#FFFFFF' : '#FFFFFF'}
+            />
+          </View>
+
+          <View style={styles.preferenceItem}>
+            <View style={styles.preferenceContent}>
+              <Text style={styles.preferenceTitle}>Hydration Reminders</Text>
+              <Text style={styles.preferenceDescription}>
+                Get reminded to drink water based on your weight
+              </Text>
+            </View>
+            <Switch
+              value={preferences.hydrationReminders}
+              onValueChange={() => togglePreference('hydrationReminders')}
+              trackColor={{ false: '#E0E0E0', true: '#007AFF' }}
+              thumbColor={preferences.hydrationReminders ? '#FFFFFF' : '#FFFFFF'}
+            />
+          </View>
+
+          <View style={styles.preferenceItem}>
+            <View style={styles.preferenceContent}>
+              <Text style={styles.preferenceTitle}>Weekly Progress</Text>
+              <Text style={styles.preferenceDescription}>
+                Get weekly summaries of your progress and achievements
+              </Text>
+            </View>
+            <Switch
+              value={preferences.weeklyProgressReminders}
+              onValueChange={() => togglePreference('weeklyProgressReminders')}
+              trackColor={{ false: '#E0E0E0', true: '#007AFF' }}
+              thumbColor={preferences.weeklyProgressReminders ? '#FFFFFF' : '#FFFFFF'}
+            />
+          </View>
         </View>
 
         <View style={styles.infoContainer}>
-          <Text style={styles.infoTitle}>How this helps you:</Text>
+          <Text style={styles.infoTitle}>About notifications:</Text>
           <Text style={styles.infoText}>
-            • Sets your daily calorie target automatically
+            • You can change these anytime in settings
           </Text>
           <Text style={styles.infoText}>
-            • Adjusts your macronutrient ratios for your goal
+            • Notifications help build consistent habits
           </Text>
           <Text style={styles.infoText}>
-            • Provides personalized recommendations
+            • We respect your time and won't spam you
           </Text>
           <Text style={styles.infoText}>
-            • You can change this anytime in settings
+            • You can always turn them off later
           </Text>
         </View>
       </ScrollView>
 
       <View style={styles.buttonContainer}>
-        <TouchableOpacity 
-          style={[
-            styles.primaryButton,
-            !selectedGoal && styles.primaryButtonDisabled
-          ]} 
-          onPress={handleNext}
-          disabled={!selectedGoal}
-        >
+        <TouchableOpacity style={styles.skipButton} onPress={handleSkip}>
+          <Text style={styles.skipButtonText}>Skip</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.primaryButton} onPress={handleNext}>
           <Text style={styles.primaryButtonText}>Continue</Text>
         </TouchableOpacity>
       </View>
@@ -135,68 +144,40 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: 16,
     color: '#666666',
+    marginBottom: 4,
   },
-  goalsContainer: {
+  optionalText: {
+    fontSize: 14,
+    color: '#999999',
+    fontStyle: 'italic',
+  },
+  preferencesContainer: {
     marginBottom: 32,
   },
-  goalOption: {
+  preferenceItem: {
     backgroundColor: '#FFFFFF',
     borderRadius: 12,
     padding: 20,
     marginBottom: 16,
-    borderWidth: 2,
-    borderColor: '#E0E0E0',
     flexDirection: 'row',
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
   },
-  goalOptionSelected: {
-    borderColor: '#007AFF',
-    backgroundColor: '#F0F8FF',
-  },
-  goalIcon: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: '#F5F5F5',
-    justifyContent: 'center',
-    alignItems: 'center',
+  preferenceContent: {
+    flex: 1,
     marginRight: 16,
   },
-  goalIconText: {
-    fontSize: 24,
-  },
-  goalContent: {
-    flex: 1,
-  },
-  goalTitle: {
-    fontSize: 18,
+  preferenceTitle: {
+    fontSize: 16,
     fontWeight: '600',
     color: '#333333',
     marginBottom: 4,
   },
-  goalTitleSelected: {
-    color: '#007AFF',
-  },
-  goalDescription: {
+  preferenceDescription: {
     fontSize: 14,
     color: '#666666',
     lineHeight: 20,
-  },
-  goalDescriptionSelected: {
-    color: '#007AFF',
-  },
-  selectedIndicator: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: '#007AFF',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  selectedIndicatorText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: 'bold',
   },
   infoContainer: {
     backgroundColor: '#E8F4FD',
@@ -220,16 +201,32 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingBottom: 40,
     paddingTop: 20,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  skipButton: {
+    flex: 1,
+    paddingVertical: 16,
+    paddingHorizontal: 32,
+    borderRadius: 12,
+    alignItems: 'center',
+    marginRight: 8,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+  },
+  skipButtonText: {
+    color: '#666666',
+    fontSize: 18,
+    fontWeight: '600',
   },
   primaryButton: {
+    flex: 1,
     backgroundColor: '#007AFF',
     paddingVertical: 16,
     paddingHorizontal: 32,
     borderRadius: 12,
     alignItems: 'center',
-  },
-  primaryButtonDisabled: {
-    backgroundColor: '#CCCCCC',
+    marginLeft: 8,
   },
   primaryButtonText: {
     color: '#FFFFFF',

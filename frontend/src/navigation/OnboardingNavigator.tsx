@@ -5,8 +5,6 @@ import { useOnboarding } from '../context/OnboardingContext';
 import Onboarding1Screen from '../screens/onboarding/Onboarding1Screen';
 import Onboarding2Screen from '../screens/onboarding/Onboarding2Screen';
 import Onboarding3Screen from '../screens/onboarding/Onboarding3Screen';
-import Onboarding4Screen from '../screens/onboarding/Onboarding4Screen';
-import Onboarding5Screen from '../screens/onboarding/Onboarding5Screen';
 
 const OnboardingNavigator: React.FC = () => {
   const { currentStep } = useOnboarding();
@@ -19,10 +17,6 @@ const OnboardingNavigator: React.FC = () => {
         return <Onboarding2Screen />;
       case 2:
         return <Onboarding3Screen />;
-      case 3:
-        return <Onboarding4Screen />;
-      case 4:
-        return <Onboarding5Screen />;
       default:
         return <Onboarding1Screen />;
     }

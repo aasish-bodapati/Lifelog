@@ -5,112 +5,173 @@ import {
   StyleSheet,
   TouchableOpacity,
   ScrollView,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useOnboarding } from '../../context/OnboardingContext';
-import { OnboardingActivity } from '../../types/onboarding';
+import { useUser } from '../../context/UserContext';
 import { calculationService } from '../../services/calculationService';
+import { toastService } from '../../services/toastService';
 
 const Onboarding3Screen: React.FC = () => {
-  const { nextStep, updateData, data } = useOnboarding();
-  const [selectedActivity, setSelectedActivity] = useState<OnboardingActivity | null>(
-    data.activity || null
+  const { data, completeOnboarding, isLoading } = useOnboarding();
+  const { state: userState } = useUser();
+  const [isCompleting, setIsCompleting] = useState(false);
+
+  const handleComplete = async () => {
+    try {
+      setIsCompleting(true);
+      await completeOnboarding();
+      toastService.success('Welcome to Lifelog!', 'Your profile has been set up successfully.');
+    } catch (error) {
+      console.error('Error completing onboarding:', error);
+      toastService.error('Setup Failed', 'There was an error setting up your profile. Please try again.');
+    } finally {
+      setIsCompleting(false);
+    }
+  };
+
+  if (!data.profile || !data.goal || !data.activity) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>Missing required information. Please go back and complete all steps.</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  const targets = data.targets || calculationService.calculateDailyTargets(
+    data.profile,
+    data.goal,
+    data.activity
   );
 
-  const activityOptions = calculationService.getActivityOptions();
-
-  const handleNext = () => {
-    if (!selectedActivity) {
-      return;
-    }
-
-    updateData({ activity: selectedActivity });
-    nextStep();
-  };
-
-  const handleActivitySelect = (activity: OnboardingActivity) => {
-    setSelectedActivity(activity);
-  };
+  const bmi = calculationService.getBMICategory(data.profile);
 
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
-          <Text style={styles.title}>Activity Level</Text>
-          <Text style={styles.subtitle}>How active are you?</Text>
+          <Text style={styles.title}>Summary</Text>
+          <Text style={styles.subtitle}>Review your goals and get started</Text>
         </View>
 
-        <View style={styles.activitiesContainer}>
-          {activityOptions.map((activity, index) => (
-            <TouchableOpacity
-              key={activity.level}
-              style={[
-                styles.activityOption,
-                selectedActivity?.level === activity.level && styles.activityOptionSelected,
-              ]}
-              onPress={() => handleActivitySelect(activity)}
-            >
-              <View style={styles.activityContent}>
-                <View style={styles.activityHeader}>
-                  <Text style={[
-                    styles.activityTitle,
-                    selectedActivity?.level === activity.level && styles.activityTitleSelected,
-                  ]}>
-                    {activity.level === 'sedentary' ? 'Sedentary' :
-                     activity.level === 'light' ? 'Lightly Active' :
-                     activity.level === 'moderate' ? 'Moderately Active' :
-                     activity.level === 'active' ? 'Very Active' : 'Extra Active'}
-                  </Text>
-                  <Text style={[
-                    styles.activityMultiplier,
-                    selectedActivity?.level === activity.level && styles.activityMultiplierSelected,
-                  ]}>
-                    {activity.multiplier}x
-                  </Text>
-                </View>
-                <Text style={[
-                  styles.activityDescription,
-                  selectedActivity?.level === activity.level && styles.activityDescriptionSelected,
-                ]}>
-                  {activity.description}
-                </Text>
+        <View style={styles.summaryContainer}>
+          {/* Profile Summary */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Your Profile</Text>
+            <View style={styles.profileInfo}>
+              <Text style={styles.profileText}>
+                {userState.user?.name || 'User'}, {data.profile.age} years old
+              </Text>
+              <Text style={styles.profileText}>
+                {data.profile.height}cm, {data.profile.weight}kg
+              </Text>
+              <Text style={styles.profileText}>
+                BMI: {bmi.bmi} ({bmi.category})
+              </Text>
+            </View>
+          </View>
+
+          {/* Goal Summary */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Your Goal</Text>
+            <View style={styles.goalInfo}>
+              <Text style={styles.goalText}>
+                {data.goal.type === 'maintain' ? '⚖️ Maintain Weight' :
+                 data.goal.type === 'gain' ? '⬆️ Gain Muscle' : '⬇️ Lose Fat'}
+              </Text>
+              <Text style={styles.goalDescription}>{data.goal.description}</Text>
+            </View>
+          </View>
+
+          {/* Activity Summary */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Activity Level</Text>
+            <View style={styles.activityInfo}>
+              <Text style={styles.activityText}>
+                {data.activity.level === 'sedentary' ? 'Sedentary' :
+                 data.activity.level === 'light' ? 'Lightly Active' :
+                 data.activity.level === 'moderate' ? 'Moderately Active' :
+                 data.activity.level === 'active' ? 'Very Active' : 'Extra Active'}
+              </Text>
+              <Text style={styles.activityDescription}>{data.activity.description}</Text>
+            </View>
+          </View>
+
+          {/* Daily Targets */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Your Daily Targets</Text>
+            <View style={styles.targetsContainer}>
+              <View style={styles.targetCard}>
+                <Text style={styles.targetValue}>{targets.calories}</Text>
+                <Text style={styles.targetLabel}>Calories</Text>
               </View>
-              {selectedActivity?.level === activity.level && (
-                <View style={styles.selectedIndicator}>
-                  <Text style={styles.selectedIndicatorText}>✓</Text>
-                </View>
-              )}
-            </TouchableOpacity>
-          ))}
+              <View style={styles.targetCard}>
+                <Text style={styles.targetValue}>{targets.protein}g</Text>
+                <Text style={styles.targetLabel}>Protein</Text>
+              </View>
+              <View style={styles.targetCard}>
+                <Text style={styles.targetValue}>{targets.carbs}g</Text>
+                <Text style={styles.targetLabel}>Carbs</Text>
+              </View>
+              <View style={styles.targetCard}>
+                <Text style={styles.targetValue}>{targets.fat}g</Text>
+                <Text style={styles.targetLabel}>Fat</Text>
+              </View>
+            </View>
+            <View style={styles.hydrationInfo}>
+              <Text style={styles.hydrationText}>
+                💧 Hydration: {targets.hydration}L per day
+              </Text>
+            </View>
+          </View>
+
+          {/* Preferences Summary */}
+          {data.preferences && (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Preferences</Text>
+              <View style={styles.preferencesInfo}>
+                {data.preferences.mealReminders && (
+                  <Text style={styles.preferenceText}>✓ Meal reminders enabled</Text>
+                )}
+                {data.preferences.hydrationReminders && (
+                  <Text style={styles.preferenceText}>✓ Hydration reminders enabled</Text>
+                )}
+                {data.preferences.weeklyProgressReminders && (
+                  <Text style={styles.preferenceText}>✓ Weekly progress reports enabled</Text>
+                )}
+                {!data.preferences.mealReminders && 
+                 !data.preferences.hydrationReminders && 
+                 !data.preferences.weeklyProgressReminders && (
+                  <Text style={styles.preferenceText}>No notifications enabled</Text>
+                )}
+              </View>
+            </View>
+          )}
         </View>
 
         <View style={styles.infoContainer}>
-          <Text style={styles.infoTitle}>Why this matters:</Text>
+          <Text style={styles.infoTitle}>Ready to start your journey!</Text>
           <Text style={styles.infoText}>
-            • Determines your daily calorie needs
-          </Text>
-          <Text style={styles.infoText}>
-            • More active = higher calorie target
-          </Text>
-          <Text style={styles.infoText}>
-            • Helps personalize your nutrition goals
-          </Text>
-          <Text style={styles.infoText}>
-            • You can adjust this anytime in settings
+            Your personalized targets are calculated based on your profile and goals. 
+            You can adjust these anytime in the app settings.
           </Text>
         </View>
       </ScrollView>
 
       <View style={styles.buttonContainer}>
         <TouchableOpacity 
-          style={[
-            styles.primaryButton,
-            !selectedActivity && styles.primaryButtonDisabled
-          ]} 
-          onPress={handleNext}
-          disabled={!selectedActivity}
+          style={[styles.primaryButton, (isLoading || isCompleting) && styles.primaryButtonDisabled]} 
+          onPress={handleComplete}
+          disabled={isLoading || isCompleting}
         >
-          <Text style={styles.primaryButtonText}>Continue</Text>
+          {isLoading || isCompleting ? (
+            <ActivityIndicator color="#FFFFFF" />
+          ) : (
+            <Text style={styles.primaryButtonText}>Start Logging</Text>
+          )}
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -140,75 +201,110 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#666666',
   },
-  activitiesContainer: {
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+  errorText: {
+    fontSize: 16,
+    color: '#D32F2F',
+    textAlign: 'center',
+  },
+  summaryContainer: {
     marginBottom: 32,
   },
-  activityOption: {
+  section: {
     backgroundColor: '#FFFFFF',
     borderRadius: 12,
     padding: 20,
     marginBottom: 16,
-    borderWidth: 2,
+    borderWidth: 1,
     borderColor: '#E0E0E0',
-    flexDirection: 'row',
-    alignItems: 'center',
   },
-  activityOptionSelected: {
-    borderColor: '#007AFF',
-    backgroundColor: '#F0F8FF',
-  },
-  activityContent: {
-    flex: 1,
-  },
-  activityHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  activityTitle: {
+  sectionTitle: {
     fontSize: 18,
     fontWeight: '600',
     color: '#333333',
-    flex: 1,
+    marginBottom: 12,
   },
-  activityTitleSelected: {
-    color: '#007AFF',
+  profileInfo: {
+    gap: 4,
   },
-  activityMultiplier: {
+  profileText: {
     fontSize: 16,
-    fontWeight: 'bold',
-    color: '#666666',
-    backgroundColor: '#F5F5F5',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
+    color: '#333333',
   },
-  activityMultiplierSelected: {
+  goalInfo: {
+    gap: 8,
+  },
+  goalText: {
+    fontSize: 16,
+    fontWeight: '600',
     color: '#007AFF',
-    backgroundColor: '#E3F2FD',
+  },
+  goalDescription: {
+    fontSize: 14,
+    color: '#666666',
+    lineHeight: 20,
+  },
+  activityInfo: {
+    gap: 8,
+  },
+  activityText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333333',
   },
   activityDescription: {
     fontSize: 14,
     color: '#666666',
     lineHeight: 20,
   },
-  activityDescriptionSelected: {
-    color: '#007AFF',
+  targetsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+    marginBottom: 16,
   },
-  selectedIndicator: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: '#007AFF',
-    justifyContent: 'center',
+  targetCard: {
+    flex: 1,
+    minWidth: '45%',
+    backgroundColor: '#F8F9FA',
+    borderRadius: 8,
+    padding: 16,
     alignItems: 'center',
-    marginLeft: 16,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
   },
-  selectedIndicatorText: {
-    color: '#FFFFFF',
-    fontSize: 16,
+  targetValue: {
+    fontSize: 24,
     fontWeight: 'bold',
+    color: '#007AFF',
+    marginBottom: 4,
+  },
+  targetLabel: {
+    fontSize: 12,
+    color: '#666666',
+    textAlign: 'center',
+  },
+  hydrationInfo: {
+    backgroundColor: '#E8F4FD',
+    padding: 12,
+    borderRadius: 8,
+  },
+  hydrationText: {
+    fontSize: 14,
+    color: '#007AFF',
+    textAlign: 'center',
+  },
+  preferencesInfo: {
+    gap: 4,
+  },
+  preferenceText: {
+    fontSize: 14,
+    color: '#333333',
   },
   infoContainer: {
     backgroundColor: '#E8F4FD',
@@ -225,7 +321,6 @@ const styles = StyleSheet.create({
   infoText: {
     fontSize: 14,
     color: '#333333',
-    marginBottom: 4,
     lineHeight: 20,
   },
   buttonContainer: {

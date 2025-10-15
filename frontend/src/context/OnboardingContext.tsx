@@ -24,7 +24,7 @@ type OnboardingAction =
 
 const initialState: OnboardingState = {
   currentStep: 0,
-  totalSteps: 5,
+  totalSteps: 3,
   data: {},
   steps: [],
   isComplete: false,
@@ -91,43 +91,29 @@ export const OnboardingProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
   // Initialize steps
   useEffect(() => {
-    const steps: OnboardingStep[] = [
-      {
-        id: 'profile',
-        title: 'Basic Information',
-        description: 'Tell us about yourself',
-        isComplete: false,
-        isOptional: false,
-      },
-      {
-        id: 'goal',
-        title: 'Your Goal',
-        description: 'What do you want to achieve?',
-        isComplete: false,
-        isOptional: false,
-      },
-      {
-        id: 'activity',
-        title: 'Activity Level',
-        description: 'How active are you?',
-        isComplete: false,
-        isOptional: false,
-      },
-      {
-        id: 'preferences',
-        title: 'Preferences',
-        description: 'Customize your experience',
-        isComplete: false,
-        isOptional: true,
-      },
-      {
-        id: 'summary',
-        title: 'Summary',
-        description: 'Review your goals',
-        isComplete: false,
-        isOptional: false,
-      },
-    ];
+  const steps: OnboardingStep[] = [
+    {
+      id: 'profile',
+      title: 'Basic Information',
+      description: 'Tell us about yourself and your goals',
+      isComplete: false,
+      isOptional: false,
+    },
+    {
+      id: 'preferences',
+      title: 'Preferences',
+      description: 'Customize your experience',
+      isComplete: false,
+      isOptional: true,
+    },
+    {
+      id: 'summary',
+      title: 'Summary',
+      description: 'Review your goals',
+      isComplete: false,
+      isOptional: false,
+    },
+  ];
     dispatch({ type: 'SET_STEPS', payload: steps });
   }, []);
 

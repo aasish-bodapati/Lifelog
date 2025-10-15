@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useOnboarding } from '../../context/OnboardingContext';
-import { OnboardingProfile } from '../../types/onboarding';
+import { OnboardingProfile, OnboardingGoal, OnboardingActivity } from '../../types/onboarding';
 import { calculationService } from '../../services/calculationService';
 
 const Onboarding1Screen: React.FC = () => {
@@ -22,18 +22,39 @@ const Onboarding1Screen: React.FC = () => {
     weight: data.profile?.weight || undefined,
   });
 
+  const [selectedGoal, setSelectedGoal] = useState<OnboardingGoal | null>(
+    data.goal || null
+  );
+
+  const [selectedActivity, setSelectedActivity] = useState<OnboardingActivity | null>(
+    data.activity || null
+  );
+
   const [errors, setErrors] = useState<string[]>([]);
 
   const handleNext = () => {
     const validation = calculationService.validateProfile(profile);
+    const allErrors: string[] = [...validation.errors];
     
-    if (!validation.isValid) {
-      setErrors(validation.errors);
+    if (!selectedGoal) {
+      allErrors.push('Please select your goal');
+    }
+    
+    if (!selectedActivity) {
+      allErrors.push('Please select your activity level');
+    }
+    
+    if (allErrors.length > 0) {
+      setErrors(allErrors);
       return;
     }
 
     setErrors([]);
-    updateData({ profile: profile as OnboardingProfile });
+    updateData({ 
+      profile: profile as OnboardingProfile,
+      goal: selectedGoal,
+      activity: selectedActivity
+    });
     nextStep();
   };
 
@@ -45,12 +66,26 @@ const Onboarding1Screen: React.FC = () => {
     }
   };
 
+  const handleGoalSelect = (goal: OnboardingGoal) => {
+    setSelectedGoal(goal);
+    if (errors.length > 0) {
+      setErrors([]);
+    }
+  };
+
+  const handleActivitySelect = (activity: OnboardingActivity) => {
+    setSelectedActivity(activity);
+    if (errors.length > 0) {
+      setErrors([]);
+    }
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
-          <Text style={styles.title}>Basic Information</Text>
-          <Text style={styles.subtitle}>Tell us about yourself</Text>
+          <Text style={styles.title}>Let's Get Started</Text>
+          <Text style={styles.subtitle}>Tell us about yourself and your goals</Text>
         </View>
 
         {errors.length > 0 && (
@@ -147,6 +182,92 @@ const Onboarding1Screen: React.FC = () => {
               })()}
             </View>
           )}
+
+          {/* Goal Selection */}
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Your Goal</Text>
+            <View style={styles.goalsContainer}>
+              {calculationService.getGoalOptions().map((goal) => (
+                <TouchableOpacity
+                  key={goal.type}
+                  style={[
+                    styles.goalOption,
+                    selectedGoal?.type === goal.type && styles.goalOptionSelected,
+                  ]}
+                  onPress={() => handleGoalSelect(goal)}
+                >
+                  <View style={styles.goalContent}>
+                    <Text style={[
+                      styles.goalTitle,
+                      selectedGoal?.type === goal.type && styles.goalTitleSelected,
+                    ]}>
+                      {goal.type === 'maintain' ? '⚖️ Maintain Weight' :
+                       goal.type === 'gain' ? '⬆️ Gain Muscle' : '⬇️ Lose Fat'}
+                    </Text>
+                    <Text style={[
+                      styles.goalDescription,
+                      selectedGoal?.type === goal.type && styles.goalDescriptionSelected,
+                    ]}>
+                      {goal.description}
+                    </Text>
+                  </View>
+                  {selectedGoal?.type === goal.type && (
+                    <View style={styles.selectedIndicator}>
+                      <Text style={styles.selectedIndicatorText}>✓</Text>
+                    </View>
+                  )}
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+
+          {/* Activity Level Selection */}
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Activity Level</Text>
+            <View style={styles.activitiesContainer}>
+              {calculationService.getActivityOptions().map((activity) => (
+                <TouchableOpacity
+                  key={activity.level}
+                  style={[
+                    styles.activityOption,
+                    selectedActivity?.level === activity.level && styles.activityOptionSelected,
+                  ]}
+                  onPress={() => handleActivitySelect(activity)}
+                >
+                  <View style={styles.activityContent}>
+                    <View style={styles.activityHeader}>
+                      <Text style={[
+                        styles.activityTitle,
+                        selectedActivity?.level === activity.level && styles.activityTitleSelected,
+                      ]}>
+                        {activity.level === 'sedentary' ? 'Sedentary' :
+                         activity.level === 'light' ? 'Lightly Active' :
+                         activity.level === 'moderate' ? 'Moderately Active' :
+                         activity.level === 'active' ? 'Very Active' : 'Extra Active'}
+                      </Text>
+                      <Text style={[
+                        styles.activityMultiplier,
+                        selectedActivity?.level === activity.level && styles.activityMultiplierSelected,
+                      ]}>
+                        {activity.multiplier}x
+                      </Text>
+                    </View>
+                    <Text style={[
+                      styles.activityDescription,
+                      selectedActivity?.level === activity.level && styles.activityDescriptionSelected,
+                    ]}>
+                      {activity.description}
+                    </Text>
+                  </View>
+                  {selectedActivity?.level === activity.level && (
+                    <View style={styles.selectedIndicator}>
+                      <Text style={styles.selectedIndicatorText}>✓</Text>
+                    </View>
+                  )}
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
         </View>
       </ScrollView>
 
@@ -287,6 +408,111 @@ const styles = StyleSheet.create({
   bmiCategory: {
     fontSize: 16,
     fontWeight: '500',
+  },
+  goalsContainer: {
+    gap: 12,
+  },
+  goalOption: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 2,
+    borderColor: '#E0E0E0',
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  goalOptionSelected: {
+    borderColor: '#007AFF',
+    backgroundColor: '#F0F8FF',
+  },
+  goalContent: {
+    flex: 1,
+  },
+  goalTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333333',
+    marginBottom: 4,
+  },
+  goalTitleSelected: {
+    color: '#007AFF',
+  },
+  goalDescription: {
+    fontSize: 14,
+    color: '#666666',
+    lineHeight: 20,
+  },
+  goalDescriptionSelected: {
+    color: '#007AFF',
+  },
+  activitiesContainer: {
+    gap: 12,
+  },
+  activityOption: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 2,
+    borderColor: '#E0E0E0',
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  activityOptionSelected: {
+    borderColor: '#007AFF',
+    backgroundColor: '#F0F8FF',
+  },
+  activityContent: {
+    flex: 1,
+  },
+  activityHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  activityTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333333',
+    flex: 1,
+  },
+  activityTitleSelected: {
+    color: '#007AFF',
+  },
+  activityMultiplier: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#666666',
+    backgroundColor: '#F5F5F5',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  activityMultiplierSelected: {
+    color: '#007AFF',
+    backgroundColor: '#E3F2FD',
+  },
+  activityDescription: {
+    fontSize: 14,
+    color: '#666666',
+    lineHeight: 20,
+  },
+  activityDescriptionSelected: {
+    color: '#007AFF',
+  },
+  selectedIndicator: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#007AFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 12,
+  },
+  selectedIndicatorText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
   buttonContainer: {
     paddingHorizontal: 24,
