@@ -49,7 +49,7 @@ const ProfileScreen: React.FC = () => {
   // Calculate targets if we have profile data
   const calculateTargets = () => {
     if (onboardingData.profile && onboardingData.goal && onboardingData.activity) {
-      return calculationService.calculateTargets(
+      return calculationService.calculateDailyTargets(
         onboardingData.profile as any,
         onboardingData.goal,
         onboardingData.activity
