@@ -2,11 +2,11 @@ import React from 'react';
 import { useOnboarding } from '../context/OnboardingContext';
 
 // Import onboarding screens
-import ProfileScreen from '../screens/onboarding/ProfileScreen';
-import GoalScreen from '../screens/onboarding/GoalScreen';
-import ActivityScreen from '../screens/onboarding/ActivityScreen';
-import PreferencesScreen from '../screens/onboarding/PreferencesScreen';
-import SummaryScreen from '../screens/onboarding/SummaryScreen';
+import Onboarding1Screen from '../screens/onboarding/Onboarding1Screen';
+import Onboarding2Screen from '../screens/onboarding/Onboarding2Screen';
+import Onboarding3Screen from '../screens/onboarding/Onboarding3Screen';
+import Onboarding4Screen from '../screens/onboarding/Onboarding4Screen';
+import Onboarding5Screen from '../screens/onboarding/Onboarding5Screen';
 
 const OnboardingNavigator: React.FC = () => {
   const { currentStep } = useOnboarding();
@@ -14,17 +14,17 @@ const OnboardingNavigator: React.FC = () => {
   const renderCurrentScreen = () => {
     switch (currentStep) {
       case 0:
-        return <ProfileScreen />;
+        return <Onboarding1Screen />;
       case 1:
-        return <GoalScreen />;
+        return <Onboarding2Screen />;
       case 2:
-        return <ActivityScreen />;
+        return <Onboarding3Screen />;
       case 3:
-        return <PreferencesScreen />;
+        return <Onboarding4Screen />;
       case 4:
-        return <SummaryScreen />;
+        return <Onboarding5Screen />;
       default:
-        return <ProfileScreen />;
+        return <Onboarding1Screen />;
     }
   };
 

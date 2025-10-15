@@ -8,70 +8,74 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useOnboarding } from '../../context/OnboardingContext';
-import { OnboardingGoal } from '../../types/onboarding';
+import { OnboardingActivity } from '../../types/onboarding';
 import { calculationService } from '../../services/calculationService';
 
-const GoalScreen: React.FC = () => {
+const Onboarding3Screen: React.FC = () => {
   const { nextStep, updateData, data } = useOnboarding();
-  const [selectedGoal, setSelectedGoal] = useState<OnboardingGoal | null>(
-    data.goal || null
+  const [selectedActivity, setSelectedActivity] = useState<OnboardingActivity | null>(
+    data.activity || null
   );
 
-  const goalOptions = calculationService.getGoalOptions();
+  const activityOptions = calculationService.getActivityOptions();
 
   const handleNext = () => {
-    if (!selectedGoal) {
+    if (!selectedActivity) {
       return;
     }
 
-    updateData({ goal: selectedGoal });
+    updateData({ activity: selectedActivity });
     nextStep();
   };
 
-  const handleGoalSelect = (goal: OnboardingGoal) => {
-    setSelectedGoal(goal);
+  const handleActivitySelect = (activity: OnboardingActivity) => {
+    setSelectedActivity(activity);
   };
 
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
-          <Text style={styles.title}>Your Goal</Text>
-          <Text style={styles.subtitle}>What do you want to achieve?</Text>
+          <Text style={styles.title}>Activity Level</Text>
+          <Text style={styles.subtitle}>How active are you?</Text>
         </View>
 
-        <View style={styles.goalsContainer}>
-          {goalOptions.map((goal, index) => (
+        <View style={styles.activitiesContainer}>
+          {activityOptions.map((activity, index) => (
             <TouchableOpacity
-              key={goal.type}
+              key={activity.level}
               style={[
-                styles.goalOption,
-                selectedGoal?.type === goal.type && styles.goalOptionSelected,
+                styles.activityOption,
+                selectedActivity?.level === activity.level && styles.activityOptionSelected,
               ]}
-              onPress={() => handleGoalSelect(goal)}
+              onPress={() => handleActivitySelect(activity)}
             >
-              <View style={styles.goalIcon}>
-                <Text style={styles.goalIconText}>
-                  {goal.type === 'maintain' ? '⚖️' : 
-                   goal.type === 'gain' ? '⬆️' : '⬇️'}
+              <View style={styles.activityContent}>
+                <View style={styles.activityHeader}>
+                  <Text style={[
+                    styles.activityTitle,
+                    selectedActivity?.level === activity.level && styles.activityTitleSelected,
+                  ]}>
+                    {activity.level === 'sedentary' ? 'Sedentary' :
+                     activity.level === 'light' ? 'Lightly Active' :
+                     activity.level === 'moderate' ? 'Moderately Active' :
+                     activity.level === 'active' ? 'Very Active' : 'Extra Active'}
+                  </Text>
+                  <Text style={[
+                    styles.activityMultiplier,
+                    selectedActivity?.level === activity.level && styles.activityMultiplierSelected,
+                  ]}>
+                    {activity.multiplier}x
+                  </Text>
+                </View>
+                <Text style={[
+                  styles.activityDescription,
+                  selectedActivity?.level === activity.level && styles.activityDescriptionSelected,
+                ]}>
+                  {activity.description}
                 </Text>
               </View>
-              <View style={styles.goalContent}>
-                <Text style={[
-                  styles.goalTitle,
-                  selectedGoal?.type === goal.type && styles.goalTitleSelected,
-                ]}>
-                  {goal.type === 'maintain' ? 'Maintain Weight' :
-                   goal.type === 'gain' ? 'Gain Muscle' : 'Lose Fat'}
-                </Text>
-                <Text style={[
-                  styles.goalDescription,
-                  selectedGoal?.type === goal.type && styles.goalDescriptionSelected,
-                ]}>
-                  {goal.description}
-                </Text>
-              </View>
-              {selectedGoal?.type === goal.type && (
+              {selectedActivity?.level === activity.level && (
                 <View style={styles.selectedIndicator}>
                   <Text style={styles.selectedIndicatorText}>✓</Text>
                 </View>
@@ -81,18 +85,18 @@ const GoalScreen: React.FC = () => {
         </View>
 
         <View style={styles.infoContainer}>
-          <Text style={styles.infoTitle}>How this helps you:</Text>
+          <Text style={styles.infoTitle}>Why this matters:</Text>
           <Text style={styles.infoText}>
-            • Sets your daily calorie target automatically
+            • Determines your daily calorie needs
           </Text>
           <Text style={styles.infoText}>
-            • Adjusts your macronutrient ratios for your goal
+            • More active = higher calorie target
           </Text>
           <Text style={styles.infoText}>
-            • Provides personalized recommendations
+            • Helps personalize your nutrition goals
           </Text>
           <Text style={styles.infoText}>
-            • You can change this anytime in settings
+            • You can adjust this anytime in settings
           </Text>
         </View>
       </ScrollView>
@@ -101,10 +105,10 @@ const GoalScreen: React.FC = () => {
         <TouchableOpacity 
           style={[
             styles.primaryButton,
-            !selectedGoal && styles.primaryButtonDisabled
+            !selectedActivity && styles.primaryButtonDisabled
           ]} 
           onPress={handleNext}
-          disabled={!selectedGoal}
+          disabled={!selectedActivity}
         >
           <Text style={styles.primaryButtonText}>Continue</Text>
         </TouchableOpacity>
@@ -136,10 +140,10 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#666666',
   },
-  goalsContainer: {
+  activitiesContainer: {
     marginBottom: 32,
   },
-  goalOption: {
+  activityOption: {
     backgroundColor: '#FFFFFF',
     borderRadius: 12,
     padding: 20,
@@ -149,40 +153,47 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
-  goalOptionSelected: {
+  activityOptionSelected: {
     borderColor: '#007AFF',
     backgroundColor: '#F0F8FF',
   },
-  goalIcon: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: '#F5F5F5',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 16,
-  },
-  goalIconText: {
-    fontSize: 24,
-  },
-  goalContent: {
+  activityContent: {
     flex: 1,
   },
-  goalTitle: {
+  activityHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  activityTitle: {
     fontSize: 18,
     fontWeight: '600',
     color: '#333333',
-    marginBottom: 4,
+    flex: 1,
   },
-  goalTitleSelected: {
+  activityTitleSelected: {
     color: '#007AFF',
   },
-  goalDescription: {
+  activityMultiplier: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#666666',
+    backgroundColor: '#F5F5F5',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  activityMultiplierSelected: {
+    color: '#007AFF',
+    backgroundColor: '#E3F2FD',
+  },
+  activityDescription: {
     fontSize: 14,
     color: '#666666',
     lineHeight: 20,
   },
-  goalDescriptionSelected: {
+  activityDescriptionSelected: {
     color: '#007AFF',
   },
   selectedIndicator: {
@@ -192,6 +203,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#007AFF',
     justifyContent: 'center',
     alignItems: 'center',
+    marginLeft: 16,
   },
   selectedIndicatorText: {
     color: '#FFFFFF',
@@ -238,5 +250,5 @@ const styles = StyleSheet.create({
   },
 });
 
-export default GoalScreen;
+export default Onboarding3Screen;
 

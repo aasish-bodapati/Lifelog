@@ -11,7 +11,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useOnboarding } from '../../context/OnboardingContext';
 import { OnboardingPreferences } from '../../types/onboarding';
 
-const PreferencesScreen: React.FC = () => {
+const Onboarding4Screen: React.FC = () => {
   const { nextStep, updateData, data } = useOnboarding();
   const [preferences, setPreferences] = useState<OnboardingPreferences>({
     mealReminders: data.preferences?.mealReminders || false,
@@ -235,5 +235,5 @@ const styles = StyleSheet.create({
   },
 });
 
-export default PreferencesScreen;
+export default Onboarding4Screen;
 

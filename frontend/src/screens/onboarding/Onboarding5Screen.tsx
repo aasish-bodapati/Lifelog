@@ -13,7 +13,7 @@ import { useUser } from '../../context/UserContext';
 import { calculationService } from '../../services/calculationService';
 import { toastService } from '../../services/toastService';
 
-const SummaryScreen: React.FC = () => {
+const Onboarding5Screen: React.FC = () => {
   const { data, completeOnboarding, isLoading } = useOnboarding();
   const { state: userState } = useUser();
   const [isCompleting, setIsCompleting] = useState(false);
@@ -345,5 +345,5 @@ const styles = StyleSheet.create({
   },
 });
 
-export default SummaryScreen;
+export default Onboarding5Screen;
 

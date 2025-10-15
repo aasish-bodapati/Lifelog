@@ -13,7 +13,7 @@ import { useOnboarding } from '../../context/OnboardingContext';
 import { OnboardingProfile } from '../../types/onboarding';
 import { calculationService } from '../../services/calculationService';
 
-const ProfileScreen: React.FC = () => {
+const Onboarding1Screen: React.FC = () => {
   const { nextStep, updateData, data } = useOnboarding();
   const [profile, setProfile] = useState<Partial<OnboardingProfile>>({
     age: data.profile?.age || undefined,
@@ -279,5 +279,5 @@ const styles = StyleSheet.create({
   },
 });
 
-export default ProfileScreen;
+export default Onboarding1Screen;
 
