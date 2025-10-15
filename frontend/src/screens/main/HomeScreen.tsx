@@ -9,10 +9,13 @@ import {
 } from 'react-native';
 import { useUser } from '../../context/UserContext';
 import { useLog } from '../../context/LogContext';
+import { useSync } from '../../context/SyncContext';
+import SyncIndicator from '../../components/SyncIndicator';
 
 const HomeScreen: React.FC = () => {
   const { state: userState } = useUser();
   const { state: logState, syncAllData } = useLog();
+  const { forceSync } = useSync();
 
   useEffect(() => {
     if (userState.user) {
@@ -20,9 +23,10 @@ const HomeScreen: React.FC = () => {
     }
   }, [userState.user]);
 
-  const handleRefresh = () => {
+  const handleRefresh = async () => {
     if (userState.user) {
-      syncAllData(userState.user.id);
+      await syncAllData(userState.user.id);
+      await forceSync();
     }
   };
 
@@ -34,13 +38,15 @@ const HomeScreen: React.FC = () => {
   };
 
   return (
-    <ScrollView
-      style={styles.container}
-      refreshControl={
-        <RefreshControl refreshing={logState.isLoading} onRefresh={handleRefresh} />
-      }
-    >
-      <View style={styles.content}>
+    <View style={styles.container}>
+      <SyncIndicator />
+      <ScrollView
+        style={styles.scrollView}
+        refreshControl={
+          <RefreshControl refreshing={logState.isLoading} onRefresh={handleRefresh} />
+        }
+      >
+        <View style={styles.content}>
         <Text style={styles.greeting}>
           {getGreeting()}, {userState.user?.username || 'User'}!
         </Text>
@@ -87,8 +93,9 @@ const HomeScreen: React.FC = () => {
           <Text style={styles.sectionTitle}>Recent Activity</Text>
           <Text style={styles.emptyText}>No recent activity</Text>
         </View>
-      </View>
-    </ScrollView>
+        </View>
+      </ScrollView>
+    </View>
   );
 };
 
@@ -96,6 +103,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F8F9FA',
+  },
+  scrollView: {
+    flex: 1,
   },
   content: {
     padding: 16,

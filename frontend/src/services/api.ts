@@ -59,4 +59,118 @@ api.interceptors.response.use(
   }
 );
 
+// API Service class with all endpoints
+class ApiService {
+  // User endpoints
+  async login(username: string, password: string) {
+    const response = await api.post('/auth/login', { username, password });
+    return response.data;
+  }
+
+  async register(username: string, email: string, password: string) {
+    const response = await api.post('/auth/register', { username, email, password });
+    return response.data;
+  }
+
+  async getCurrentUser() {
+    const response = await api.get('/users/me');
+    return response.data;
+  }
+
+  async updateUser(userId: number, userData: any) {
+    const response = await api.put(`/users/${userId}`, userData);
+    return response.data;
+  }
+
+  // Workout endpoints
+  async createWorkout(workoutData: any) {
+    const response = await api.post('/fitness', workoutData);
+    return response.data;
+  }
+
+  async getWorkouts(userId: number, limit: number = 50) {
+    const response = await api.get(`/fitness?user_id=${userId}&limit=${limit}`);
+    return response.data;
+  }
+
+  async updateWorkout(workoutId: string, workoutData: any) {
+    const response = await api.put(`/fitness/${workoutId}`, workoutData);
+    return response.data;
+  }
+
+  async deleteWorkout(workoutId: string) {
+    const response = await api.delete(`/fitness/${workoutId}`);
+    return response.data;
+  }
+
+  // Nutrition endpoints
+  async createNutritionLog(nutritionData: any) {
+    const response = await api.post('/nutrition', nutritionData);
+    return response.data;
+  }
+
+  async getNutritionLogs(userId: number, date?: string, limit: number = 50) {
+    let url = `/nutrition?user_id=${userId}&limit=${limit}`;
+    if (date) {
+      url += `&date=${date}`;
+    }
+    const response = await api.get(url);
+    return response.data;
+  }
+
+  async updateNutritionLog(nutritionId: string, nutritionData: any) {
+    const response = await api.put(`/nutrition/${nutritionId}`, nutritionData);
+    return response.data;
+  }
+
+  async deleteNutritionLog(nutritionId: string) {
+    const response = await api.delete(`/nutrition/${nutritionId}`);
+    return response.data;
+  }
+
+  // Body stats endpoints
+  async createBodyStat(bodyStatData: any) {
+    const response = await api.post('/body', bodyStatData);
+    return response.data;
+  }
+
+  async getBodyStats(userId: number, limit: number = 50) {
+    const response = await api.get(`/body?user_id=${userId}&limit=${limit}`);
+    return response.data;
+  }
+
+  async updateBodyStat(bodyStatId: string, bodyStatData: any) {
+    const response = await api.put(`/body/${bodyStatId}`, bodyStatData);
+    return response.data;
+  }
+
+  async deleteBodyStat(bodyStatId: string) {
+    const response = await api.delete(`/body/${bodyStatId}`);
+    return response.data;
+  }
+
+  // Analytics endpoints
+  async getDailyAnalytics(userId: number, date: string) {
+    const response = await api.get(`/analytics/daily?user_id=${userId}&date=${date}`);
+    return response.data;
+  }
+
+  async getWeeklyAnalytics(userId: number, startDate: string) {
+    const response = await api.get(`/analytics/weekly?user_id=${userId}&start_date=${startDate}`);
+    return response.data;
+  }
+
+  // Sync endpoints
+  async syncData(syncData: any) {
+    const response = await api.post('/sync', syncData);
+    return response.data;
+  }
+
+  async getSyncStatus(userId: number) {
+    const response = await api.get(`/sync/status?user_id=${userId}`);
+    return response.data;
+  }
+}
+
+export const apiService = new ApiService();
 export default api;

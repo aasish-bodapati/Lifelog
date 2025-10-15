@@ -8,6 +8,7 @@ import AppNavigator from './src/navigation/AppNavigator';
 import { UserProvider } from './src/context/UserContext';
 import { LogProvider } from './src/context/LogContext';
 import { OnboardingProvider } from './src/context/OnboardingContext';
+import { SyncProvider } from './src/context/SyncContext';
 
 const App: React.FC = () => {
   return (
@@ -16,10 +17,12 @@ const App: React.FC = () => {
         <UserProvider>
           <OnboardingProvider>
             <LogProvider>
-              <NavigationContainer>
-                <StatusBar style="dark" />
-                <AppNavigator />
-              </NavigationContainer>
+              <SyncProvider>
+                <NavigationContainer>
+                  <StatusBar style="dark" />
+                  <AppNavigator />
+                </NavigationContainer>
+              </SyncProvider>
             </LogProvider>
           </OnboardingProvider>
         </UserProvider>
