@@ -65,35 +65,6 @@ const Onboarding1Screen: React.FC = () => {
 
         <View style={styles.form}>
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Gender</Text>
-            <View style={styles.genderContainer}>
-              {[
-                { value: 'M', label: 'Male' },
-                { value: 'F', label: 'Female' },
-                { value: 'Other', label: 'Other' },
-              ].map((option) => (
-                <TouchableOpacity
-                  key={option.value}
-                  style={[
-                    styles.genderOption,
-                    profile.gender === option.value && styles.genderOptionSelected,
-                  ]}
-                  onPress={() => updateField('gender', option.value as 'M' | 'F' | 'Other')}
-                >
-                  <Text
-                    style={[
-                      styles.genderOptionText,
-                      profile.gender === option.value && styles.genderOptionTextSelected,
-                    ]}
-                  >
-                    {option.label}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </View>
-
-          <View style={styles.inputGroup}>
             <Text style={styles.label}>Age, Height & Weight</Text>
             <View style={styles.measurementsContainer}>
               <View style={styles.measurementInput}>
@@ -129,6 +100,35 @@ const Onboarding1Screen: React.FC = () => {
                   maxLength={3}
                 />
               </View>
+            </View>
+          </View>
+
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Gender</Text>
+            <View style={styles.genderContainer}>
+              {[
+                { value: 'M', label: 'Male' },
+                { value: 'F', label: 'Female' },
+                { value: 'Other', label: 'Other' },
+              ].map((option) => (
+                <TouchableOpacity
+                  key={option.value}
+                  style={[
+                    styles.genderOption,
+                    profile.gender === option.value && styles.genderOptionSelected,
+                  ]}
+                  onPress={() => updateField('gender', option.value as 'M' | 'F' | 'Other')}
+                >
+                  <Text
+                    style={[
+                      styles.genderOptionText,
+                      profile.gender === option.value && styles.genderOptionTextSelected,
+                    ]}
+                  >
+                    {option.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
             </View>
           </View>
 
