@@ -160,6 +160,16 @@ class ApiService {
     return response.data;
   }
 
+  async getConsistencyStreak(userId: number) {
+    const response = await api.get(`/analytics/streak?user_id=${userId}`);
+    return response.data;
+  }
+
+  async getProgressMetrics(userId: number, days: number = 30) {
+    const response = await api.get(`/analytics/progress?user_id=${userId}&days=${days}`);
+    return response.data;
+  }
+
   // Sync endpoints
   async syncData(syncData: any) {
     const response = await api.post('/sync', syncData);

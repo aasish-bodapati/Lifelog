@@ -178,7 +178,7 @@ export type RootStackParamList = {
 };
 
 export type MainTabParamList = {
-  Home: undefined;
+  Dashboard: undefined;
   Fitness: undefined;
   Nutrition: undefined;
   Progress: undefined;

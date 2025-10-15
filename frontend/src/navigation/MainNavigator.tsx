@@ -6,6 +6,7 @@ import { MainTabParamList, MainStackParamList } from '../types';
 
 // Import screens
 import HomeScreen from '../screens/main/HomeScreen';
+import DashboardScreen from '../screens/main/DashboardScreen';
 import FitnessScreen from '../screens/main/FitnessScreen';
 import NutritionScreen from '../screens/main/NutritionScreen';
 import ProgressScreen from '../screens/main/ProgressScreen';
@@ -26,8 +27,8 @@ const MainTabs: React.FC = () => {
           let iconName: string;
 
           switch (route.name) {
-            case 'Home':
-              iconName = 'home';
+            case 'Dashboard':
+              iconName = 'dashboard';
               break;
             case 'Fitness':
               iconName = 'fitness-center';
@@ -52,7 +53,7 @@ const MainTabs: React.FC = () => {
         headerShown: false,
       })}
     >
-      <Tab.Screen name="Home" component={HomeScreen} />
+      <Tab.Screen name="Dashboard" component={DashboardScreen} />
       <Tab.Screen name="Fitness" component={FitnessScreen} />
       <Tab.Screen name="Nutrition" component={NutritionScreen} />
       <Tab.Screen name="Progress" component={ProgressScreen} />
