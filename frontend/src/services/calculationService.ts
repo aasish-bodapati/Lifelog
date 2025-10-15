@@ -41,6 +41,49 @@ export const calculationService = {
   },
 
   /**
+   * Get remaining macro ratio for carbs and fat after protein is calculated
+   */
+  getRemainingMacroRatio(goal: string): { C: number; F: number } {
+    const ratios = {
+      'maintain': { C: 0.60, F: 0.40 }, // 60% carbs, 40% fat
+      'gain': { C: 0.70, F: 0.30 },     // 70% carbs, 30% fat
+      'lose': { C: 0.50, F: 0.50 }      // 50% carbs, 50% fat
+    };
+    return ratios[goal as keyof typeof ratios] || ratios['maintain'];
+  },
+
+  /**
+   * Calculate dynamic hydration based on gender and activity level
+   */
+  calculateHydration(profile: OnboardingProfile, activity: OnboardingActivity): number {
+    // Base hydration per kg body weight (gender-specific)
+    const basePerKg = profile.gender === 'M' ? 35 : 31; // ml per kg
+    
+    // Activity bonus (ml)
+    const activityBonus = this.getActivityHydrationBonus(activity.level);
+    
+    // Calculate total hydration
+    const totalML = (profile.weight * basePerKg) + activityBonus;
+    
+    // Convert to liters and round to 1 decimal
+    return Math.round((totalML / 1000) * 10) / 10;
+  },
+
+  /**
+   * Get hydration bonus based on activity level
+   */
+  getActivityHydrationBonus(activityLevel: string): number {
+    const bonuses = {
+      'sedentary': 0,
+      'light': 200,
+      'moderate': 400,
+      'active': 600,
+      'extra': 800
+    };
+    return bonuses[activityLevel as keyof typeof bonuses] || 0;
+  },
+
+  /**
    * Calculate TDEE (Total Daily Energy Expenditure)
    */
   calculateTDEE(profile: OnboardingProfile, activity: OnboardingActivity): number {
@@ -56,7 +99,7 @@ export const calculationService = {
     goal: OnboardingGoal,
     activity: OnboardingActivity
   ): CalculatedTargets {
-    // 1. Calculate BMR
+    // 1. Calculate BMR (gender-specific)
     const BMR = this.calculateBMR(profile);
     
     // 2. Calculate TDEE
@@ -70,14 +113,26 @@ export const calculationService = {
       targetCalories -= 400;
     }
     
-    // 4. Calculate macro split
+    // 4. Calculate protein with body weight cap
     const macroRatio = this.getMacroRatio(goal.type);
-    const protein = Math.round((targetCalories * macroRatio.P) / 4);
-    const carbs = Math.round((targetCalories * macroRatio.C) / 4);
-    const fat = Math.round((targetCalories * macroRatio.F) / 9);
+    const proteinFromCalories = (targetCalories * macroRatio.P) / 4;
     
-    // 5. Calculate hydration (35ml per kg body weight)
-    const hydration = Math.round((profile.weight * 35) / 1000 * 10) / 10; // Round to 1 decimal
+    // Cap protein based on body weight (2.0g/kg for muscle gain, 1.6g/kg for others)
+    const maxProteinPerKg = goal.type === 'gain' ? 2.0 : 1.6;
+    const maxProtein = profile.weight * maxProteinPerKg;
+    const protein = Math.round(Math.min(proteinFromCalories, maxProtein));
+    
+    // 5. Calculate remaining calories for carbs and fat
+    const proteinCalories = protein * 4;
+    const remainingCalories = targetCalories - proteinCalories;
+    
+    // 6. Split remaining calories between carbs and fat
+    const remainingRatio = this.getRemainingMacroRatio(goal.type);
+    const carbs = Math.round((remainingCalories * remainingRatio.C) / 4);
+    const fat = Math.round((remainingCalories * remainingRatio.F) / 9);
+    
+    // 7. Calculate dynamic hydration based on gender and activity
+    const hydration = this.calculateHydration(profile, activity);
     
     return {
       calories: Math.round(targetCalories),
