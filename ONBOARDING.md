@@ -3,6 +3,17 @@
 ## 🎯 Goal
 Help users get to logging ASAP — ideally within 60 seconds. Capture just enough info to personalize recommendations and make them feel clarity + progress, not setup fatigue.
 
+## ✨ Gender-Specific Optimizations
+The onboarding system now includes physiologically accurate, gender-specific calculations:
+
+- **BMR**: Gender-specific constants (+5 for men, -161 for women)
+- **Calorie Adjustments**: Men ±400kcal, Women ±300kcal (more sustainable)
+- **Protein Caps**: Men 1.8-2.2g/kg, Women 1.6-2.0g/kg (realistic limits)
+- **Macro Ratios**: Men higher carbs, Women higher fat (hormone support)
+- **Hydration**: Men 35ml/kg, Women 31ml/kg (metabolic differences)
+
+This ensures more accurate, sustainable, and personalized targets for each user.
+
 ## 🧩 Step-by-Step Flow
 
 ### Step 1: Complete Profile & Goals (Combined)
@@ -111,26 +122,35 @@ TDEE accounts for activity level, multiplying BMR by an activity factor:
 TDEE = 1685 × 1.55 ≈ 2610 kcal/day
 ```
 
-### 3️⃣ Goal Adjustments
-| Goal | Adjustment |
-|------|------------|
-| Maintain | TDEE (no change) |
-| Gain | TDEE + 300–500 kcal |
-| Lose | TDEE - 300–500 kcal |
+### 3️⃣ Goal Adjustments (Gender-Specific)
+Gender-specific calorie adjustments for more sustainable results:
+
+| Goal | Male Adjustment | Female Adjustment |
+|------|-----------------|-------------------|
+| Maintain | TDEE (no change) | TDEE (no change) |
+| Gain | TDEE + 400 kcal | TDEE + 300 kcal |
+| Lose | TDEE - 400 kcal | TDEE - 300 kcal |
 
 **Example**: Want to gain muscle
-```
-CalorieTarget = 2610 + 400 = 3010 kcal/day
-```
+- **Male**: 2610 + 400 = 3010 kcal/day
+- **Female**: 2354 + 300 = 2654 kcal/day
 
-### 4️⃣ Macronutrient Split
-Common ratios (adjustable later in settings):
+### 4️⃣ Macronutrient Split (Gender-Specific)
+Physiologically accurate ratios based on gender differences:
 
+#### **Male Ratios** (Higher carb utilization)
 | Goal | Protein | Carbs | Fat |
 |------|---------|-------|-----|
 | Maintain | 30% | 45% | 25% |
-| Gain | 30–35% | 45–50% | 20–25% |
-| Lose | 35–40% | 35–45% | 20–25% |
+| Gain | 32% | 48% | 20% |
+| Lose | 37% | 40% | 23% |
+
+#### **Female Ratios** (Higher fat for hormones)
+| Goal | Protein | Carbs | Fat |
+|------|---------|-------|-----|
+| Maintain | 30% | 40% | 30% |
+| Gain | 32% | 45% | 23% |
+| Lose | 37% | 35% | 28% |
 
 **Convert to grams**:
 ```
@@ -139,15 +159,49 @@ Carbs(g) = (Calories × Carb%) / 4
 Fat(g) = (Calories × Fat%) / 9
 ```
 
-**Example**: Gain goal, 3010 kcal, ratio 30P/50C/20F
+**Example**: Male, Gain goal, 3010 kcal
 ```
-Protein: 3010 × 0.3 / 4 ≈ 226 g
-Carbs: 3010 × 0.5 / 4 ≈ 376 g
-Fat: 3010 × 0.2 / 9 ≈ 67 g
+Protein: 3010 × 0.32 / 4 ≈ 241 g
+Carbs: 3010 × 0.48 / 4 ≈ 361 g
+Fat: 3010 × 0.20 / 9 ≈ 67 g
 ```
 
-### 5️⃣ Optional Micro Adjustments
-- **Hydration**: 35 ml per kg body weight → 70kg × 35 ≈ 2.45 L/day
+**Example**: Female, Gain goal, 2654 kcal
+```
+Protein: 2654 × 0.32 / 4 ≈ 212 g
+Carbs: 2654 × 0.45 / 4 ≈ 299 g
+Fat: 2654 × 0.23 / 9 ≈ 68 g
+```
+
+### 5️⃣ Protein Caps (Gender-Specific)
+Realistic protein limits based on body weight and gender:
+
+| Goal | Male (g/kg) | Female (g/kg) |
+|------|-------------|---------------|
+| Maintain | 1.8 | 1.6 |
+| Gain | 2.2 | 2.0 |
+| Lose | 2.0 | 1.8 |
+
+**Example**: 70kg person
+- **Male, Gain**: Max 154g protein (70 × 2.2)
+- **Female, Gain**: Max 140g protein (70 × 2.0)
+
+### 6️⃣ Hydration (Gender-Specific)
+Dynamic water intake based on gender and activity:
+
+| Gender | Base (ml/kg) | Example (70kg) |
+|--------|--------------|----------------|
+| Male | 35 | 2.45 L/day |
+| Female | 31 | 2.17 L/day |
+
+**Activity Bonus**:
+- Sedentary: +0ml
+- Light: +200ml
+- Moderate: +400ml
+- Active: +600ml
+- Extra: +800ml
+
+### 7️⃣ Optional Micro Adjustments
 - **Workout energy**: Add ~200–400 kcal per workout depending on intensity
 - **Quick defaults**: If user skips activity or goal, use "Maintain + lightly active"
 
@@ -155,51 +209,100 @@ Fat: 3010 × 0.2 / 9 ≈ 67 g
 
 ```typescript
 function calculateDailyTargets(weight: number, height: number, age: number, gender: string, activityLevel: string, goal: string) {
-    // 1. BMR
+    // 1. BMR (gender-specific)
     const BMR = gender === 'M' 
         ? 10*weight + 6.25*height - 5*age + 5 
         : 10*weight + 6.25*height - 5*age - 161;
 
     // 2. TDEE
-    const activityMultiplier = getActivityMultiplier(activityLevel); // e.g., 1.55
-    let TDEE = BMR * activityMultiplier;
+    const activityMultiplier = getActivityMultiplier(activityLevel);
+    const TDEE = BMR * activityMultiplier;
 
-    // 3. Adjust for goal
-    if (goal === 'gain') TDEE += 400;
-    else if (goal === 'lose') TDEE -= 400;
+    // 3. Gender-specific goal adjustments
+    const calorieAdjustment = getCalorieAdjustment(goal, gender);
+    const targetCalories = TDEE + calorieAdjustment;
 
-    // 4. Macro split
-    const macroRatio = getMacroRatio(goal); // e.g., {P:0.3, C:0.5, F:0.2}
-    const proteinG = (TDEE * macroRatio.P) / 4;
-    const carbsG = (TDEE * macroRatio.C) / 4;
-    const fatG = (TDEE * macroRatio.F) / 9;
+    // 4. Gender-specific macro ratios
+    const macroRatio = getMacroRatio(goal, gender);
+    const proteinFromCalories = (targetCalories * macroRatio.P) / 4;
+    
+    // 5. Gender-specific protein caps
+    const maxProteinPerKg = getProteinCapPerKg(goal, gender);
+    const maxProtein = weight * maxProteinPerKg;
+    const protein = Math.min(proteinFromCalories, maxProtein);
+
+    // 6. Split remaining calories between carbs and fat
+    const proteinCalories = protein * 4;
+    const remainingCalories = targetCalories - proteinCalories;
+    const remainingRatio = getRemainingMacroRatio(goal, gender);
+    
+    const carbs = (remainingCalories * remainingRatio.C) / 4;
+    const fat = (remainingCalories * remainingRatio.F) / 9;
+
+    // 7. Gender-specific hydration
+    const hydration = calculateHydration(weight, gender, activityLevel);
 
     return { 
-        calories: Math.round(TDEE), 
-        protein: Math.round(proteinG), 
-        carbs: Math.round(carbsG), 
-        fat: Math.round(fatG) 
+        calories: Math.round(targetCalories), 
+        protein: Math.round(protein), 
+        carbs: Math.round(carbs), 
+        fat: Math.round(fat),
+        hydration: Math.round(hydration * 10) / 10
     };
 }
 
-function getActivityMultiplier(level: string): number {
-    const multipliers = {
-        'sedentary': 1.2,
-        'light': 1.375,
-        'moderate': 1.55,
-        'active': 1.725,
-        'extra': 1.9
+function getCalorieAdjustment(goal: string, gender: string): number {
+    const adjustments = {
+        'maintain': 0,
+        'gain': gender === 'M' ? 400 : 300,
+        'lose': gender === 'M' ? -400 : -300
     };
-    return multipliers[level] || 1.55;
+    return adjustments[goal] || 0;
 }
 
-function getMacroRatio(goal: string): {P: number, C: number, F: number} {
+function getMacroRatio(goal: string, gender: string): {P: number, C: number, F: number} {
     const ratios = {
-        'maintain': {P: 0.30, C: 0.45, F: 0.25},
-        'gain': {P: 0.32, C: 0.48, F: 0.20},
-        'lose': {P: 0.37, C: 0.40, F: 0.23}
+        'maintain': gender === 'M' 
+            ? {P: 0.30, C: 0.45, F: 0.25}
+            : {P: 0.30, C: 0.40, F: 0.30},
+        'gain': gender === 'M'
+            ? {P: 0.32, C: 0.48, F: 0.20}
+            : {P: 0.32, C: 0.45, F: 0.23},
+        'lose': gender === 'M'
+            ? {P: 0.37, C: 0.40, F: 0.23}
+            : {P: 0.37, C: 0.35, F: 0.28}
     };
     return ratios[goal] || ratios['maintain'];
+}
+
+function getProteinCapPerKg(goal: string, gender: string): number {
+    const caps = {
+        'maintain': gender === 'M' ? 1.8 : 1.6,
+        'gain': gender === 'M' ? 2.2 : 2.0,
+        'lose': gender === 'M' ? 2.0 : 1.8
+    };
+    return caps[goal] || caps['maintain'];
+}
+
+function getRemainingMacroRatio(goal: string, gender: string): {C: number, F: number} {
+    const ratios = {
+        'maintain': gender === 'M'
+            ? {C: 0.60, F: 0.40}
+            : {C: 0.57, F: 0.43},
+        'gain': gender === 'M'
+            ? {C: 0.70, F: 0.30}
+            : {C: 0.65, F: 0.35},
+        'lose': gender === 'M'
+            ? {C: 0.50, F: 0.50}
+            : {C: 0.45, F: 0.55}
+    };
+    return ratios[goal] || ratios['maintain'];
+}
+
+function calculateHydration(weight: number, gender: string, activityLevel: string): number {
+    const basePerKg = gender === 'M' ? 35 : 31;
+    const activityBonus = getActivityHydrationBonus(activityLevel);
+    return ((weight * basePerKg) + activityBonus) / 1000;
 }
 ```
 
