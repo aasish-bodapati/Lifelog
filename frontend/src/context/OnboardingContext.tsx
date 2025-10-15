@@ -24,7 +24,7 @@ type OnboardingAction =
 
 const initialState: OnboardingState = {
   currentStep: 0,
-  totalSteps: 6,
+  totalSteps: 5,
   data: {},
   steps: [],
   isComplete: false,
@@ -92,13 +92,6 @@ export const OnboardingProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   // Initialize steps
   useEffect(() => {
     const steps: OnboardingStep[] = [
-      {
-        id: 'welcome',
-        title: 'Welcome',
-        description: 'Get started with Lifelog',
-        isComplete: false,
-        isOptional: false,
-      },
       {
         id: 'profile',
         title: 'Your Profile',

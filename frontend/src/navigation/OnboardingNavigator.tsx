@@ -3,7 +3,6 @@ import { createStackNavigator } from '@react-navigation/stack';
 import { OnboardingStackParamList } from '../types/onboarding';
 
 // Import onboarding screens
-import WelcomeScreen from '../screens/onboarding/WelcomeScreen';
 import ProfileScreen from '../screens/onboarding/ProfileScreen';
 import GoalScreen from '../screens/onboarding/GoalScreen';
 import ActivityScreen from '../screens/onboarding/ActivityScreen';
@@ -21,7 +20,6 @@ const OnboardingNavigator: React.FC = () => {
         gestureEnabled: false, // Disable swipe back during onboarding
       }}
     >
-      <Stack.Screen name="Welcome" component={WelcomeScreen} />
       <Stack.Screen name="Profile" component={ProfileScreen} />
       <Stack.Screen name="Goal" component={GoalScreen} />
       <Stack.Screen name="Activity" component={ActivityScreen} />

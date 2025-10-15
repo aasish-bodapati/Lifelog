@@ -68,7 +68,6 @@ export interface OnboardingContextType {
 }
 
 export type OnboardingStackParamList = {
-  Welcome: undefined;
   Profile: undefined;
   Goal: undefined;
   Activity: undefined;
