@@ -173,6 +173,7 @@ export interface ApiResponse<T> {
 // Navigation types
 export type RootStackParamList = {
   Auth: undefined;
+  Onboarding: undefined;
   Main: undefined;
 };
 
