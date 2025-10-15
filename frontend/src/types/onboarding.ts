@@ -63,6 +63,8 @@ export interface OnboardingContextType {
   updateData: (data: Partial<OnboardingData>) => void;
   completeOnboarding: () => Promise<void>;
   resetOnboarding: () => void;
+  checkOnboardingStatus: () => Promise<void>;
+  restartOnboarding: () => Promise<void>;
 }
 
 export type OnboardingStackParamList = {

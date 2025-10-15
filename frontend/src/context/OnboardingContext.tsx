@@ -215,6 +215,30 @@ export const OnboardingProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     }
   };
 
+  const checkOnboardingStatus = async () => {
+    try {
+      const isComplete = await AsyncStorage.getItem('onboardingComplete');
+      if (isComplete === 'true') {
+        dispatch({ type: 'COMPLETE_ONBOARDING' });
+      } else {
+        // Reset onboarding state if not complete
+        dispatch({ type: 'RESET_ONBOARDING' });
+      }
+    } catch (error) {
+      console.error('Error checking onboarding status:', error);
+    }
+  };
+
+  const restartOnboarding = async () => {
+    try {
+      await AsyncStorage.removeItem('onboardingComplete');
+      await AsyncStorage.removeItem('onboardingData');
+      dispatch({ type: 'RESET_ONBOARDING' });
+    } catch (error) {
+      console.error('Error restarting onboarding:', error);
+    }
+  };
+
   const value: OnboardingContextType = {
     currentStep: state.currentStep,
     totalSteps: state.totalSteps,
@@ -228,6 +252,8 @@ export const OnboardingProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     updateData,
     completeOnboarding,
     resetOnboarding,
+    checkOnboardingStatus,
+    restartOnboarding,
   };
 
   return (
@@ -244,3 +270,4 @@ export const useOnboarding = (): OnboardingContextType => {
   }
   return context;
 };
+

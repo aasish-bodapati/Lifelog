@@ -32,3 +32,4 @@ const OnboardingNavigator: React.FC = () => {
 };
 
 export default OnboardingNavigator;
+

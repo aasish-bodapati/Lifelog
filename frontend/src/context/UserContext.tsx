@@ -82,7 +82,6 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       dispatch({ type: 'SET_LOADING', payload: true });
       
-      // TODO: Implement actual login API call
       const response = await userService.login(email, password);
       
       await AsyncStorage.setItem('auth_token', response.token);
@@ -126,6 +125,10 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       await AsyncStorage.removeItem('auth_token');
       await AsyncStorage.removeItem('user_id');
+      // Note: We don't remove onboarding data here so users don't have to redo onboarding
+      // If you want users to redo onboarding on each login, uncomment the next lines:
+      // await AsyncStorage.removeItem('onboardingComplete');
+      // await AsyncStorage.removeItem('onboardingData');
       dispatch({ type: 'LOGOUT' });
     } catch (error) {
       console.error('Logout failed:', error);
