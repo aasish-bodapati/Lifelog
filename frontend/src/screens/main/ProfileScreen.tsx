@@ -7,7 +7,7 @@ import { calculationService } from '../../services/calculationService';
 
 const ProfileScreen: React.FC = () => {
   const { state, logout } = useUser();
-  const { data: onboardingData } = useOnboarding();
+  const { data: onboardingData, restartOnboarding } = useOnboarding();
 
   // Debug logging
   console.log('ProfileScreen - onboardingData:', onboardingData);
@@ -15,6 +15,14 @@ const ProfileScreen: React.FC = () => {
 
   const handleLogout = async () => {
     await logout();
+  };
+
+  const handleRerunOnboarding = async () => {
+    try {
+      await restartOnboarding();
+    } catch (error) {
+      console.error('Error restarting onboarding:', error);
+    }
   };
 
   const getGoalText = (goalType: string) => {
@@ -166,9 +174,15 @@ const ProfileScreen: React.FC = () => {
           </View>
         )}
 
-        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-          <Text style={styles.logoutButtonText}>Logout</Text>
-        </TouchableOpacity>
+        <View style={styles.buttonContainer}>
+          <TouchableOpacity style={styles.rerunButton} onPress={handleRerunOnboarding}>
+            <Text style={styles.rerunButtonText}>Update Profile</Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+            <Text style={styles.logoutButtonText}>Logout</Text>
+          </TouchableOpacity>
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -299,14 +313,37 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#1A1A1A',
   },
+  buttonContainer: {
+    marginTop: 20,
+    marginBottom: 30,
+    gap: 12,
+  },
+  rerunButton: {
+    backgroundColor: '#007AFF',
+    paddingVertical: 16,
+    paddingHorizontal: 32,
+    borderRadius: 12,
+    alignItems: 'center',
+    shadowColor: '#007AFF',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  rerunButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
+  },
   logoutButton: {
     backgroundColor: '#FF3B30',
     paddingVertical: 16,
     paddingHorizontal: 32,
     borderRadius: 12,
     alignItems: 'center',
-    marginTop: 20,
-    marginBottom: 30,
   },
   logoutButtonText: {
     color: '#FFFFFF',
