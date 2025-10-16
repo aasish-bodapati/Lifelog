@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from app.db import engine, Base
-from app.routes import users, fitness, nutrition, body_stats, summary
+from app.routes import users, fitness, nutrition, body_stats, summary, sync, analytics
 
 # Create database tables
 @asynccontextmanager
@@ -35,6 +35,8 @@ app.include_router(fitness.router, prefix="/api/fitness", tags=["fitness"])
 app.include_router(nutrition.router, prefix="/api/nutrition", tags=["nutrition"])
 app.include_router(body_stats.router, prefix="/api/body", tags=["body-stats"])
 app.include_router(summary.router, prefix="/api/summary", tags=["summary"])
+app.include_router(sync.router, prefix="/api/sync", tags=["sync"])
+app.include_router(analytics.router, prefix="/api/analytics", tags=["analytics"])
 
 @app.get("/")
 async def root():

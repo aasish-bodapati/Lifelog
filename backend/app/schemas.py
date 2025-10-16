@@ -1,5 +1,5 @@
 from pydantic import BaseModel, EmailStr
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
 from datetime import datetime
 
 # User schemas
@@ -170,3 +170,35 @@ class WeeklySummary(BaseModel):
     total_workouts: int
     total_workout_duration: int  # minutes
     weight_change: Optional[float] = None
+
+# Sync schemas
+class SyncRequest(BaseModel):
+    user_id: int
+    data: Dict[str, List[Dict[str, Any]]]
+
+class SyncItem(BaseModel):
+    table: str
+    record_id: str
+    operation: str
+
+class FailedItem(BaseModel):
+    table: str
+    record_id: str
+    error: str
+
+class SyncResponse(BaseModel):
+    success: bool
+    synced_count: int
+    failed_count: int
+    synced_items: List[SyncItem]
+    failed_items: List[FailedItem]
+    sync_timestamp: str
+
+class SyncStatusResponse(BaseModel):
+    user_id: int
+    total_records: int
+    workout_count: int
+    nutrition_count: int
+    body_stat_count: int
+    last_sync_time: Optional[str] = None
+    sync_healthy: bool
