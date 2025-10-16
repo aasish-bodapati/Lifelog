@@ -55,6 +55,17 @@ class NotificationService {
 
   async initialize() {
     try {
+      // Check if we're in Expo Go (limited notification support)
+      const isExpoGo = __DEV__ && !global.Expo?.modules?.expo?.modules?.ExpoModules;
+      
+      if (isExpoGo) {
+        console.log('Running in Expo Go - notifications have limited functionality');
+        console.log('For full notification support, use a development build');
+        // Still load settings for when user switches to development build
+        await this.loadSettings();
+        return true;
+      }
+
       // Request permissions
       const { status } = await Notifications.requestPermissionsAsync();
       if (status !== 'granted') {
@@ -106,6 +117,14 @@ class NotificationService {
 
   async scheduleAllNotifications() {
     try {
+      // Check if we're in Expo Go (limited notification support)
+      const isExpoGo = __DEV__ && !global.Expo?.modules?.expo?.modules?.ExpoModules;
+      
+      if (isExpoGo) {
+        console.log('Skipping notification scheduling in Expo Go');
+        return;
+      }
+
       // Cancel existing notifications
       await this.cancelAllNotifications();
 
