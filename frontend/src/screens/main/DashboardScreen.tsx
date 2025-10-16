@@ -15,6 +15,8 @@ import { databaseService } from '../../services/databaseService';
 import { calculationService } from '../../services/calculationService';
 import { hapticService } from '../../services/hapticService';
 import SyncIndicator from '../../components/SyncIndicator';
+import PersonalizedHeader from '../../components/dashboard/PersonalizedHeader';
+import AnimatedCard from '../../components/AnimatedCard';
 import EnergyCard from '../../components/dashboard/EnergyCard';
 import MacrosCard from '../../components/dashboard/MacrosCard';
 import HydrationCard from '../../components/dashboard/HydrationCard';
@@ -132,21 +134,6 @@ const DashboardScreen: React.FC = () => {
     }
   }, [userState.user?.id]);
 
-  // Handle refresh
-  const handleRefresh = useCallback(async () => {
-    hapticService.light();
-    setIsLoading(true);
-    
-    try {
-      await loadTodayData();
-      await forceSync();
-      setLastSyncTime(new Date().toISOString());
-    } catch (error) {
-      console.error('Error refreshing dashboard:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [loadTodayData, forceSync]);
 
   // Load data on mount and when user changes
   useEffect(() => {
@@ -163,19 +150,19 @@ const DashboardScreen: React.FC = () => {
     }
   }, [syncStatus.lastSyncTime]);
 
-  const getGreeting = () => {
-    const hour = new Date().getHours();
-    if (hour < 12) return 'Good Morning';
-    if (hour < 18) return 'Good Afternoon';
-    return 'Good Evening';
-  };
-
-  const getMotivationalMessage = () => {
-    if (streak === 0) return "Start your journey today!";
-    if (streak === 1) return "Great start! Keep it up!";
-    if (streak < 7) return `You're on a ${streak}-day streak!`;
-    if (streak < 30) return `Amazing ${streak}-day streak!`;
-    return `Incredible ${streak}-day streak! You're unstoppable!`;
+  const handleRefresh = async () => {
+    hapticService.light();
+    setIsLoading(true);
+    
+    try {
+      await loadTodayData();
+      await forceSync();
+      setLastSyncTime(new Date().toISOString());
+    } catch (error) {
+      console.error('Error refreshing dashboard:', error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -190,56 +177,59 @@ const DashboardScreen: React.FC = () => {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.content}>
-          {/* Header */}
-          <View style={styles.header}>
-            <Text style={styles.greeting}>
-              {getGreeting()}, {userState.user?.username || 'User'}!
-            </Text>
-            <Text style={styles.motivationalMessage}>
-              {getMotivationalMessage()}
-            </Text>
-          </View>
+          {/* Personalized Header */}
+          <PersonalizedHeader onRefresh={handleRefresh} />
 
           {/* Dashboard Cards */}
           <View style={styles.cardsContainer}>
             {/* Energy Card */}
-            <EnergyCard
-              current={dailyTotals.calories}
-              target={dailyTargets?.calories || 0}
-              isLoading={isLoading}
-            />
+            <AnimatedCard delay={100}>
+              <EnergyCard
+                current={dailyTotals.calories}
+                target={dailyTargets?.calories || 0}
+                isLoading={isLoading}
+              />
+            </AnimatedCard>
 
             {/* Macros Card */}
-            <MacrosCard
-              protein={dailyTotals.protein}
-              carbs={dailyTotals.carbs}
-              fat={dailyTotals.fat}
-              proteinTarget={dailyTargets?.protein || 0}
-              carbsTarget={dailyTargets?.carbs || 0}
-              fatTarget={dailyTargets?.fat || 0}
-              isLoading={isLoading}
-            />
+            <AnimatedCard delay={200}>
+              <MacrosCard
+                protein={dailyTotals.protein}
+                carbs={dailyTotals.carbs}
+                fat={dailyTotals.fat}
+                proteinTarget={dailyTargets?.protein || 0}
+                carbsTarget={dailyTargets?.carbs || 0}
+                fatTarget={dailyTargets?.fat || 0}
+                isLoading={isLoading}
+              />
+            </AnimatedCard>
 
             {/* Hydration Card */}
-            <HydrationCard
-              current={dailyTotals.water}
-              target={dailyTargets?.hydration || 0}
-              isLoading={isLoading}
-            />
+            <AnimatedCard delay={300}>
+              <HydrationCard
+                current={dailyTotals.water}
+                target={dailyTargets?.hydration || 0}
+                isLoading={isLoading}
+              />
+            </AnimatedCard>
 
             {/* Body Trend Card */}
-            <BodyTrendCard
-              userId={userState.user?.id || 0}
-              isLoading={isLoading}
-            />
+            <AnimatedCard delay={400}>
+              <BodyTrendCard
+                userId={userState.user?.id || 0}
+                isLoading={isLoading}
+              />
+            </AnimatedCard>
 
             {/* Consistency Card */}
-            <ConsistencyCard
-              streak={streak}
-              lastSyncTime={lastSyncTime}
-              syncStatus={syncStatus}
-              isLoading={isLoading}
-            />
+            <AnimatedCard delay={500}>
+              <ConsistencyCard
+                streak={streak}
+                lastSyncTime={lastSyncTime}
+                syncStatus={syncStatus}
+                isLoading={isLoading}
+              />
+            </AnimatedCard>
           </View>
         </View>
       </ScrollView>
@@ -257,20 +247,6 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: 16,
-  },
-  header: {
-    marginBottom: 24,
-  },
-  greeting: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#1A1A1A',
-    marginBottom: 4,
-  },
-  motivationalMessage: {
-    fontSize: 16,
-    color: '#666666',
-    fontWeight: '500',
   },
   cardsContainer: {
     gap: 16,

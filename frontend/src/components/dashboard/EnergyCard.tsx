@@ -22,24 +22,28 @@ const EnergyCard: React.FC<EnergyCardProps> = ({
 
   useEffect(() => {
     if (!isLoading) {
-      Animated.timing(progressAnim, {
-        toValue: progress,
-        duration: 1000,
-        useNativeDriver: false,
-      }).start();
+      // Staggered animation for better visual appeal
+      Animated.sequence([
+        Animated.delay(200),
+        Animated.timing(progressAnim, {
+          toValue: progress,
+          duration: 1200,
+          useNativeDriver: false,
+        }),
+      ]).start();
 
       // Pulse animation when approaching target
       if (progress > 0.8) {
         Animated.loop(
           Animated.sequence([
             Animated.timing(pulseAnim, {
-              toValue: 1.1,
-              duration: 800,
+              toValue: 1.05,
+              duration: 1000,
               useNativeDriver: true,
             }),
             Animated.timing(pulseAnim, {
               toValue: 1,
-              duration: 800,
+              duration: 1000,
               useNativeDriver: true,
             }),
           ])
