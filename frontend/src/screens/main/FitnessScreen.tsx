@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -15,55 +15,36 @@ import { databaseService, LocalWorkout } from '../../services/databaseService';
 import { apiService } from '../../services/api';
 import { hapticService } from '../../services/hapticService';
 import { toastService } from '../../services/toastService';
-import { exerciseProgressService, ExerciseProgress, ExerciseStats } from '../../services/exerciseProgressService';
+import { exerciseProgressService, ExerciseProgress } from '../../services/exerciseProgressService';
+import { useScreenData, useWeeklyWorkoutStats } from '../../hooks';
+import { getWorkoutIcon, getWorkoutColor } from '../../utils';
+import { CommonStyles, Layout, Colors, Typography } from '../../styles/designSystem';
 import QuickWorkoutLogScreen from '../logging/QuickWorkoutLogScreen';
 import LoadingSkeleton from '../../components/LoadingSkeleton';
 import ExerciseProgressCard from '../../components/dashboard/ExerciseProgressCard';
 
 const FitnessScreen: React.FC = () => {
   const { state: userState } = useUser();
-  const [workouts, setWorkouts] = useState<LocalWorkout[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
   const [showWorkoutLog, setShowWorkoutLog] = useState(false);
-  const [weeklyStats, setWeeklyStats] = useState({
-    totalWorkouts: 0,
-    totalDuration: 0,
-    avgDuration: 0,
-  });
-  
-  // Exercise progress state
   const [exerciseProgress, setExerciseProgress] = useState<ExerciseProgress[]>([]);
-  const [exerciseStats, setExerciseStats] = useState<ExerciseStats | null>(null);
 
-  useEffect(() => {
-    loadData();
-  }, [userState.user?.id]);
+  const quickWorkouts = [
+    { name: 'Morning Run', duration: 30, icon: 'walk', color: '#FF6B6B' },
+    { name: 'Weight Training', duration: 45, icon: 'barbell', color: '#4ECDC4' },
+    { name: 'Yoga Session', duration: 20, icon: 'leaf', color: '#45B7D1' },
+    { name: 'Cycling', duration: 60, icon: 'bicycle', color: '#FFD93D' },
+    { name: 'Swimming', duration: 30, icon: 'water', color: '#A29BFE' },
+  ];
 
-  const loadData = async () => {
-    try {
-      setIsLoading(true);
+  // Use the new useScreenData hook for workouts
+  const { data: workouts, isLoading, isRefreshing, refresh, loadData } = useScreenData<LocalWorkout[]>({
+    fetchData: async () => {
       const userId = userState.user?.id || 0;
       
       // Load recent workouts from local database
       const recentWorkouts = await databaseService.getWorkouts(userId, 30);
-      setWorkouts(recentWorkouts);
       
-      // Calculate weekly stats
-      const now = new Date();
-      const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-      const weekAgoStr = weekAgo.toISOString().split('T')[0];
-      
-      const weekWorkouts = recentWorkouts.filter(w => w.date >= weekAgoStr);
-      const totalDuration = weekWorkouts.reduce((sum, w) => sum + (w.duration_minutes || 0), 0);
-      
-      setWeeklyStats({
-        totalWorkouts: weekWorkouts.length,
-        totalDuration,
-        avgDuration: weekWorkouts.length > 0 ? Math.round(totalDuration / weekWorkouts.length) : 0,
-      });
-
-      // Try to fetch from backend for sync
+      // Try to fetch from backend for sync (silent failure)
       try {
         const backendWorkouts = await apiService.getWorkouts(userId, 30);
         if (backendWorkouts && backendWorkouts.length > 0) {
@@ -73,28 +54,28 @@ const FitnessScreen: React.FC = () => {
         console.log('Backend workouts unavailable, using local data');
       }
 
-      // Load exercise progress data
+      // Load exercise progress data (silent failure)
       try {
         const progressData = await exerciseProgressService.getExerciseProgress(userId, 10);
         setExerciseProgress(progressData);
-        
-        const statsData = await exerciseProgressService.getExerciseStats(userId);
-        setExerciseStats(statsData);
       } catch (error) {
         console.error('Error loading exercise progress:', error);
       }
-    } catch (error) {
-      console.error('Error loading fitness data:', error);
-      toastService.error('Error loading data');
-    } finally {
-      setIsLoading(false);
-    }
-  };
+      
+      return recentWorkouts;
+    },
+    dependencies: [userState.user?.id],
+    errorMessage: 'Failed to load workout data',
+  });
 
-  const onRefresh = async () => {
-    setRefreshing(true);
-    await loadData();
-    setRefreshing(false);
+  // Use the new useWeeklyWorkoutStats hook for weekly calculations
+  const weeklyStats = useWeeklyWorkoutStats(workouts || []);
+
+  // Convert to match existing interface
+  const weeklyStatsFormatted = {
+    totalWorkouts: weeklyStats.totalItems,
+    totalDuration: weeklyStats.totalValue,
+    avgDuration: weeklyStats.avgValue,
   };
 
   const handleWorkoutLogSuccess = () => {
@@ -102,6 +83,13 @@ const FitnessScreen: React.FC = () => {
     loadData();
     hapticService.success();
     toastService.success('Workout logged successfully!');
+  };
+
+  const handleQuickWorkout = (workout: { name: string; duration: number; icon: string; color: string }) => {
+    hapticService.light();
+    // For now, just open the modal with pre-filled duration
+    // TODO: In the future, we could pre-fill the exercise search with the workout name
+    setShowWorkoutLog(true);
   };
 
   const formatDate = (dateString: string) => {
@@ -126,35 +114,10 @@ const FitnessScreen: React.FC = () => {
     return 'No duration';
   };
 
-  const getWorkoutIcon = (name: string) => {
-    const nameLower = name.toLowerCase();
-    if (nameLower.includes('cardio') || nameLower.includes('run') || nameLower.includes('bike')) {
-      return 'bicycle';
-    } else if (nameLower.includes('strength') || nameLower.includes('weights') || nameLower.includes('lift')) {
-      return 'barbell';
-    } else if (nameLower.includes('yoga') || nameLower.includes('stretch')) {
-      return 'body';
-    } else {
-      return 'fitness';
-    }
-  };
-
-  const getWorkoutColor = (name: string) => {
-    const nameLower = name.toLowerCase();
-    if (nameLower.includes('cardio') || nameLower.includes('run') || nameLower.includes('bike')) {
-      return '#FF6B6B';
-    } else if (nameLower.includes('strength') || nameLower.includes('weights') || nameLower.includes('lift')) {
-      return '#4ECDC4';
-    } else if (nameLower.includes('yoga') || nameLower.includes('stretch')) {
-      return '#A29BFE';
-    } else {
-      return '#45B7D1';
-    }
-  };
 
   if (isLoading) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={CommonStyles.screenContainer}>
         <View style={styles.header}>
           <Text style={styles.title}>Fitness</Text>
         </View>
@@ -164,11 +127,11 @@ const FitnessScreen: React.FC = () => {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={CommonStyles.screenContainer}>
       <ScrollView
-        style={styles.scrollView}
+        style={CommonStyles.scrollView}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          <RefreshControl refreshing={isRefreshing} onRefresh={refresh} />
         }
         showsVerticalScrollIndicator={false}
       >
@@ -194,6 +157,26 @@ const FitnessScreen: React.FC = () => {
           </TouchableOpacity>
         </View>
 
+        {/* Quick Workouts */}
+        <View style={styles.quickWorkoutsSection}>
+          <Text style={styles.sectionTitle}>Quick Workouts</Text>
+          <View style={styles.quickWorkoutsContainer}>
+            {quickWorkouts.map((workout, index) => (
+              <TouchableOpacity
+                key={index}
+                style={styles.quickWorkoutButton}
+                onPress={() => handleQuickWorkout(workout)}
+              >
+                <View style={[styles.quickWorkoutIconContainer, { backgroundColor: workout.color + '20' }]}>
+                  <Ionicons name={workout.icon as any} size={20} color={workout.color} />
+                </View>
+                <Text style={styles.quickWorkoutText}>{workout.name}</Text>
+                <Text style={styles.quickWorkoutDuration}>{workout.duration} min</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+
         {/* Weekly Stats */}
         <View style={styles.statsSection}>
           <Text style={styles.sectionTitle}>This Week</Text>
@@ -202,47 +185,36 @@ const FitnessScreen: React.FC = () => {
               <View style={[styles.statIconContainer, { backgroundColor: '#FF6B6B20' }]}>
                 <Ionicons name="barbell" size={24} color="#FF6B6B" />
               </View>
-              <Text style={styles.statNumber}>{weeklyStats.totalWorkouts}</Text>
+              <Text style={styles.statNumber}>{weeklyStatsFormatted.totalWorkouts}</Text>
               <Text style={styles.statLabel}>Workouts</Text>
             </View>
             <View style={styles.statCard}>
               <View style={[styles.statIconContainer, { backgroundColor: '#4ECDC420' }]}>
                 <Ionicons name="time" size={24} color="#4ECDC4" />
               </View>
-              <Text style={styles.statNumber}>{weeklyStats.totalDuration}</Text>
+              <Text style={styles.statNumber}>{weeklyStatsFormatted.totalDuration}</Text>
               <Text style={styles.statLabel}>Minutes</Text>
             </View>
             <View style={styles.statCard}>
               <View style={[styles.statIconContainer, { backgroundColor: '#45B7D120' }]}>
                 <Ionicons name="stats-chart" size={24} color="#45B7D1" />
               </View>
-              <Text style={styles.statNumber}>{weeklyStats.avgDuration}</Text>
+              <Text style={styles.statNumber}>{weeklyStatsFormatted.avgDuration}</Text>
               <Text style={styles.statLabel}>Avg Duration</Text>
             </View>
           </View>
         </View>
 
-        {/* Exercise Progress */}
-        {exerciseProgress.length > 0 && (
-          <View style={styles.section}>
-            <ExerciseProgressCard
-              exerciseProgress={exerciseProgress}
-              onViewAll={() => console.log('View all exercises')}
-              onExercisePress={(exerciseName) => console.log('Exercise pressed:', exerciseName)}
-            />
-          </View>
-        )}
-
         {/* Recent Workouts */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Recent Workouts</Text>
-            {workouts.length > 0 && (
+            {workouts && workouts.length > 0 && (
               <Text style={styles.sectionSubtitle}>{workouts.length} total</Text>
             )}
           </View>
           
-          {workouts.length > 0 ? (
+          {workouts && workouts.length > 0 ? (
             <View style={styles.workoutsList}>
               {workouts.map((workout) => (
                 <TouchableOpacity
@@ -305,46 +277,14 @@ const FitnessScreen: React.FC = () => {
           )}
         </View>
 
-        {/* Exercise Stats */}
-        {exerciseStats && (
+        {/* Exercise Progress */}
+        {exerciseProgress.length > 0 && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Fitness Statistics</Text>
-            <View style={styles.statsCard}>
-              <View style={styles.statsRow}>
-                <View style={styles.statItem}>
-                  <Text style={styles.statValue}>{exerciseStats.total_exercises}</Text>
-                  <Text style={styles.statLabel}>Total Exercises</Text>
-                </View>
-                <View style={styles.statItem}>
-                  <Text style={styles.statValue}>{exerciseStats.total_workouts}</Text>
-                  <Text style={styles.statLabel}>Total Workouts</Text>
-                </View>
-                <View style={styles.statItem}>
-                  <Text style={styles.statValue}>{exerciseStats.current_streak}</Text>
-                  <Text style={styles.statLabel}>Current Streak</Text>
-                </View>
-              </View>
-              <View style={styles.statsRow}>
-                <View style={styles.statItem}>
-                  <Text style={styles.statValue}>{exerciseStats.total_weight_lifted}kg</Text>
-                  <Text style={styles.statLabel}>Weight Lifted</Text>
-                </View>
-                <View style={styles.statItem}>
-                  <Text style={styles.statValue}>{exerciseStats.total_distance_covered}km</Text>
-                  <Text style={styles.statLabel}>Distance</Text>
-                </View>
-                <View style={styles.statItem}>
-                  <Text style={styles.statValue}>{exerciseStats.total_duration}h</Text>
-                  <Text style={styles.statLabel}>Duration</Text>
-                </View>
-              </View>
-              {exerciseStats.most_frequent_exercise !== 'None' && (
-                <View style={styles.favoriteExercise}>
-                  <Text style={styles.favoriteLabel}>Favorite Exercise:</Text>
-                  <Text style={styles.favoriteValue}>{exerciseStats.most_frequent_exercise}</Text>
-                </View>
-              )}
-            </View>
+            <ExerciseProgressCard
+              exerciseProgress={exerciseProgress}
+              onViewAll={() => console.log('View all exercises')}
+              onExercisePress={(exerciseName) => console.log('Exercise pressed:', exerciseName)}
+            />
           </View>
         )}
 
@@ -369,8 +309,9 @@ const FitnessScreen: React.FC = () => {
       {/* Workout Log Modal */}
       <Modal
         visible={showWorkoutLog}
-        animationType="slide"
-        presentationStyle="pageSheet"
+        animationType="fade"
+        presentationStyle="overFullScreen"
+        transparent={true}
         onRequestClose={() => setShowWorkoutLog(false)}
       >
         <QuickWorkoutLogScreen
@@ -383,82 +324,96 @@ const FitnessScreen: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F8F9FA',
-  },
-  scrollView: {
-    flex: 1,
-  },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    backgroundColor: '#FFFFFF',
+    paddingHorizontal: Layout.screenPadding,
+    paddingVertical: Layout.headerPadding,
+    backgroundColor: Colors.surface,
     borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
+    borderBottomColor: Colors.border,
   },
   title: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: '#1A1A1A',
+    ...Typography.h1,
+    color: Colors.textPrimary,
   },
   subtitle: {
-    fontSize: 14,
-    color: '#666666',
+    ...Typography.bodySmall,
+    color: Colors.textSecondary,
     marginTop: 2,
   },
   quickActions: {
-    paddingHorizontal: 20,
-    paddingVertical: 16,
+    paddingHorizontal: Layout.screenPadding,
+    paddingVertical: Layout.sectionSpacing,
   },
-  primaryButton: {
+  quickWorkoutsSection: {
+    paddingHorizontal: Layout.screenPadding,
+    paddingBottom: Layout.sectionSpacing,
+  },
+  quickWorkoutsContainer: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+    justifyContent: 'space-between',
+  },
+  quickWorkoutButton: {
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    borderRadius: 16,
+    backgroundColor: Colors.surface,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    minWidth: 120,
+    maxWidth: 140,
+    ...Layout.shadowSmall,
+  },
+  quickWorkoutIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: Colors.primaryLight,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#007AFF',
-    paddingVertical: 16,
-    paddingHorizontal: 24,
-    borderRadius: 12,
-    shadowColor: '#007AFF',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
+    marginBottom: 8,
+  },
+  quickWorkoutText: {
+    ...Typography.bodySmall,
+    fontWeight: '600',
+    textAlign: 'center',
+    marginBottom: 4,
+  },
+  quickWorkoutDuration: {
+    ...Typography.caption,
+    color: Colors.textSecondary,
+    textAlign: 'center',
+  },
+  primaryButton: {
+    ...CommonStyles.buttonPrimary,
+    flexDirection: 'row',
   },
   primaryButtonText: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#FFFFFF',
+    ...Typography.h4,
+    color: Colors.surface,
     marginLeft: 8,
   },
   statsSection: {
-    paddingHorizontal: 20,
-    marginBottom: 24,
+    paddingHorizontal: Layout.screenPadding,
+    marginBottom: Layout.sectionSpacingLarge,
   },
   sectionTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#1A1A1A',
-    marginBottom: 16,
+    ...Typography.h3,
+    color: Colors.textPrimary,
+    marginBottom: Layout.cardSpacing,
   },
   statsGrid: {
-    flexDirection: 'row',
-    gap: 12,
+    ...CommonStyles.grid,
   },
   statCard: {
+    ...CommonStyles.card,
     flex: 1,
-    backgroundColor: '#FFFFFF',
-    padding: 16,
-    borderRadius: 12,
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
   },
   statIconContainer: {
     width: 48,
@@ -480,8 +435,8 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   section: {
-    paddingHorizontal: 20,
-    marginBottom: 24,
+    paddingHorizontal: Layout.screenPadding,
+    marginBottom: Layout.sectionSpacingLarge,
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -620,54 +575,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#666666',
     lineHeight: 18,
-  },
-  statsCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  statsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 16,
-  },
-  statItem: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  statValue: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#1A1A1A',
-    marginBottom: 4,
-  },
-  statLabel: {
-    fontSize: 12,
-    color: '#666666',
-    textAlign: 'center',
-  },
-  favoriteExercise: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingTop: 16,
-    borderTopWidth: 1,
-    borderTopColor: '#F0F0F0',
-  },
-  favoriteLabel: {
-    fontSize: 14,
-    color: '#666666',
-    marginRight: 8,
-  },
-  favoriteValue: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#007AFF',
   },
 });
 

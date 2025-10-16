@@ -15,6 +15,8 @@ import { databaseService } from '../../services/databaseService';
 import { calculationService } from '../../services/calculationService';
 import { hapticService } from '../../services/hapticService';
 import { advancedAnalyticsService, DailyInsights, WeeklyTrends, ConsistencyStreak } from '../../services/advancedAnalyticsService';
+import { getProgressIcon, getMacroColor, getStreakIcon, getConsistencyColor } from '../../utils';
+import { CommonStyles, Layout, Colors, Typography } from '../../styles/designSystem';
 import SyncIndicator from '../../components/SyncIndicator';
 import PersonalizedHeader from '../../components/dashboard/PersonalizedHeader';
 import AnimatedCard from '../../components/AnimatedCard';
@@ -220,17 +222,17 @@ const DashboardScreen: React.FC = () => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={CommonStyles.screenContainer}>
       <SyncIndicator />
       
       <ScrollView
-        style={styles.scrollView}
+        style={CommonStyles.scrollView}
         refreshControl={
           <RefreshControl refreshing={isLoading} onRefresh={handleRefresh} />
         }
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.content}>
+        <View style={CommonStyles.content}>
           
           {/* Personalized Header */}
           <PersonalizedHeader onRefresh={handleRefresh} />
@@ -329,18 +331,8 @@ const DashboardScreen: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F8F9FA',
-  },
-  scrollView: {
-    flex: 1,
-  },
-  content: {
-    padding: 16,
-  },
   cardsContainer: {
-    gap: 16,
+    gap: Layout.cardSpacing,
   },
 });
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -6,6 +6,7 @@ import {
   ScrollView,
   TouchableOpacity,
   RefreshControl,
+  Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -14,50 +15,26 @@ import { databaseService, LocalNutritionLog } from '../../services/databaseServi
 import { apiService } from '../../services/api';
 import { hapticService } from '../../services/hapticService';
 import { toastService } from '../../services/toastService';
+import { useScreenData, useWeeklyNutritionStats } from '../../hooks';
+import { getMealTypeIcon, getMealTypeColor } from '../../utils';
+import { CommonStyles, Layout, Colors, Typography, Spacing } from '../../styles/designSystem';
 import QuickMealLogScreen from '../logging/QuickMealLogScreen';
 import LoadingSkeleton from '../../components/LoadingSkeleton';
 
 const NutritionScreen: React.FC = () => {
   const { state: userState } = useUser();
-  const [nutritionLogs, setNutritionLogs] = useState<LocalNutritionLog[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
   const [showMealLog, setShowMealLog] = useState(false);
-  const [selectedMealType, setSelectedMealType] = useState<string>('');
-  const [todaysMacros, setTodaysMacros] = useState({
-    calories: 0,
-    protein: 0,
-    carbs: 0,
-    fat: 0,
-  });
 
-  useEffect(() => {
-    loadData();
-  }, [userState.user?.id]);
-
-  const loadData = async () => {
-    try {
-      setIsLoading(true);
+  // Use the new useScreenData hook for data loading
+  const { data: nutritionLogs, isLoading, isRefreshing, refresh, loadData } = useScreenData<LocalNutritionLog[]>({
+    fetchData: async () => {
       const userId = userState.user?.id || 0;
       const today = new Date().toISOString().split('T')[0];
       
-      // Load today's nutrition logs
-      const todayLogs = await databaseService.getNutritionLogs(userId, today, 100);
-      setNutritionLogs(todayLogs);
+      // Load recent nutrition logs (last 30 days)
+      const recentLogs = await databaseService.getNutritionLogs(userId, today, 100);
       
-      // Calculate today's macros
-      const macros = todayLogs.reduce(
-        (totals, log) => ({
-          calories: totals.calories + (log.calories || 0),
-          protein: totals.protein + (log.protein_g || 0),
-          carbs: totals.carbs + (log.carbs_g || 0),
-          fat: totals.fat + (log.fat_g || 0),
-        }),
-        { calories: 0, protein: 0, carbs: 0, fat: 0 }
-      );
-      setTodaysMacros(macros);
-
-      // Try to fetch from backend for sync
+      // Try to fetch from backend for sync (silent failure)
       try {
         const backendLogs = await apiService.getNutritionLogs(userId, today, 100);
         if (backendLogs && backendLogs.length > 0) {
@@ -66,105 +43,40 @@ const NutritionScreen: React.FC = () => {
       } catch (error) {
         console.log('Backend nutrition logs unavailable, using local data');
       }
-    } catch (error) {
-      console.error('Error loading nutrition data:', error);
-      toastService.error('Error loading data');
-    } finally {
-      setIsLoading(false);
-    }
-  };
+      
+      return recentLogs;
+    },
+    dependencies: [userState.user?.id],
+    errorMessage: 'Failed to load nutrition data',
+  });
 
-  const onRefresh = async () => {
-    setRefreshing(true);
-    await loadData();
-    setRefreshing(false);
+  // Use the new useWeeklyNutritionStats hook for weekly calculations
+  const weeklyStats = useWeeklyNutritionStats(nutritionLogs || []);
+
+  // Convert to match existing interface
+  const weeklyStatsFormatted = {
+    totalMeals: weeklyStats.totalItems,
+    totalCalories: weeklyStats.totalValue,
+    avgCalories: weeklyStats.avgValue,
   };
 
   const handleMealLogSuccess = () => {
     setShowMealLog(false);
-    setSelectedMealType('');
     loadData();
     hapticService.success();
     toastService.success('Meal logged successfully!');
   };
 
-  const handleMealTypePress = (mealType: string) => {
-    hapticService.light();
-    setSelectedMealType(mealType);
-    setShowMealLog(true);
-  };
 
   const formatTime = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
-  const getMealTypeIcon = (mealType: string) => {
-    switch (mealType.toLowerCase()) {
-      case 'breakfast':
-        return 'sunny';
-      case 'lunch':
-        return 'partly-sunny';
-      case 'dinner':
-        return 'moon';
-      case 'snack':
-        return 'cafe';
-      default:
-        return 'restaurant';
-    }
-  };
-
-  const getMealTypeColor = (mealType: string) => {
-    switch (mealType.toLowerCase()) {
-      case 'breakfast':
-        return '#FF9500';
-      case 'lunch':
-        return '#34C759';
-      case 'dinner':
-        return '#5856D6';
-      case 'snack':
-        return '#FF2D92';
-      default:
-        return '#8E8E93';
-    }
-  };
-
-  const getMealTypeStats = () => {
-    const stats = {
-      breakfast: 0,
-      lunch: 0,
-      dinner: 0,
-      snack: 0,
-    };
-
-    nutritionLogs.forEach(log => {
-      const mealType = log.meal_type.toLowerCase();
-      if (mealType in stats) {
-        stats[mealType as keyof typeof stats]++;
-      }
-    });
-
-    return stats;
-  };
-
-  const calculateMacroPercentages = () => {
-    const totalMacroCalories = (todaysMacros.protein * 4) + (todaysMacros.carbs * 4) + (todaysMacros.fat * 9);
-    
-    if (totalMacroCalories === 0) return { protein: 0, carbs: 0, fat: 0 };
-    
-    return {
-      protein: Math.round((todaysMacros.protein * 4 / totalMacroCalories) * 100),
-      carbs: Math.round((todaysMacros.carbs * 4 / totalMacroCalories) * 100),
-      fat: Math.round((todaysMacros.fat * 9 / totalMacroCalories) * 100),
-    };
-  };
-
-  const mealTypeStats = getMealTypeStats();
-  const macroPercentages = calculateMacroPercentages();
 
   if (isLoading) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={CommonStyles.screenContainer}>
         <View style={styles.header}>
           <Text style={styles.title}>Nutrition</Text>
         </View>
@@ -174,11 +86,11 @@ const NutritionScreen: React.FC = () => {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={CommonStyles.screenContainer}>
       <ScrollView
-        style={styles.scrollView}
+        style={CommonStyles.scrollView}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          <RefreshControl refreshing={isRefreshing} onRefresh={refresh} />
         }
         showsVerticalScrollIndicator={false}
       >
@@ -188,112 +100,47 @@ const NutritionScreen: React.FC = () => {
             <Text style={styles.title}>Nutrition</Text>
             <Text style={styles.subtitle}>Track your meals and macros</Text>
           </View>
+        </View>
+
+        {/* Quick Actions */}
+        <View style={styles.quickActions}>
           <TouchableOpacity
-            style={styles.quickLogButton}
+            style={styles.primaryButton}
             onPress={() => {
               hapticService.light();
               setShowMealLog(true);
             }}
           >
-            <Ionicons name="add-circle" size={20} color="#007AFF" />
-            <Text style={styles.quickLogButtonText}>Quick Log</Text>
+            <Ionicons name="add-circle" size={24} color="#FFFFFF" />
+            <Text style={styles.primaryButtonText}>Log Meal</Text>
           </TouchableOpacity>
         </View>
 
-        {/* Today's Macros */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Today's Nutrition</Text>
-          <View style={styles.macroCard}>
-            <View style={styles.macroHeader}>
-              <Text style={styles.macroTitle}>Macros Breakdown</Text>
-              <Text style={styles.totalCalories}>{Math.round(todaysMacros.calories)} kcal</Text>
+        {/* Weekly Stats */}
+        <View style={styles.statsSection}>
+          <Text style={styles.sectionTitle}>This Week</Text>
+          <View style={styles.statsGrid}>
+            <View style={styles.statCard}>
+              <View style={[styles.statIconContainer, { backgroundColor: '#FF6B6B20' }]}>
+                <Ionicons name="restaurant" size={24} color="#FF6B6B" />
+              </View>
+              <Text style={styles.statNumber}>{weeklyStatsFormatted.totalMeals}</Text>
+              <Text style={styles.statLabel}>Meals</Text>
             </View>
-            
-            <View style={styles.macroRow}>
-              <View style={styles.macroItem}>
-                <View style={[styles.macroIndicator, { backgroundColor: '#4ECDC4' }]} />
-                <View style={styles.macroDetails}>
-                  <Text style={styles.macroLabel}>Protein</Text>
-                  <Text style={styles.macroValue}>{Math.round(todaysMacros.protein)}g</Text>
-                </View>
-                <Text style={styles.macroPercentage}>{macroPercentages.protein}%</Text>
+            <View style={styles.statCard}>
+              <View style={[styles.statIconContainer, { backgroundColor: '#4ECDC420' }]}>
+                <Ionicons name="flame" size={24} color="#4ECDC4" />
               </View>
-
-              <View style={styles.macroItem}>
-                <View style={[styles.macroIndicator, { backgroundColor: '#FFD93D' }]} />
-                <View style={styles.macroDetails}>
-                  <Text style={styles.macroLabel}>Carbs</Text>
-                  <Text style={styles.macroValue}>{Math.round(todaysMacros.carbs)}g</Text>
-                </View>
-                <Text style={styles.macroPercentage}>{macroPercentages.carbs}%</Text>
-              </View>
-
-              <View style={styles.macroItem}>
-                <View style={[styles.macroIndicator, { backgroundColor: '#FF6B6B' }]} />
-                <View style={styles.macroDetails}>
-                  <Text style={styles.macroLabel}>Fat</Text>
-                  <Text style={styles.macroValue}>{Math.round(todaysMacros.fat)}g</Text>
-                </View>
-                <Text style={styles.macroPercentage}>{macroPercentages.fat}%</Text>
-              </View>
+              <Text style={styles.statNumber}>{weeklyStatsFormatted.totalCalories}</Text>
+              <Text style={styles.statLabel}>Calories</Text>
             </View>
-
-            {/* Macro Distribution Bar */}
-            {todaysMacros.calories > 0 && (
-              <View style={styles.macroBar}>
-                <View style={[styles.macroBarSegment, { 
-                  flex: macroPercentages.protein, 
-                  backgroundColor: '#4ECDC4' 
-                }]} />
-                <View style={[styles.macroBarSegment, { 
-                  flex: macroPercentages.carbs, 
-                  backgroundColor: '#FFD93D' 
-                }]} />
-                <View style={[styles.macroBarSegment, { 
-                  flex: macroPercentages.fat, 
-                  backgroundColor: '#FF6B6B' 
-                }]} />
+            <View style={styles.statCard}>
+              <View style={[styles.statIconContainer, { backgroundColor: '#45B7D120' }]}>
+                <Ionicons name="stats-chart" size={24} color="#45B7D1" />
               </View>
-            )}
-          </View>
-        </View>
-
-        {/* Quick Meal Logging */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Log Meal</Text>
-          <View style={styles.mealTypeGrid}>
-            {['Breakfast', 'Lunch', 'Dinner', 'Snack'].map((mealType) => (
-              <TouchableOpacity
-                key={mealType}
-                style={[
-                  styles.mealTypeButton,
-                  { backgroundColor: getMealTypeColor(mealType) + '20' }
-                ]}
-                onPress={() => handleMealTypePress(mealType)}
-                activeOpacity={0.7}
-              >
-                <View style={[
-                  styles.mealTypeIconContainer,
-                  { backgroundColor: getMealTypeColor(mealType) + '40' }
-                ]}>
-                  <Ionicons
-                    name={getMealTypeIcon(mealType) as any}
-                    size={24}
-                    color={getMealTypeColor(mealType)}
-                  />
-                </View>
-                <Text style={[styles.mealTypeText, { color: getMealTypeColor(mealType) }]}>
-                  {mealType}
-                </Text>
-                {mealTypeStats[mealType.toLowerCase() as keyof typeof mealTypeStats] > 0 && (
-                  <View style={[styles.mealCountBadge, { backgroundColor: getMealTypeColor(mealType) }]}>
-                    <Text style={styles.mealCountText}>
-                      {mealTypeStats[mealType.toLowerCase() as keyof typeof mealTypeStats]}
-                    </Text>
-                  </View>
-                )}
-              </TouchableOpacity>
-            ))}
+              <Text style={styles.statNumber}>{weeklyStatsFormatted.avgCalories}</Text>
+              <Text style={styles.statLabel}>Avg Calories</Text>
+            </View>
           </View>
         </View>
 
@@ -301,56 +148,50 @@ const NutritionScreen: React.FC = () => {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Today's Meals</Text>
-            {nutritionLogs.length > 0 && (
+            {nutritionLogs && nutritionLogs.length > 0 && (
               <Text style={styles.sectionSubtitle}>{nutritionLogs.length} logged</Text>
             )}
           </View>
           
-          {nutritionLogs.length > 0 ? (
+          {nutritionLogs && nutritionLogs.length > 0 ? (
             <View style={styles.mealsList}>
               {nutritionLogs.map((log) => (
-                <View key={log.local_id} style={styles.mealCard}>
+                <TouchableOpacity
+                  key={log.local_id}
+                  style={styles.mealCard}
+                  onPress={() => {
+                    hapticService.light();
+                    // TODO: Navigate to meal details
+                  }}
+                  activeOpacity={0.7}
+                >
                   <View style={styles.mealHeader}>
-                    <View style={styles.mealTypeInfo}>
-                      <View style={[
-                        styles.mealIconContainer,
-                        { backgroundColor: getMealTypeColor(log.meal_type) + '20' }
-                      ]}>
-                        <Ionicons
-                          name={getMealTypeIcon(log.meal_type) as any}
-                          size={20}
-                          color={getMealTypeColor(log.meal_type)}
-                        />
-                      </View>
-                      <View>
-                        <Text style={styles.mealTypeName}>{log.meal_type}</Text>
-                        <Text style={styles.mealTime}>{formatTime(log.created_at)}</Text>
-                      </View>
+                    <View style={[
+                      styles.mealIconContainer,
+                      { backgroundColor: getMealTypeColor(log.meal_type) + '20' }
+                    ]}>
+                      <Ionicons
+                        name={getMealTypeIcon(log.meal_type) as any}
+                        size={20}
+                        color={getMealTypeColor(log.meal_type)}
+                      />
                     </View>
-                    <Text style={styles.mealCalories}>{log.calories || 0} kcal</Text>
+                    <View style={styles.mealInfo}>
+                      <Text style={styles.mealTypeName}>{log.meal_type}</Text>
+                      <Text style={styles.mealTime}>{formatTime(log.created_at)}</Text>
+                    </View>
+                    <View style={styles.mealMeta}>
+                      <Text style={styles.mealCalories}>{log.calories || 0} kcal</Text>
+                      <Ionicons name="chevron-forward" size={16} color="#CCCCCC" />
+                    </View>
                   </View>
                   
-                  <View style={styles.mealMacros}>
-                    <View style={styles.mealMacroItem}>
-                      <Text style={styles.mealMacroValue}>{log.protein_g || 0}g</Text>
-                      <Text style={styles.mealMacroLabel}>Protein</Text>
-                    </View>
-                    <View style={styles.mealMacroItem}>
-                      <Text style={styles.mealMacroValue}>{log.carbs_g || 0}g</Text>
-                      <Text style={styles.mealMacroLabel}>Carbs</Text>
-                    </View>
-                    <View style={styles.mealMacroItem}>
-                      <Text style={styles.mealMacroValue}>{log.fat_g || 0}g</Text>
-                      <Text style={styles.mealMacroLabel}>Fat</Text>
-                    </View>
-                  </View>
-
                   {log.notes && (
                     <Text style={styles.mealNotes} numberOfLines={2}>
                       {log.notes}
                     </Text>
                   )}
-                </View>
+                </TouchableOpacity>
               ))}
             </View>
           ) : (
@@ -375,17 +216,17 @@ const NutritionScreen: React.FC = () => {
           )}
         </View>
 
-        {/* Nutrition Tips */}
-        {nutritionLogs.length > 0 && (
+        {/* Tips Section */}
+        {nutritionLogs && nutritionLogs.length > 0 && (
           <View style={styles.tipsSection}>
             <View style={styles.tipCard}>
-              <Ionicons name="bulb" size={20} color="#4CAF50" />
+              <Ionicons name="bulb" size={20} color="#FFA500" />
               <View style={styles.tipContent}>
-                <Text style={styles.tipTitle}>Nutrition Tip</Text>
+                <Text style={styles.tipTitle}>Pro Tip</Text>
                 <Text style={styles.tipText}>
-                  {todaysMacros.protein >= 100
-                    ? "Excellent protein intake! You're fueling your muscles well."
-                    : "Try to include more protein-rich foods to hit your daily goal."}
+                  {weeklyStatsFormatted.avgCalories >= 2000
+                    ? "You're maintaining a good calorie balance this week!"
+                    : "Try to include more nutrient-dense foods in your meals."}
                 </Text>
               </View>
             </View>
@@ -394,70 +235,98 @@ const NutritionScreen: React.FC = () => {
       </ScrollView>
 
       {/* Meal Log Modal */}
-      <QuickMealLogScreen
+      <Modal
         visible={showMealLog}
-        onClose={() => {
-          setShowMealLog(false);
-          setSelectedMealType('');
-        }}
-        onSuccess={handleMealLogSuccess}
-        initialMealType={selectedMealType}
-      />
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setShowMealLog(false)}
+      >
+        <QuickMealLogScreen
+          onClose={() => setShowMealLog(false)}
+          onSuccess={handleMealLogSuccess}
+        />
+      </Modal>
     </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F8F9FA',
-  },
-  scrollView: {
-    flex: 1,
-  },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    backgroundColor: '#FFFFFF',
+    paddingHorizontal: Layout.screenPadding,
+    paddingVertical: Layout.headerPadding,
+    backgroundColor: Colors.surface,
     borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
+    borderBottomColor: Colors.border,
   },
   title: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: '#1A1A1A',
+    ...Typography.h1,
+    color: Colors.textPrimary,
   },
   subtitle: {
-    fontSize: 14,
-    color: '#666666',
+    ...Typography.bodySmall,
+    color: Colors.textSecondary,
     marginTop: 2,
   },
-  quickLogButton: {
+  quickActions: {
+    paddingHorizontal: Layout.screenPadding,
+    marginBottom: Layout.sectionSpacing,
+  },
+  primaryButton: {
+    ...CommonStyles.buttonPrimary,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    backgroundColor: '#F0F8FF',
-    borderRadius: 20,
+    justifyContent: 'center',
+    paddingVertical: Spacing.lg,
   },
-  quickLogButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#007AFF',
-    marginLeft: 4,
+  primaryButtonText: {
+    ...Typography.label,
+    color: Colors.textLight,
+    marginLeft: Spacing.sm,
+    fontSize: 16,
+  },
+  statsSection: {
+    paddingHorizontal: Layout.screenPadding,
+    marginBottom: Layout.sectionSpacingLarge,
+  },
+  statsGrid: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: Spacing.md,
+  },
+  statCard: {
+    ...CommonStyles.card,
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: Spacing.lg,
+  },
+  statIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: Spacing.sm,
+  },
+  statNumber: {
+    ...Typography.h2,
+    marginBottom: Spacing.xs,
+  },
+  statLabel: {
+    ...Typography.caption,
+    color: Colors.textSecondary,
+    textAlign: 'center',
   },
   section: {
-    paddingHorizontal: 20,
-    marginTop: 24,
+    paddingHorizontal: Layout.screenPadding,
+    marginBottom: Layout.sectionSpacingLarge,
   },
   sectionTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#1A1A1A',
-    marginBottom: 16,
+    ...Typography.h3,
+    color: Colors.textPrimary,
+    marginBottom: Layout.cardSpacing,
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -468,114 +337,6 @@ const styles = StyleSheet.create({
   sectionSubtitle: {
     fontSize: 14,
     color: '#666666',
-  },
-  macroCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  macroHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  macroTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#1A1A1A',
-  },
-  totalCalories: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#007AFF',
-  },
-  macroRow: {
-    gap: 12,
-    marginBottom: 16,
-  },
-  macroItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 8,
-  },
-  macroIndicator: {
-    width: 4,
-    height: 32,
-    borderRadius: 2,
-    marginRight: 12,
-  },
-  macroDetails: {
-    flex: 1,
-  },
-  macroLabel: {
-    fontSize: 14,
-    color: '#666666',
-    marginBottom: 2,
-  },
-  macroValue: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#1A1A1A',
-  },
-  macroPercentage: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#666666',
-  },
-  macroBar: {
-    flexDirection: 'row',
-    height: 8,
-    borderRadius: 4,
-    overflow: 'hidden',
-    backgroundColor: '#F0F0F0',
-  },
-  macroBarSegment: {
-    height: '100%',
-  },
-  mealTypeGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
-  },
-  mealTypeButton: {
-    width: '48%',
-    borderRadius: 12,
-    padding: 16,
-    alignItems: 'center',
-    position: 'relative',
-  },
-  mealTypeIconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  mealTypeText: {
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  mealCountBadge: {
-    position: 'absolute',
-    top: 12,
-    right: 12,
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  mealCountText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#FFFFFF',
   },
   mealsList: {
     gap: 12,
@@ -592,11 +353,12 @@ const styles = StyleSheet.create({
   },
   mealHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
   },
-  mealTypeInfo: {
+  mealInfo: {
+    flex: 1,
+  },
+  mealMeta: {
     flexDirection: 'row',
     alignItems: 'center',
   },
@@ -609,19 +371,19 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   mealTypeName: {
+    ...Typography.label,
     fontSize: 16,
-    fontWeight: '600',
-    color: '#1A1A1A',
-    textTransform: 'capitalize',
+    marginBottom: 2,
   },
   mealTime: {
-    fontSize: 14,
-    color: '#666666',
+    ...Typography.caption,
+    color: Colors.textSecondary,
   },
   mealCalories: {
+    ...Typography.label,
+    color: Colors.primary,
     fontSize: 16,
-    fontWeight: '700',
-    color: '#007AFF',
+    marginRight: Spacing.sm,
   },
   mealMacros: {
     flexDirection: 'row',
@@ -644,14 +406,10 @@ const styles = StyleSheet.create({
     color: '#666666',
   },
   mealNotes: {
-    fontSize: 14,
-    color: '#666666',
-    marginTop: 12,
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: '#F0F0F0',
+    ...Typography.bodySmall,
+    color: Colors.textSecondary,
     fontStyle: 'italic',
-    lineHeight: 20,
+    marginTop: Spacing.sm,
   },
   emptyState: {
     backgroundColor: '#FFFFFF',

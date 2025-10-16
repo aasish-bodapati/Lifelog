@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -19,6 +19,9 @@ import { apiService } from '../../services/api';
 import { hapticService } from '../../services/hapticService';
 import { calculationService } from '../../services/calculationService';
 import { advancedAnalyticsService, DailyInsights, WeeklyTrends, ConsistencyStreak, ProgressMetrics } from '../../services/advancedAnalyticsService';
+import { useScreenData } from '../../hooks';
+import { getProgressIcon, getTrendIcon, getTrendColor, getConsistencyColor } from '../../utils';
+import { CommonStyles, Layout, Colors, Typography } from '../../styles/designSystem';
 import SyncIndicator from '../../components/SyncIndicator';
 import WeeklySummaryCard from '../../components/progress/WeeklySummaryCard';
 import TrendChart from '../../components/analytics/TrendChart';
@@ -369,17 +372,17 @@ const ProgressScreen: React.FC = () => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={CommonStyles.screenContainer}>
       <SyncIndicator />
       
       <ScrollView
-        style={styles.scrollView}
+        style={CommonStyles.scrollView}
         refreshControl={
           <RefreshControl refreshing={isLoading} onRefresh={handleRefresh} />
         }
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.content}>
+        <View style={CommonStyles.content}>
           {/* Header */}
           <View style={styles.header}>
             <Text style={styles.title}>Progress</Text>
@@ -531,114 +534,85 @@ const ProgressScreen: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F8F9FA',
-  },
-  scrollView: {
-    flex: 1,
-  },
-  content: {
-    padding: 16,
-  },
   header: {
-    marginBottom: 24,
+    marginBottom: Layout.sectionSpacingLarge,
   },
   title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#1A1A1A',
+    ...Typography.h1,
+    color: Colors.textPrimary,
   },
   subtitle: {
-    fontSize: 16,
-    color: '#666666',
+    ...Typography.body,
+    color: Colors.textSecondary,
     marginTop: 4,
   },
   periodSelector: {
+    ...CommonStyles.card,
     flexDirection: 'row',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
     padding: 4,
-    marginBottom: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    marginBottom: Layout.sectionSpacingLarge,
   },
   periodButton: {
     flex: 1,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 8,
+    paddingVertical: Layout.cardSpacing,
+    paddingHorizontal: Layout.cardPadding,
+    borderRadius: Layout.radiusSmall,
     alignItems: 'center',
   },
   periodButtonActive: {
-    backgroundColor: '#007AFF',
+    backgroundColor: Colors.primary,
   },
   periodButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#666666',
+    ...Typography.label,
+    color: Colors.textSecondary,
   },
   periodButtonTextActive: {
-    color: '#FFFFFF',
+    color: Colors.surface,
   },
   chartsContainer: {
-    marginBottom: 24,
+    marginBottom: Layout.sectionSpacingLarge,
   },
   sectionTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#1A1A1A',
-    marginBottom: 16,
+    ...Typography.h3,
+    color: Colors.textPrimary,
+    marginBottom: Layout.cardSpacing,
   },
   progressSummaryContainer: {
-    marginBottom: 24,
+    marginBottom: Layout.sectionSpacingLarge,
   },
   progressSummaryCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    ...CommonStyles.cardLarge,
   },
   progressRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 16,
+    marginBottom: Layout.cardSpacing,
   },
   progressItem: {
     flex: 1,
     alignItems: 'center',
   },
   progressValue: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#1A1A1A',
+    ...Typography.h2,
+    color: Colors.textPrimary,
     marginBottom: 4,
   },
   progressLabel: {
-    fontSize: 12,
-    color: '#666666',
+    ...Typography.caption,
+    color: Colors.textSecondary,
     textAlign: 'center',
   },
   weightLoss: {
-    color: '#28A745',
+    color: Colors.success,
   },
   weightGain: {
-    color: '#DC3545',
+    color: Colors.error,
   },
   achievementsContainer: {
-    marginBottom: 24,
+    marginBottom: Layout.sectionSpacingLarge,
   },
   achievementsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
+    ...CommonStyles.grid,
   },
 });
 
