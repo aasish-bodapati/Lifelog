@@ -184,7 +184,22 @@ const QuickWorkoutLogScreen: React.FC<QuickWorkoutLogScreenProps> = ({
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Workout Details</Text>
           
-          {/* Selected Exercises List */}
+          {/* Add New Exercise - Fixed at top */}
+          <View style={styles.addExerciseSection}>
+            <Text style={styles.addExerciseTitle}>Add Exercise</Text>
+            
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Search and select exercises to add them automatically</Text>
+              <ExerciseSearchDropdown
+                value=""
+                onSelect={handleExerciseSelect}
+                placeholder="Search and select an exercise..."
+                style={styles.exerciseDropdown}
+              />
+            </View>
+          </View>
+
+          {/* Selected Exercises List - Below search */}
           {selectedExercises.length > 0 && (
             <View style={styles.selectedExercisesContainer}>
               <Text style={styles.selectedExercisesTitle}>Selected Exercises ({selectedExercises.length})</Text>
@@ -238,21 +253,6 @@ const QuickWorkoutLogScreen: React.FC<QuickWorkoutLogScreenProps> = ({
               ))}
             </View>
           )}
-
-          {/* Add New Exercise */}
-          <View style={styles.addExerciseSection}>
-            <Text style={styles.addExerciseTitle}>Add Exercise</Text>
-            
-            <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Search and select exercises to add them automatically</Text>
-              <ExerciseSearchDropdown
-                value=""
-                onSelect={handleExerciseSelect}
-                placeholder="Search and select an exercise..."
-                style={styles.exerciseDropdown}
-              />
-            </View>
-          </View>
         </View>
         </ScrollView>
 
@@ -549,7 +549,7 @@ const styles = StyleSheet.create({
     marginLeft: 4,
   },
   addExerciseSection: {
-    marginTop: 20,
+    marginBottom: 20,
   },
   addExerciseTitle: {
     fontSize: 16,
