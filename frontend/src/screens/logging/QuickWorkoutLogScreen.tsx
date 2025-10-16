@@ -92,6 +92,11 @@ const QuickWorkoutLogScreen: React.FC<QuickWorkoutLogScreenProps> = ({
       return;
     }
 
+    if (!duration.trim()) {
+      toastService.error('Error', 'Please enter the duration for this exercise');
+      return;
+    }
+
     setIsLoading(true);
 
     try {
@@ -214,19 +219,20 @@ const QuickWorkoutLogScreen: React.FC<QuickWorkoutLogScreenProps> = ({
                   <Text style={styles.exerciseDetailText}>{selectedExercise.muscleGroups.join(', ')}</Text>
                 </View>
               </View>
+              
+              {/* Duration Input */}
+              <View style={styles.durationInputContainer}>
+                <Text style={styles.durationLabel}>Duration (minutes)</Text>
+                <TextInput
+                  style={styles.durationInput}
+                  value={duration}
+                  onChangeText={setDuration}
+                  placeholder="30"
+                  keyboardType="numeric"
+                />
+              </View>
             </View>
           )}
-
-          <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Duration (minutes)</Text>
-            <TextInput
-              style={styles.textInput}
-              value={duration}
-              onChangeText={setDuration}
-              placeholder="30"
-              keyboardType="numeric"
-            />
-          </View>
         </View>
         </ScrollView>
 
@@ -468,6 +474,28 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#666',
     marginLeft: 6,
+  },
+  durationInputContainer: {
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#F0F0F0',
+  },
+  durationLabel: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#333',
+    marginBottom: 6,
+  },
+  durationInput: {
+    backgroundColor: '#F8F9FA',
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 16,
+    textAlign: 'center',
   },
 });
 
