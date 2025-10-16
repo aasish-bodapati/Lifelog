@@ -32,7 +32,14 @@ const QuickWorkoutLogScreen: React.FC<QuickWorkoutLogScreenProps> = ({
   const [isLoading, setIsLoading] = useState(false);
 
   // Form state
-  const [selectedExercises, setSelectedExercises] = useState<Array<Exercise & { duration: string }>>([]);
+  const [selectedExercises, setSelectedExercises] = useState<Array<Exercise & { 
+    sets?: number;
+    reps?: number;
+    weight?: number;
+    duration?: number;
+    distance?: number;
+    intensity?: 'low' | 'moderate' | 'high';
+  }>>([]);
 
   // Recent workouts for autofill
   const [recentWorkouts, setRecentWorkouts] = useState<LocalWorkout[]>([]);
@@ -55,24 +62,60 @@ const QuickWorkoutLogScreen: React.FC<QuickWorkoutLogScreenProps> = ({
   const handleQuickFill = (workout: LocalWorkout) => {
     // For quick fill, we'll add the workout as a single exercise
     if (workout.name && workout.duration_minutes) {
-      const quickExercise: Exercise & { duration: string } = {
+      const quickExercise: Exercise & { duration: number } = {
         id: 'quick-' + Date.now(),
         name: workout.name,
         category: 'other',
         muscleGroups: [],
         equipment: 'other',
         difficulty: 'beginner',
-        duration: workout.duration_minutes.toString(),
+        duration: workout.duration_minutes,
       };
       setSelectedExercises(prev => [...prev, quickExercise]);
     }
   };
 
   const handleExerciseSelect = (exercise: Exercise) => {
-    // Automatically add the exercise with default duration
+    // Automatically add the exercise with default values based on category
+    let defaultData: any = {};
+    
+    switch (exercise.category) {
+      case 'strength':
+        defaultData = {
+          sets: 3,
+          reps: 10,
+          weight: exercise.equipment === 'bodyweight' ? 0 : 20, // 0 for bodyweight, 20kg for weights
+        };
+        break;
+      case 'cardio':
+        defaultData = {
+          duration: 30, // minutes
+          distance: 5, // km
+          intensity: 'moderate' as const,
+        };
+        break;
+      case 'flexibility':
+        defaultData = {
+          duration: 15, // minutes
+          intensity: 'low' as const,
+        };
+        break;
+      case 'sports':
+        defaultData = {
+          duration: 45, // minutes
+          distance: 0, // varies by sport
+          intensity: 'moderate' as const,
+        };
+        break;
+      default:
+        defaultData = {
+          duration: 30, // minutes
+        };
+    }
+    
     const newExercise = {
       ...exercise,
-      duration: '30', // Default duration
+      ...defaultData,
     };
     setSelectedExercises(prev => [...prev, newExercise]);
   };
@@ -115,7 +158,7 @@ const QuickWorkoutLogScreen: React.FC<QuickWorkoutLogScreenProps> = ({
 
     try {
       // Calculate total duration
-      const totalDuration = selectedExercises.reduce((sum, exercise) => sum + parseInt(exercise.duration), 0);
+      const totalDuration = selectedExercises.reduce((sum, exercise) => sum + (exercise.duration || 0), 0);
       
       // Create workout name from exercises
       const workoutName = selectedExercises.length === 1 
@@ -127,7 +170,15 @@ const QuickWorkoutLogScreen: React.FC<QuickWorkoutLogScreenProps> = ({
         name: workoutName,
         date: new Date().toISOString().split('T')[0],
         duration_minutes: totalDuration,
-        notes: `Exercises: ${selectedExercises.map(ex => `${ex.name} (${ex.duration}min)`).join(', ')}`,
+        notes: `Exercises: ${selectedExercises.map(ex => {
+          let details = [];
+          if (ex.sets && ex.reps) details.push(`${ex.sets}x${ex.reps}`);
+          if (ex.weight && ex.weight > 0) details.push(`${ex.weight}kg`);
+          if (ex.duration) details.push(`${ex.duration}min`);
+          if (ex.distance && ex.distance > 0) details.push(`${ex.distance}km`);
+          if (ex.intensity) details.push(ex.intensity);
+          return `${ex.name}${details.length > 0 ? ` (${details.join(', ')})` : ''}`;
+        }).join(', ')}`,
       };
 
       await databaseService.saveWorkout(workoutData);
@@ -150,14 +201,14 @@ const QuickWorkoutLogScreen: React.FC<QuickWorkoutLogScreenProps> = ({
   return (
     <View style={styles.overlay}>
       <View style={styles.popupContainer}>
-        <View style={styles.header}>
+      <View style={styles.header}>
           <Text style={styles.title}>Quick Log Workout</Text>
-          <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-            <Ionicons name="close" size={24} color="#666" />
-          </TouchableOpacity>
-        </View>
+        <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+          <Ionicons name="close" size={24} color="#666" />
+        </TouchableOpacity>
+      </View>
 
-        <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {/* Recent Workouts */}
         {recentWorkouts.length > 0 && (
           <View style={styles.section}>
@@ -187,8 +238,8 @@ const QuickWorkoutLogScreen: React.FC<QuickWorkoutLogScreenProps> = ({
           {/* Add New Exercise - Fixed at top */}
           <View style={styles.addExerciseSection}>
             <Text style={styles.addExerciseTitle}>Add Exercise</Text>
-            
-            <View style={styles.inputGroup}>
+          
+          <View style={styles.inputGroup}>
               <Text style={styles.inputLabel}>Search and select exercises to add them automatically</Text>
               <ExerciseSearchDropdown
                 value=""
@@ -228,19 +279,168 @@ const QuickWorkoutLogScreen: React.FC<QuickWorkoutLogScreenProps> = ({
                         </View>
                       </View>
                     </View>
-                    <View style={styles.exerciseDuration}>
-                      <TextInput
-                        style={styles.durationEditInput}
-                        value={exercise.duration}
-                        onChangeText={(text) => {
-                          const updatedExercises = [...selectedExercises];
-                          updatedExercises[index].duration = text;
-                          setSelectedExercises(updatedExercises);
-                        }}
-                        keyboardType="numeric"
-                        selectTextOnFocus
-                      />
-                      <Text style={styles.durationUnit}>min</Text>
+                    <View style={styles.exerciseInputs}>
+                      {exercise.category === 'strength' && (
+                        <View style={styles.inputRow}>
+                          <View style={styles.inputField}>
+                            <Text style={styles.inputLabel}>Sets</Text>
+                            <TextInput
+                              style={styles.numberInput}
+                              value={exercise.sets?.toString() || ''}
+                              onChangeText={(text) => {
+                                const updatedExercises = [...selectedExercises];
+                                updatedExercises[index].sets = parseInt(text) || 0;
+                                setSelectedExercises(updatedExercises);
+                              }}
+                              keyboardType="numeric"
+                              selectTextOnFocus
+                            />
+                          </View>
+                          <View style={styles.inputField}>
+                            <Text style={styles.inputLabel}>Reps</Text>
+                            <TextInput
+                              style={styles.numberInput}
+                              value={exercise.reps?.toString() || ''}
+                              onChangeText={(text) => {
+                                const updatedExercises = [...selectedExercises];
+                                updatedExercises[index].reps = parseInt(text) || 0;
+                                setSelectedExercises(updatedExercises);
+                              }}
+                              keyboardType="numeric"
+                              selectTextOnFocus
+                            />
+                          </View>
+                          {exercise.equipment !== 'bodyweight' && (
+                            <View style={styles.inputField}>
+                              <Text style={styles.inputLabel}>Weight (kg)</Text>
+                              <TextInput
+                                style={styles.numberInput}
+                                value={exercise.weight?.toString() || ''}
+                                onChangeText={(text) => {
+                                  const updatedExercises = [...selectedExercises];
+                                  updatedExercises[index].weight = parseInt(text) || 0;
+                                  setSelectedExercises(updatedExercises);
+                                }}
+                                keyboardType="numeric"
+                                selectTextOnFocus
+                              />
+                            </View>
+                          )}
+                        </View>
+                      )}
+                      
+                      {exercise.category === 'cardio' && (
+                        <View style={styles.inputRow}>
+                          <View style={styles.inputField}>
+                            <Text style={styles.inputLabel}>Duration (min)</Text>
+                            <TextInput
+                              style={styles.numberInput}
+                              value={exercise.duration?.toString() || ''}
+                              onChangeText={(text) => {
+                                const updatedExercises = [...selectedExercises];
+                                updatedExercises[index].duration = parseInt(text) || 0;
+                                setSelectedExercises(updatedExercises);
+                              }}
+                              keyboardType="numeric"
+                              selectTextOnFocus
+                            />
+                          </View>
+                          <View style={styles.inputField}>
+                            <Text style={styles.inputLabel}>Distance (km)</Text>
+                            <TextInput
+                              style={styles.numberInput}
+                              value={exercise.distance?.toString() || ''}
+                              onChangeText={(text) => {
+                                const updatedExercises = [...selectedExercises];
+                                updatedExercises[index].distance = parseInt(text) || 0;
+                                setSelectedExercises(updatedExercises);
+                              }}
+                              keyboardType="numeric"
+                              selectTextOnFocus
+                            />
+                          </View>
+                          <View style={styles.inputField}>
+                            <Text style={styles.inputLabel}>Intensity</Text>
+                            <View style={styles.intensityButtons}>
+                              {(['low', 'moderate', 'high'] as const).map((level) => (
+                                <TouchableOpacity
+                                  key={level}
+                                  style={[
+                                    styles.intensityButton,
+                                    exercise.intensity === level && styles.intensityButtonActive
+                                  ]}
+                                  onPress={() => {
+                                    const updatedExercises = [...selectedExercises];
+                                    updatedExercises[index].intensity = level;
+                                    setSelectedExercises(updatedExercises);
+                                  }}
+                                >
+                                  <Text style={[
+                                    styles.intensityButtonText,
+                                    exercise.intensity === level && styles.intensityButtonTextActive
+                                  ]}>
+                                    {level.charAt(0).toUpperCase() + level.slice(1)}
+                                  </Text>
+                                </TouchableOpacity>
+                              ))}
+                            </View>
+                          </View>
+                        </View>
+                      )}
+                      
+                      {(exercise.category === 'flexibility' || exercise.category === 'sports') && (
+                        <View style={styles.inputRow}>
+                          <View style={styles.inputField}>
+                            <Text style={styles.inputLabel}>Duration (min)</Text>
+                            <TextInput
+                              style={styles.numberInput}
+                              value={exercise.duration?.toString() || ''}
+                              onChangeText={(text) => {
+                                const updatedExercises = [...selectedExercises];
+                                updatedExercises[index].duration = parseInt(text) || 0;
+                                setSelectedExercises(updatedExercises);
+                              }}
+                              keyboardType="numeric"
+                              selectTextOnFocus
+                            />
+                          </View>
+                          {exercise.category === 'sports' && (
+                            <View style={styles.inputField}>
+                              <Text style={styles.inputLabel}>Distance (km)</Text>
+            <TextInput
+                                style={styles.numberInput}
+                                value={exercise.distance?.toString() || ''}
+                                onChangeText={(text) => {
+                                  const updatedExercises = [...selectedExercises];
+                                  updatedExercises[index].distance = parseInt(text) || 0;
+                                  setSelectedExercises(updatedExercises);
+                                }}
+              keyboardType="numeric"
+                                selectTextOnFocus
+            />
+          </View>
+                          )}
+                        </View>
+                      )}
+                      
+                      {exercise.category === 'other' && (
+                        <View style={styles.inputRow}>
+                          <View style={styles.inputField}>
+                            <Text style={styles.inputLabel}>Duration (min)</Text>
+            <TextInput
+                              style={styles.numberInput}
+                              value={exercise.duration?.toString() || ''}
+                              onChangeText={(text) => {
+                                const updatedExercises = [...selectedExercises];
+                                updatedExercises[index].duration = parseInt(text) || 0;
+                                setSelectedExercises(updatedExercises);
+                              }}
+                              keyboardType="numeric"
+                              selectTextOnFocus
+            />
+          </View>
+                        </View>
+                      )}
                     </View>
                     <TouchableOpacity
                       onPress={() => handleRemoveExercise(index)}
@@ -254,7 +454,7 @@ const QuickWorkoutLogScreen: React.FC<QuickWorkoutLogScreenProps> = ({
             </View>
           )}
         </View>
-        </ScrollView>
+      </ScrollView>
 
         <View style={styles.footer}>
           <TouchableOpacity
@@ -556,6 +756,59 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#333',
     marginBottom: 12,
+  },
+  exerciseInputs: {
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#F0F0F0',
+  },
+  inputRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+  },
+  inputField: {
+    flex: 1,
+    minWidth: 80,
+  },
+  numberInput: {
+    backgroundColor: '#F8F9FA',
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    fontSize: 14,
+    textAlign: 'center',
+    marginTop: 4,
+  },
+  intensityButtons: {
+    flexDirection: 'row',
+    gap: 4,
+    marginTop: 4,
+  },
+  intensityButton: {
+    flex: 1,
+    paddingVertical: 6,
+    paddingHorizontal: 8,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    backgroundColor: '#F8F9FA',
+    alignItems: 'center',
+  },
+  intensityButtonActive: {
+    backgroundColor: '#007AFF',
+    borderColor: '#007AFF',
+  },
+  intensityButtonText: {
+    fontSize: 12,
+    color: '#666',
+    fontWeight: '500',
+  },
+  intensityButtonTextActive: {
+    color: '#FFFFFF',
   },
 });
 
