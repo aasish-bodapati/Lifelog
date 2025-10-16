@@ -71,7 +71,7 @@ const ExerciseSearchDropdown: React.FC<ExerciseSearchDropdownProps> = ({
 
   const handleSelect = (exercise: Exercise) => {
     setSelectedExercise(exercise);
-    setSearchQuery(exercise.name); // Show the selected exercise name in the input
+    setSearchQuery(''); // Clear the search query so input shows placeholder
     setIsOpen(false);
     onSelect(exercise);
   };
@@ -126,8 +126,8 @@ const ExerciseSearchDropdown: React.FC<ExerciseSearchDropdownProps> = ({
             autoCapitalize="none"
           />
         </View>
-        {selectedExercise && (
-          <TouchableOpacity onPress={handleClear} style={styles.clearButton}>
+        {searchQuery.length > 0 && (
+          <TouchableOpacity onPress={() => setSearchQuery('')} style={styles.clearButton}>
             <Ionicons name="close-circle" size={20} color={Colors.textSecondary} />
           </TouchableOpacity>
         )}
