@@ -14,6 +14,7 @@ import { useOnboarding } from '../../context/OnboardingContext';
 import { databaseService } from '../../services/databaseService';
 import { calculationService } from '../../services/calculationService';
 import { hapticService } from '../../services/hapticService';
+import { advancedAnalyticsService, DailyInsights, WeeklyTrends, ConsistencyStreak } from '../../services/advancedAnalyticsService';
 import SyncIndicator from '../../components/SyncIndicator';
 import PersonalizedHeader from '../../components/dashboard/PersonalizedHeader';
 import AnimatedCard from '../../components/AnimatedCard';
@@ -22,6 +23,9 @@ import MacrosCard from '../../components/dashboard/MacrosCard';
 import HydrationCard from '../../components/dashboard/HydrationCard';
 import BodyTrendCard from '../../components/dashboard/BodyTrendCard';
 import ConsistencyCard from '../../components/dashboard/ConsistencyCard';
+import AdvancedAnalyticsCard from '../../components/dashboard/AdvancedAnalyticsCard';
+import ProgressInsights from '../../components/analytics/ProgressInsights';
+import TrendChart from '../../components/analytics/TrendChart';
 
 const { width } = Dimensions.get('window');
 
@@ -57,6 +61,12 @@ const DashboardScreen: React.FC = () => {
   const [dailyTargets, setDailyTargets] = useState<DailyTargets | null>(null);
   const [streak, setStreak] = useState(0);
   const [lastSyncTime, setLastSyncTime] = useState<string | null>(null);
+  
+  // Advanced analytics state
+  const [dailyInsights, setDailyInsights] = useState<DailyInsights | null>(null);
+  const [weeklyTrends, setWeeklyTrends] = useState<WeeklyTrends | null>(null);
+  const [consistencyStreak, setConsistencyStreak] = useState<ConsistencyStreak | null>(null);
+  const [caloriesTrend, setCaloriesTrend] = useState<Array<{ date: string; value: number }>>([]);
 
   // Calculate daily targets from onboarding data
   const calculateTargets = useCallback(() => {
@@ -134,14 +144,57 @@ const DashboardScreen: React.FC = () => {
     }
   }, [userState.user?.id]);
 
+  // Load advanced analytics data
+  const loadAdvancedAnalytics = useCallback(async () => {
+    if (!userState.user?.id) return;
+
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      const weekStart = new Date();
+      weekStart.setDate(weekStart.getDate() - 6);
+      const weekStartStr = weekStart.toISOString().split('T')[0];
+
+      // Load daily insights
+      const dailyData = await advancedAnalyticsService.getDailyInsights(userState.user.id, today);
+      setDailyInsights(dailyData);
+
+      // Load weekly trends
+      const weeklyData = await advancedAnalyticsService.getWeeklyTrends(userState.user.id, weekStartStr);
+      setWeeklyTrends(weeklyData);
+
+      // Load consistency streak
+      const streakData = await advancedAnalyticsService.getConsistencyStreak(userState.user.id);
+      setConsistencyStreak(streakData);
+      setStreak(streakData.current_streak);
+
+      // Load calories trend for last 7 days
+      const trendData: Array<{ date: string; value: number }> = [];
+      for (let i = 6; i >= 0; i--) {
+        const date = new Date();
+        date.setDate(date.getDate() - i);
+        const dateStr = date.toISOString().split('T')[0];
+        
+        const dayData = await advancedAnalyticsService.getDailyInsights(userState.user.id, dateStr);
+        trendData.push({
+          date: dateStr,
+          value: dayData.total_calories,
+        });
+      }
+      setCaloriesTrend(trendData);
+
+    } catch (error) {
+      console.error('Error loading advanced analytics:', error);
+    }
+  }, [userState.user?.id]);
 
   // Load data on mount and when user changes
   useEffect(() => {
     if (userState.user) {
       calculateTargets();
       loadTodayData();
+      loadAdvancedAnalytics();
     }
-  }, [userState.user, calculateTargets, loadTodayData]);
+  }, [userState.user, calculateTargets, loadTodayData, loadAdvancedAnalytics]);
 
   // Update last sync time when sync completes
   useEffect(() => {
@@ -156,6 +209,7 @@ const DashboardScreen: React.FC = () => {
     
     try {
       await loadTodayData();
+      await loadAdvancedAnalytics();
       await forceSync();
       setLastSyncTime(new Date().toISOString());
     } catch (error) {
@@ -231,6 +285,42 @@ const DashboardScreen: React.FC = () => {
                 isLoading={isLoading}
               />
             </AnimatedCard>
+
+            {/* Advanced Analytics Card */}
+            {dailyInsights && weeklyTrends && consistencyStreak && (
+              <AnimatedCard delay={600}>
+                <AdvancedAnalyticsCard
+                  dailyInsights={dailyInsights}
+                  weeklyTrends={weeklyTrends}
+                  consistencyStreak={consistencyStreak}
+                  onViewDetails={() => console.log('View analytics details')}
+                />
+              </AnimatedCard>
+            )}
+
+            {/* Calories Trend Chart */}
+            {caloriesTrend.length > 0 && (
+              <AnimatedCard delay={700}>
+                <TrendChart
+                  title="Calories Trend"
+                  data={caloriesTrend}
+                  color="#FF6B6B"
+                  unit="kcal"
+                />
+              </AnimatedCard>
+            )}
+
+            {/* Progress Insights */}
+            {dailyInsights && weeklyTrends && consistencyStreak && (
+              <AnimatedCard delay={800}>
+                <ProgressInsights
+                  dailyInsights={dailyInsights}
+                  weeklyTrends={weeklyTrends}
+                  consistencyStreak={consistencyStreak}
+                  onInsightPress={(insight) => console.log('Insight pressed:', insight)}
+                />
+              </AnimatedCard>
+            )}
           </View>
         </View>
       </ScrollView>
