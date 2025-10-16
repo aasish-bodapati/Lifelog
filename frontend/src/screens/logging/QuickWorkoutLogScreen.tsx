@@ -32,8 +32,9 @@ const QuickWorkoutLogScreen: React.FC<QuickWorkoutLogScreenProps> = ({
   const [isLoading, setIsLoading] = useState(false);
 
   // Form state
-  const [duration, setDuration] = useState('');
-  const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(null);
+  const [selectedExercises, setSelectedExercises] = useState<Array<Exercise & { duration: string }>>([]);
+  const [currentExercise, setCurrentExercise] = useState<Exercise | null>(null);
+  const [currentDuration, setCurrentDuration] = useState('');
 
   // Recent workouts for autofill
   const [recentWorkouts, setRecentWorkouts] = useState<LocalWorkout[]>([]);
@@ -54,12 +55,39 @@ const QuickWorkoutLogScreen: React.FC<QuickWorkoutLogScreenProps> = ({
   };
 
   const handleQuickFill = (workout: LocalWorkout) => {
-    setDuration(workout.duration_minutes?.toString() || '');
-    setSelectedExercise(null); // Clear selected exercise when using quick fill
+    // For quick fill, we'll add the workout as a single exercise
+    if (workout.name && workout.duration_minutes) {
+      const quickExercise: Exercise & { duration: string } = {
+        id: 'quick-' + Date.now(),
+        name: workout.name,
+        category: 'other',
+        muscleGroups: [],
+        equipment: 'other',
+        difficulty: 'beginner',
+        duration: workout.duration_minutes.toString(),
+      };
+      setSelectedExercises(prev => [...prev, quickExercise]);
+    }
   };
 
   const handleExerciseSelect = (exercise: Exercise) => {
-    setSelectedExercise(exercise);
+    setCurrentExercise(exercise);
+  };
+
+  const handleAddExercise = () => {
+    if (currentExercise && currentDuration.trim()) {
+      const newExercise = {
+        ...currentExercise,
+        duration: currentDuration.trim(),
+      };
+      setSelectedExercises(prev => [...prev, newExercise]);
+      setCurrentExercise(null);
+      setCurrentDuration('');
+    }
+  };
+
+  const handleRemoveExercise = (index: number) => {
+    setSelectedExercises(prev => prev.filter((_, i) => i !== index));
   };
 
   const getCategoryColor = (category: Exercise['category']) => {
@@ -87,24 +115,28 @@ const QuickWorkoutLogScreen: React.FC<QuickWorkoutLogScreenProps> = ({
       return;
     }
 
-    if (!selectedExercise) {
-      toastService.error('Error', 'Please select an exercise');
-      return;
-    }
-
-    if (!duration.trim()) {
-      toastService.error('Error', 'Please enter the duration for this exercise');
+    if (selectedExercises.length === 0) {
+      toastService.error('Error', 'Please add at least one exercise');
       return;
     }
 
     setIsLoading(true);
 
     try {
+      // Calculate total duration
+      const totalDuration = selectedExercises.reduce((sum, exercise) => sum + parseInt(exercise.duration), 0);
+      
+      // Create workout name from exercises
+      const workoutName = selectedExercises.length === 1 
+        ? selectedExercises[0].name 
+        : `${selectedExercises[0].name} + ${selectedExercises.length - 1} more`;
+
       const workoutData = {
         user_id: userState.user.id,
-        name: selectedExercise.name,
+        name: workoutName,
         date: new Date().toISOString().split('T')[0],
-        duration_minutes: duration ? parseInt(duration) : undefined,
+        duration_minutes: totalDuration,
+        notes: `Exercises: ${selectedExercises.map(ex => `${ex.name} (${ex.duration}min)`).join(', ')}`,
       };
 
       await databaseService.saveWorkout(workoutData);
@@ -161,78 +193,137 @@ const QuickWorkoutLogScreen: React.FC<QuickWorkoutLogScreenProps> = ({
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Workout Details</Text>
           
-          <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Exercise *</Text>
-            <ExerciseSearchDropdown
-              value={selectedExercise?.id || ''}
-              onSelect={handleExerciseSelect}
-              placeholder="Search and select an exercise..."
-              style={styles.exerciseDropdown}
-            />
-          </View>
-
-          {/* Selected Exercise Card */}
-          {selectedExercise && (
-            <View style={styles.selectedExerciseCard}>
-              <View style={styles.exerciseCardHeader}>
-                <View style={styles.exerciseIconContainer}>
-                  <Ionicons
-                    name={getWorkoutIcon(selectedExercise.name) as any}
-                    size={24}
-                    color={getWorkoutColor(selectedExercise.name)}
-                  />
-                </View>
-                <View style={styles.exerciseInfo}>
-                  <Text style={styles.exerciseName}>{selectedExercise.name}</Text>
-                  <View style={styles.exerciseMeta}>
-                    <View style={[styles.categoryBadge, { backgroundColor: getCategoryColor(selectedExercise.category) + '20' }]}>
-                      <Text style={[styles.categoryText, { color: getCategoryColor(selectedExercise.category) }]}>
-                        {selectedExercise.category}
-                      </Text>
+          {/* Selected Exercises List */}
+          {selectedExercises.length > 0 && (
+            <View style={styles.selectedExercisesContainer}>
+              <Text style={styles.selectedExercisesTitle}>Selected Exercises ({selectedExercises.length})</Text>
+              {selectedExercises.map((exercise, index) => (
+                <View key={index} style={styles.selectedExerciseCard}>
+                  <View style={styles.exerciseCardHeader}>
+                    <View style={styles.exerciseIconContainer}>
+                      <Ionicons
+                        name={getWorkoutIcon(exercise.name) as any}
+                        size={24}
+                        color={getWorkoutColor(exercise.name)}
+                      />
                     </View>
-                    <View style={[styles.difficultyBadge, { backgroundColor: getDifficultyColor(selectedExercise.difficulty) + '20' }]}>
-                      <Text style={[styles.difficultyText, { color: getDifficultyColor(selectedExercise.difficulty) }]}>
-                        {selectedExercise.difficulty}
-                      </Text>
+                    <View style={styles.exerciseInfo}>
+                      <Text style={styles.exerciseName}>{exercise.name}</Text>
+                      <View style={styles.exerciseMeta}>
+                        <View style={[styles.categoryBadge, { backgroundColor: getCategoryColor(exercise.category) + '20' }]}>
+                          <Text style={[styles.categoryText, { color: getCategoryColor(exercise.category) }]}>
+                            {exercise.category}
+                          </Text>
+                        </View>
+                        <View style={[styles.difficultyBadge, { backgroundColor: getDifficultyColor(exercise.difficulty) + '20' }]}>
+                          <Text style={[styles.difficultyText, { color: getDifficultyColor(exercise.difficulty) }]}>
+                            {exercise.difficulty}
+                          </Text>
+                        </View>
+                      </View>
                     </View>
+                    <View style={styles.exerciseDuration}>
+                      <Text style={styles.durationText}>{exercise.duration} min</Text>
+                    </View>
+                    <TouchableOpacity
+                      onPress={() => handleRemoveExercise(index)}
+                      style={styles.removeExerciseButton}
+                    >
+                      <Ionicons name="close-circle" size={24} color="#DC3545" />
+                    </TouchableOpacity>
                   </View>
                 </View>
-                <TouchableOpacity
-                  onPress={() => setSelectedExercise(null)}
-                  style={styles.removeExerciseButton}
-                >
-                  <Ionicons name="close-circle" size={24} color="#DC3545" />
-                </TouchableOpacity>
-              </View>
-              
-              {selectedExercise.description && (
-                <Text style={styles.exerciseDescription}>{selectedExercise.description}</Text>
-              )}
-              
-              <View style={styles.exerciseDetails}>
-                <View style={styles.exerciseDetailItem}>
-                  <Ionicons name="fitness" size={16} color="#666" />
-                  <Text style={styles.exerciseDetailText}>{selectedExercise.equipment}</Text>
-                </View>
-                <View style={styles.exerciseDetailItem}>
-                  <Ionicons name="body" size={16} color="#666" />
-                  <Text style={styles.exerciseDetailText}>{selectedExercise.muscleGroups.join(', ')}</Text>
-                </View>
-              </View>
-              
-              {/* Duration Input */}
-              <View style={styles.durationInputContainer}>
-                <Text style={styles.durationLabel}>Duration (minutes)</Text>
-                <TextInput
-                  style={styles.durationInput}
-                  value={duration}
-                  onChangeText={setDuration}
-                  placeholder="30"
-                  keyboardType="numeric"
-                />
-              </View>
+              ))}
             </View>
           )}
+
+          {/* Add New Exercise */}
+          <View style={styles.addExerciseSection}>
+            <Text style={styles.addExerciseTitle}>Add Exercise</Text>
+            
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Exercise *</Text>
+              <ExerciseSearchDropdown
+                value={currentExercise?.id || ''}
+                onSelect={handleExerciseSelect}
+                placeholder="Search and select an exercise..."
+                style={styles.exerciseDropdown}
+              />
+            </View>
+
+            {/* Current Exercise Card */}
+            {currentExercise && (
+              <View style={styles.currentExerciseCard}>
+                <View style={styles.exerciseCardHeader}>
+                  <View style={styles.exerciseIconContainer}>
+                    <Ionicons
+                      name={getWorkoutIcon(currentExercise.name) as any}
+                      size={24}
+                      color={getWorkoutColor(currentExercise.name)}
+                    />
+                  </View>
+                  <View style={styles.exerciseInfo}>
+                    <Text style={styles.exerciseName}>{currentExercise.name}</Text>
+                    <View style={styles.exerciseMeta}>
+                      <View style={[styles.categoryBadge, { backgroundColor: getCategoryColor(currentExercise.category) + '20' }]}>
+                        <Text style={[styles.categoryText, { color: getCategoryColor(currentExercise.category) }]}>
+                          {currentExercise.category}
+                        </Text>
+                      </View>
+                      <View style={[styles.difficultyBadge, { backgroundColor: getDifficultyColor(currentExercise.difficulty) + '20' }]}>
+                        <Text style={[styles.difficultyText, { color: getDifficultyColor(currentExercise.difficulty) }]}>
+                          {currentExercise.difficulty}
+                        </Text>
+                      </View>
+                    </View>
+                  </View>
+                  <TouchableOpacity
+                    onPress={() => setCurrentExercise(null)}
+                    style={styles.removeExerciseButton}
+                  >
+                    <Ionicons name="close-circle" size={24} color="#DC3545" />
+                  </TouchableOpacity>
+                </View>
+                
+                {currentExercise.description && (
+                  <Text style={styles.exerciseDescription}>{currentExercise.description}</Text>
+                )}
+                
+                <View style={styles.exerciseDetails}>
+                  <View style={styles.exerciseDetailItem}>
+                    <Ionicons name="fitness" size={16} color="#666" />
+                    <Text style={styles.exerciseDetailText}>{currentExercise.equipment}</Text>
+                  </View>
+                  <View style={styles.exerciseDetailItem}>
+                    <Ionicons name="body" size={16} color="#666" />
+                    <Text style={styles.exerciseDetailText}>{currentExercise.muscleGroups.join(', ')}</Text>
+                  </View>
+                </View>
+                
+                {/* Duration Input */}
+                <View style={styles.durationInputContainer}>
+                  <Text style={styles.durationLabel}>Duration (minutes)</Text>
+                  <TextInput
+                    style={styles.durationInput}
+                    value={currentDuration}
+                    onChangeText={setCurrentDuration}
+                    placeholder="30"
+                    keyboardType="numeric"
+                  />
+                </View>
+
+                {/* Add Exercise Button */}
+                <TouchableOpacity
+                  onPress={handleAddExercise}
+                  style={styles.addExerciseButton}
+                  disabled={!currentDuration.trim()}
+                >
+                  <Ionicons name="add" size={20} color="#FFFFFF" />
+                  <Text style={styles.addExerciseButtonText}>Add to Workout</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          </View>
         </View>
         </ScrollView>
 
@@ -496,6 +587,59 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     fontSize: 16,
     textAlign: 'center',
+  },
+  selectedExercisesContainer: {
+    marginBottom: 20,
+  },
+  selectedExercisesTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 12,
+  },
+  exerciseDuration: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 8,
+  },
+  durationText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#007AFF',
+  },
+  addExerciseSection: {
+    marginTop: 20,
+  },
+  addExerciseTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 12,
+  },
+  currentExerciseCard: {
+    backgroundColor: '#F8F9FA',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 2,
+    borderColor: '#007AFF',
+    borderStyle: 'dashed',
+  },
+  addExerciseButton: {
+    backgroundColor: '#007AFF',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    marginTop: 12,
+  },
+  addExerciseButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
+    marginLeft: 8,
   },
 });
 
