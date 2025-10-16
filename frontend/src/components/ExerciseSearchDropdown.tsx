@@ -34,12 +34,12 @@ const ExerciseSearchDropdown: React.FC<ExerciseSearchDropdownProps> = ({
   const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(null);
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Load initial popular exercises
+  // Load initial popular exercises when dropdown opens with no search
   useEffect(() => {
-    if (isOpen && searchResults.length === 0) {
+    if (isOpen && searchQuery.length === 0 && searchResults.length === 0) {
       setSearchResults(exerciseLibraryService.getPopularExercises());
     }
-  }, [isOpen]);
+  }, [isOpen, searchQuery]);
 
   // Search exercises with debounce
   useEffect(() => {
@@ -71,7 +71,7 @@ const ExerciseSearchDropdown: React.FC<ExerciseSearchDropdownProps> = ({
 
   const handleSelect = (exercise: Exercise) => {
     setSelectedExercise(exercise);
-    setSearchQuery('');
+    setSearchQuery(exercise.name); // Show the selected exercise name in the input
     setIsOpen(false);
     onSelect(exercise);
   };
@@ -79,6 +79,7 @@ const ExerciseSearchDropdown: React.FC<ExerciseSearchDropdownProps> = ({
   const handleClear = () => {
     setSelectedExercise(null);
     setSearchQuery('');
+    setIsOpen(false);
     onSelect({} as Exercise); // Clear selection
   };
 
@@ -104,15 +105,26 @@ const ExerciseSearchDropdown: React.FC<ExerciseSearchDropdownProps> = ({
 
   return (
     <View style={[styles.container, style]}>
-      <TouchableOpacity
-        style={styles.inputContainer}
-        onPress={() => setIsOpen(true)}
-      >
+      <View style={styles.inputContainer}>
         <View style={styles.inputContent}>
           <Ionicons name="search" size={20} color={Colors.textSecondary} />
-          <Text style={[styles.inputText, !selectedExercise && styles.placeholder]}>
-            {selectedExercise ? selectedExercise.name : placeholder}
-          </Text>
+          <TextInput
+            style={styles.textInput}
+            value={searchQuery}
+            onChangeText={(text) => {
+              setSearchQuery(text);
+              setIsOpen(text.length > 0);
+            }}
+            onFocus={() => {
+              if (searchResults.length > 0) {
+                setIsOpen(true);
+              }
+            }}
+            placeholder={placeholder}
+            placeholderTextColor={Colors.textSecondary}
+            autoCorrect={false}
+            autoCapitalize="none"
+          />
         </View>
         {selectedExercise && (
           <TouchableOpacity onPress={handleClear} style={styles.clearButton}>
@@ -120,30 +132,10 @@ const ExerciseSearchDropdown: React.FC<ExerciseSearchDropdownProps> = ({
           </TouchableOpacity>
         )}
         <Ionicons name="chevron-down" size={16} color={Colors.textSecondary} />
-      </TouchableOpacity>
+      </View>
 
       {isOpen && (
         <View style={styles.dropdownContainer}>
-          <View style={styles.searchInputContainer}>
-            <Ionicons name="search" size={16} color={Colors.textSecondary} />
-            <TextInput
-              style={styles.searchInput}
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-              placeholder="Search exercises..."
-              placeholderTextColor={Colors.textSecondary}
-              autoFocus
-            />
-            {searchQuery.length > 0 && (
-              <TouchableOpacity
-                onPress={() => setSearchQuery('')}
-                style={styles.clearSearchButton}
-              >
-                <Ionicons name="close-circle" size={16} color={Colors.textSecondary} />
-              </TouchableOpacity>
-            )}
-          </View>
-
           <ScrollView
             style={styles.exercisesList}
             showsVerticalScrollIndicator={false}
@@ -210,9 +202,12 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   inputContainer: {
-    ...CommonStyles.card,
     flexDirection: 'row',
     alignItems: 'center',
+    backgroundColor: Colors.background,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: Layout.radiusMedium,
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.sm,
     minHeight: 48,
@@ -221,6 +216,12 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
+  },
+  textInput: {
+    ...Typography.body,
+    marginLeft: Spacing.sm,
+    flex: 1,
+    paddingVertical: 0,
   },
   inputText: {
     ...Typography.body,
@@ -247,25 +248,9 @@ const styles = StyleSheet.create({
     maxHeight: 300,
     marginTop: Spacing.xs,
   },
-  searchInputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: Colors.background,
-    borderRadius: Layout.radiusSmall,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: Spacing.xs,
-    margin: Spacing.sm,
-  },
-  searchInput: {
-    ...Typography.body,
-    flex: 1,
-    marginLeft: Spacing.sm,
-  },
-  clearSearchButton: {
-    marginLeft: Spacing.sm,
-  },
   exercisesList: {
     maxHeight: 200,
+    paddingVertical: Spacing.sm,
   },
   exerciseItem: {
     backgroundColor: Colors.background,
