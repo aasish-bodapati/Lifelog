@@ -269,7 +269,7 @@ const QuickWorkoutLogScreen: React.FC<QuickWorkoutLogScreenProps> = ({
             disabled={isLoading}
           >
             <Text style={styles.saveButtonText}>
-              {isLoading ? 'Saving...' : 'Save Workout'}
+              {isLoading ? 'Logging...' : 'Log Workout'}
             </Text>
           </TouchableOpacity>
         </View>
