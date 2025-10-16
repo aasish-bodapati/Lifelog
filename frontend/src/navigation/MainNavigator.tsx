@@ -15,6 +15,7 @@ import WorkoutLogScreen from '../screens/log/WorkoutLogScreen';
 import NutritionLogScreen from '../screens/log/NutritionLogScreen';
 import BodyStatsLogScreen from '../screens/log/BodyStatsLogScreen';
 import SettingsScreen from '../screens/settings/SettingsScreen';
+import NotificationSettingsScreen from '../screens/settings/NotificationSettingsScreen';
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
 const Stack = createStackNavigator<MainStackParamList>();
@@ -90,6 +91,11 @@ const MainNavigator: React.FC = () => {
         name="Settings" 
         component={SettingsScreen}
         options={{ headerShown: true, title: 'Settings' }}
+      />
+      <Stack.Screen 
+        name="NotificationSettings" 
+        component={NotificationSettingsScreen}
+        options={{ headerShown: true, title: 'Notification Settings' }}
       />
     </Stack.Navigator>
   );

@@ -14,6 +14,7 @@ import { databaseService, LocalNutritionLog } from '../../services/databaseServi
 import { useUser } from '../../context/UserContext';
 import { useSync } from '../../context/SyncContext';
 import { toastService } from '../../services/toastService';
+import { notificationService } from '../../services/notificationService';
 
 interface QuickMealLogScreenProps {
   onClose: () => void;
@@ -92,6 +93,20 @@ const QuickMealLogScreen: React.FC<QuickMealLogScreenProps> = ({
       
       // Trigger sync
       await forceSync();
+      
+      // Schedule follow-up reminder if user hasn't logged other meals today
+      const today = new Date().toISOString().split('T')[0];
+      const todayMeals = await databaseService.getNutritionLogs(userState.user.id, today, 100);
+      const otherMeals = todayMeals.filter(meal => meal.meal_type !== selectedMealType);
+      
+      if (otherMeals.length === 0) {
+        // Schedule reminder for other meal types
+        const otherMealTypes = ['breakfast', 'lunch', 'dinner', 'snack'].filter(type => type !== selectedMealType);
+        const nextMealType = otherMealTypes[0];
+        if (nextMealType) {
+          await notificationService.scheduleMealLoggingReminder(nextMealType, 30); // 30 minutes later
+        }
+      }
       
       toastService.success('Success', 'Meal logged successfully!');
       onSuccess?.();

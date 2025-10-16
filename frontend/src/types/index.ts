@@ -196,4 +196,5 @@ export type MainStackParamList = {
   NutritionLog: { logId?: number };
   BodyStatsLog: { statId?: number };
   Settings: undefined;
+  NotificationSettings: undefined;
 };
