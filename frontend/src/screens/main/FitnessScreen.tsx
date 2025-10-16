@@ -15,8 +15,10 @@ import { databaseService, LocalWorkout } from '../../services/databaseService';
 import { apiService } from '../../services/api';
 import { hapticService } from '../../services/hapticService';
 import { toastService } from '../../services/toastService';
+import { exerciseProgressService, ExerciseProgress, ExerciseStats } from '../../services/exerciseProgressService';
 import QuickWorkoutLogScreen from '../logging/QuickWorkoutLogScreen';
 import LoadingSkeleton from '../../components/LoadingSkeleton';
+import ExerciseProgressCard from '../../components/dashboard/ExerciseProgressCard';
 
 const FitnessScreen: React.FC = () => {
   const { state: userState } = useUser();
@@ -29,6 +31,10 @@ const FitnessScreen: React.FC = () => {
     totalDuration: 0,
     avgDuration: 0,
   });
+  
+  // Exercise progress state
+  const [exerciseProgress, setExerciseProgress] = useState<ExerciseProgress[]>([]);
+  const [exerciseStats, setExerciseStats] = useState<ExerciseStats | null>(null);
 
   useEffect(() => {
     loadData();
@@ -65,6 +71,17 @@ const FitnessScreen: React.FC = () => {
         }
       } catch (error) {
         console.log('Backend workouts unavailable, using local data');
+      }
+
+      // Load exercise progress data
+      try {
+        const progressData = await exerciseProgressService.getExerciseProgress(userId, 10);
+        setExerciseProgress(progressData);
+        
+        const statsData = await exerciseProgressService.getExerciseStats(userId);
+        setExerciseStats(statsData);
+      } catch (error) {
+        console.error('Error loading exercise progress:', error);
       }
     } catch (error) {
       console.error('Error loading fitness data:', error);
@@ -205,6 +222,17 @@ const FitnessScreen: React.FC = () => {
           </View>
         </View>
 
+        {/* Exercise Progress */}
+        {exerciseProgress.length > 0 && (
+          <View style={styles.section}>
+            <ExerciseProgressCard
+              exerciseProgress={exerciseProgress}
+              onViewAll={() => console.log('View all exercises')}
+              onExercisePress={(exerciseName) => console.log('Exercise pressed:', exerciseName)}
+            />
+          </View>
+        )}
+
         {/* Recent Workouts */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
@@ -276,6 +304,49 @@ const FitnessScreen: React.FC = () => {
             </View>
           )}
         </View>
+
+        {/* Exercise Stats */}
+        {exerciseStats && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Fitness Statistics</Text>
+            <View style={styles.statsCard}>
+              <View style={styles.statsRow}>
+                <View style={styles.statItem}>
+                  <Text style={styles.statValue}>{exerciseStats.total_exercises}</Text>
+                  <Text style={styles.statLabel}>Total Exercises</Text>
+                </View>
+                <View style={styles.statItem}>
+                  <Text style={styles.statValue}>{exerciseStats.total_workouts}</Text>
+                  <Text style={styles.statLabel}>Total Workouts</Text>
+                </View>
+                <View style={styles.statItem}>
+                  <Text style={styles.statValue}>{exerciseStats.current_streak}</Text>
+                  <Text style={styles.statLabel}>Current Streak</Text>
+                </View>
+              </View>
+              <View style={styles.statsRow}>
+                <View style={styles.statItem}>
+                  <Text style={styles.statValue}>{exerciseStats.total_weight_lifted}kg</Text>
+                  <Text style={styles.statLabel}>Weight Lifted</Text>
+                </View>
+                <View style={styles.statItem}>
+                  <Text style={styles.statValue}>{exerciseStats.total_distance_covered}km</Text>
+                  <Text style={styles.statLabel}>Distance</Text>
+                </View>
+                <View style={styles.statItem}>
+                  <Text style={styles.statValue}>{exerciseStats.total_duration}h</Text>
+                  <Text style={styles.statLabel}>Duration</Text>
+                </View>
+              </View>
+              {exerciseStats.most_frequent_exercise !== 'None' && (
+                <View style={styles.favoriteExercise}>
+                  <Text style={styles.favoriteLabel}>Favorite Exercise:</Text>
+                  <Text style={styles.favoriteValue}>{exerciseStats.most_frequent_exercise}</Text>
+                </View>
+              )}
+            </View>
+          </View>
+        )}
 
         {/* Tips Section */}
         {workouts.length > 0 && (
@@ -549,6 +620,54 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#666666',
     lineHeight: 18,
+  },
+  statsCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  statsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+  statItem: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  statValue: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#1A1A1A',
+    marginBottom: 4,
+  },
+  statLabel: {
+    fontSize: 12,
+    color: '#666666',
+    textAlign: 'center',
+  },
+  favoriteExercise: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#F0F0F0',
+  },
+  favoriteLabel: {
+    fontSize: 14,
+    color: '#666666',
+    marginRight: 8,
+  },
+  favoriteValue: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#007AFF',
   },
 });
 

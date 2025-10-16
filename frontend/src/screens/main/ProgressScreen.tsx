@@ -18,11 +18,14 @@ import { databaseService } from '../../services/databaseService';
 import { apiService } from '../../services/api';
 import { hapticService } from '../../services/hapticService';
 import { calculationService } from '../../services/calculationService';
+import { advancedAnalyticsService, DailyInsights, WeeklyTrends, ConsistencyStreak, ProgressMetrics } from '../../services/advancedAnalyticsService';
 import SyncIndicator from '../../components/SyncIndicator';
 import WeeklySummaryCard from '../../components/progress/WeeklySummaryCard';
-import TrendChart from '../../components/progress/TrendChart';
+import TrendChart from '../../components/analytics/TrendChart';
 import AchievementCard from '../../components/progress/AchievementCard';
 import ProgressMessage from '../../components/progress/ProgressMessage';
+import ProgressInsights from '../../components/analytics/ProgressInsights';
+import AdvancedAnalyticsCard from '../../components/dashboard/AdvancedAnalyticsCard';
 
 const { width } = Dimensions.get('window');
 
@@ -69,6 +72,14 @@ const ProgressScreen: React.FC = () => {
   const [dailyData, setDailyData] = useState<DailyData[]>([]);
   const [achievements, setAchievements] = useState<Achievement[]>([]);
   const [progressMessage, setProgressMessage] = useState<string | null>(null);
+  
+  // Advanced analytics state
+  const [dailyInsights, setDailyInsights] = useState<DailyInsights | null>(null);
+  const [weeklyTrends, setWeeklyTrends] = useState<WeeklyTrends | null>(null);
+  const [consistencyStreak, setConsistencyStreak] = useState<ConsistencyStreak | null>(null);
+  const [progressMetrics, setProgressMetrics] = useState<ProgressMetrics | null>(null);
+  const [caloriesTrend, setCaloriesTrend] = useState<Array<{ date: string; value: number }>>([]);
+  const [weightTrend, setWeightTrend] = useState<Array<{ date: string; value: number }>>([]);
 
   // Load progress data
   const loadProgressData = useCallback(async () => {
@@ -93,13 +104,42 @@ const ProgressScreen: React.FC = () => {
           break;
       }
 
-      // Load weekly data
+      // Load advanced analytics
+      const today = new Date().toISOString().split('T')[0];
       const weekStart = startDate.toISOString().split('T')[0];
+      
       try {
-        const weekly = await apiService.getWeeklyAnalytics(userState.user.id, weekStart);
-        setWeeklyData(weekly);
+        // Load daily insights
+        const dailyData = await advancedAnalyticsService.getDailyInsights(userState.user.id, today);
+        setDailyInsights(dailyData);
+
+        // Load weekly trends
+        const weeklyData = await advancedAnalyticsService.getWeeklyTrends(userState.user.id, weekStart);
+        setWeeklyTrends(weeklyData);
+        setWeeklyData(weeklyData); // Also set for backward compatibility
+
+        // Load consistency streak
+        const streakData = await advancedAnalyticsService.getConsistencyStreak(userState.user.id);
+        setConsistencyStreak(streakData);
+
+        // Load progress metrics
+        const days = selectedPeriod === 'week' ? 7 : selectedPeriod === 'month' ? 30 : 365;
+        const progressData = await advancedAnalyticsService.getProgressMetrics(userState.user.id, days);
+        setProgressMetrics(progressData);
+
+        // Set trend data
+        setCaloriesTrend(progressData.calories_trend.map((value, index) => ({
+          date: new Date(Date.now() - (days - 1 - index) * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+          value: value
+        })));
+        
+        setWeightTrend(progressData.weight_trend.map((value, index) => ({
+          date: new Date(Date.now() - (days - 1 - index) * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+          value: value
+        })));
+
       } catch (error) {
-        console.log('Using local data for weekly analytics');
+        console.log('Advanced analytics unavailable, using local data');
         // Fallback to local data
         setWeeklyData(null);
       }
@@ -377,6 +417,26 @@ const ProgressScreen: React.FC = () => {
             <ProgressMessage message={progressMessage} />
           )}
 
+          {/* Advanced Analytics Card */}
+          {dailyInsights && weeklyTrends && consistencyStreak && (
+            <AdvancedAnalyticsCard
+              dailyInsights={dailyInsights}
+              weeklyTrends={weeklyTrends}
+              consistencyStreak={consistencyStreak}
+              onViewDetails={() => console.log('View detailed analytics')}
+            />
+          )}
+
+          {/* Progress Insights */}
+          {dailyInsights && weeklyTrends && consistencyStreak && (
+            <ProgressInsights
+              dailyInsights={dailyInsights}
+              weeklyTrends={weeklyTrends}
+              consistencyStreak={consistencyStreak}
+              onInsightPress={(insight) => console.log('Insight pressed:', insight)}
+            />
+          )}
+
           {/* Weekly Summary */}
           {weeklyData && (
             <WeeklySummaryCard data={weeklyData} />
@@ -386,9 +446,10 @@ const ProgressScreen: React.FC = () => {
           <View style={styles.chartsContainer}>
             <Text style={styles.sectionTitle}>Trends ({getPeriodText()})</Text>
             
+            {/* Use advanced analytics data if available, otherwise fallback to local data */}
             <TrendChart
               title="Calories"
-              data={dailyData.map(d => ({ date: d.date, value: d.total_calories }))}
+              data={caloriesTrend.length > 0 ? caloriesTrend : dailyData.map(d => ({ date: d.date, value: d.total_calories }))}
               color="#FF6B6B"
               unit="kcal"
             />
@@ -406,7 +467,50 @@ const ProgressScreen: React.FC = () => {
               color="#45B7D1"
               unit=""
             />
+
+            {/* Weight trend chart if data is available */}
+            {weightTrend.length > 0 && weightTrend.some(w => w.value > 0) && (
+              <TrendChart
+                title="Weight"
+                data={weightTrend.filter(w => w.value > 0)}
+                color="#9B59B6"
+                unit="kg"
+              />
+            )}
           </View>
+
+          {/* Progress Summary */}
+          {progressMetrics && (
+            <View style={styles.progressSummaryContainer}>
+              <Text style={styles.sectionTitle}>Progress Summary</Text>
+              <View style={styles.progressSummaryCard}>
+                <View style={styles.progressRow}>
+                  <View style={styles.progressItem}>
+                    <Text style={styles.progressValue}>{progressMetrics.avg_daily_calories.toFixed(0)}</Text>
+                    <Text style={styles.progressLabel}>Avg Daily Calories</Text>
+                  </View>
+                  <View style={styles.progressItem}>
+                    <Text style={[styles.progressValue, progressMetrics.weight_change < 0 ? styles.weightLoss : styles.weightGain]}>
+                      {progressMetrics.weight_change > 0 ? '+' : ''}{progressMetrics.weight_change.toFixed(1)}kg
+                    </Text>
+                    <Text style={styles.progressLabel}>Weight Change</Text>
+                  </View>
+                </View>
+                <View style={styles.progressRow}>
+                  <View style={styles.progressItem}>
+                    <Text style={styles.progressValue}>{progressMetrics.daily_summaries.length}</Text>
+                    <Text style={styles.progressLabel}>Days Tracked</Text>
+                  </View>
+                  <View style={styles.progressItem}>
+                    <Text style={styles.progressValue}>
+                      {progressMetrics.daily_summaries.reduce((sum, d) => sum + d.workout_count, 0)}
+                    </Text>
+                    <Text style={styles.progressLabel}>Total Workouts</Text>
+                  </View>
+                </View>
+              </View>
+            </View>
+          )}
 
           {/* Achievements */}
           <View style={styles.achievementsContainer}>
@@ -488,6 +592,45 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#1A1A1A',
     marginBottom: 16,
+  },
+  progressSummaryContainer: {
+    marginBottom: 24,
+  },
+  progressSummaryCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  progressRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+  progressItem: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  progressValue: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#1A1A1A',
+    marginBottom: 4,
+  },
+  progressLabel: {
+    fontSize: 12,
+    color: '#666666',
+    textAlign: 'center',
+  },
+  weightLoss: {
+    color: '#28A745',
+  },
+  weightGain: {
+    color: '#DC3545',
   },
   achievementsContainer: {
     marginBottom: 24,
