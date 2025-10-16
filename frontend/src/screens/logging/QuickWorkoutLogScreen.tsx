@@ -33,8 +33,6 @@ const QuickWorkoutLogScreen: React.FC<QuickWorkoutLogScreenProps> = ({
 
   // Form state
   const [selectedExercises, setSelectedExercises] = useState<Array<Exercise & { duration: string }>>([]);
-  const [currentExercise, setCurrentExercise] = useState<Exercise | null>(null);
-  const [currentDuration, setCurrentDuration] = useState('');
 
   // Recent workouts for autofill
   const [recentWorkouts, setRecentWorkouts] = useState<LocalWorkout[]>([]);
@@ -71,19 +69,12 @@ const QuickWorkoutLogScreen: React.FC<QuickWorkoutLogScreenProps> = ({
   };
 
   const handleExerciseSelect = (exercise: Exercise) => {
-    setCurrentExercise(exercise);
-  };
-
-  const handleAddExercise = () => {
-    if (currentExercise && currentDuration.trim()) {
-      const newExercise = {
-        ...currentExercise,
-        duration: currentDuration.trim(),
-      };
-      setSelectedExercises(prev => [...prev, newExercise]);
-      setCurrentExercise(null);
-      setCurrentDuration('');
-    }
+    // Automatically add the exercise with default duration
+    const newExercise = {
+      ...exercise,
+      duration: '30', // Default duration
+    };
+    setSelectedExercises(prev => [...prev, newExercise]);
   };
 
   const handleRemoveExercise = (index: number) => {
@@ -223,7 +214,18 @@ const QuickWorkoutLogScreen: React.FC<QuickWorkoutLogScreenProps> = ({
                       </View>
                     </View>
                     <View style={styles.exerciseDuration}>
-                      <Text style={styles.durationText}>{exercise.duration} min</Text>
+                      <TextInput
+                        style={styles.durationEditInput}
+                        value={exercise.duration}
+                        onChangeText={(text) => {
+                          const updatedExercises = [...selectedExercises];
+                          updatedExercises[index].duration = text;
+                          setSelectedExercises(updatedExercises);
+                        }}
+                        keyboardType="numeric"
+                        selectTextOnFocus
+                      />
+                      <Text style={styles.durationUnit}>min</Text>
                     </View>
                     <TouchableOpacity
                       onPress={() => handleRemoveExercise(index)}
@@ -242,87 +244,14 @@ const QuickWorkoutLogScreen: React.FC<QuickWorkoutLogScreenProps> = ({
             <Text style={styles.addExerciseTitle}>Add Exercise</Text>
             
             <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Exercise *</Text>
+              <Text style={styles.inputLabel}>Search and select exercises to add them automatically</Text>
               <ExerciseSearchDropdown
-                value={currentExercise?.id || ''}
+                value=""
                 onSelect={handleExerciseSelect}
                 placeholder="Search and select an exercise..."
                 style={styles.exerciseDropdown}
               />
             </View>
-
-            {/* Current Exercise Card */}
-            {currentExercise && (
-              <View style={styles.currentExerciseCard}>
-                <View style={styles.exerciseCardHeader}>
-                  <View style={styles.exerciseIconContainer}>
-                    <Ionicons
-                      name={getWorkoutIcon(currentExercise.name) as any}
-                      size={24}
-                      color={getWorkoutColor(currentExercise.name)}
-                    />
-                  </View>
-                  <View style={styles.exerciseInfo}>
-                    <Text style={styles.exerciseName}>{currentExercise.name}</Text>
-                    <View style={styles.exerciseMeta}>
-                      <View style={[styles.categoryBadge, { backgroundColor: getCategoryColor(currentExercise.category) + '20' }]}>
-                        <Text style={[styles.categoryText, { color: getCategoryColor(currentExercise.category) }]}>
-                          {currentExercise.category}
-                        </Text>
-                      </View>
-                      <View style={[styles.difficultyBadge, { backgroundColor: getDifficultyColor(currentExercise.difficulty) + '20' }]}>
-                        <Text style={[styles.difficultyText, { color: getDifficultyColor(currentExercise.difficulty) }]}>
-                          {currentExercise.difficulty}
-                        </Text>
-                      </View>
-                    </View>
-                  </View>
-                  <TouchableOpacity
-                    onPress={() => setCurrentExercise(null)}
-                    style={styles.removeExerciseButton}
-                  >
-                    <Ionicons name="close-circle" size={24} color="#DC3545" />
-                  </TouchableOpacity>
-                </View>
-                
-                {currentExercise.description && (
-                  <Text style={styles.exerciseDescription}>{currentExercise.description}</Text>
-                )}
-                
-                <View style={styles.exerciseDetails}>
-                  <View style={styles.exerciseDetailItem}>
-                    <Ionicons name="fitness" size={16} color="#666" />
-                    <Text style={styles.exerciseDetailText}>{currentExercise.equipment}</Text>
-                  </View>
-                  <View style={styles.exerciseDetailItem}>
-                    <Ionicons name="body" size={16} color="#666" />
-                    <Text style={styles.exerciseDetailText}>{currentExercise.muscleGroups.join(', ')}</Text>
-                  </View>
-                </View>
-                
-                {/* Duration Input */}
-                <View style={styles.durationInputContainer}>
-                  <Text style={styles.durationLabel}>Duration (minutes)</Text>
-                  <TextInput
-                    style={styles.durationInput}
-                    value={currentDuration}
-                    onChangeText={setCurrentDuration}
-                    placeholder="30"
-                    keyboardType="numeric"
-                  />
-                </View>
-
-                {/* Add Exercise Button */}
-                <TouchableOpacity
-                  onPress={handleAddExercise}
-                  style={styles.addExerciseButton}
-                  disabled={!currentDuration.trim()}
-                >
-                  <Ionicons name="add" size={20} color="#FFFFFF" />
-                  <Text style={styles.addExerciseButtonText}>Add to Workout</Text>
-                </TouchableOpacity>
-              </View>
-            )}
           </View>
         </View>
         </ScrollView>
@@ -598,14 +527,26 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   exerciseDuration: {
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 8,
   },
-  durationText: {
+  durationEditInput: {
     fontSize: 14,
     fontWeight: '600',
     color: '#007AFF',
+    textAlign: 'center',
+    minWidth: 40,
+    maxWidth: 60,
+    borderBottomWidth: 1,
+    borderBottomColor: '#007AFF',
+    paddingVertical: 2,
+  },
+  durationUnit: {
+    fontSize: 12,
+    color: '#666',
+    marginLeft: 4,
   },
   addExerciseSection: {
     marginTop: 20,
@@ -615,31 +556,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#333',
     marginBottom: 12,
-  },
-  currentExerciseCard: {
-    backgroundColor: '#F8F9FA',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
-    borderWidth: 2,
-    borderColor: '#007AFF',
-    borderStyle: 'dashed',
-  },
-  addExerciseButton: {
-    backgroundColor: '#007AFF',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    marginTop: 12,
-  },
-  addExerciseButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
-    marginLeft: 8,
   },
 });
 
