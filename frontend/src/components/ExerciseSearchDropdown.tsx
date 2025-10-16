@@ -4,9 +4,8 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  FlatList,
+  ScrollView,
   StyleSheet,
-  Modal,
   Dimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -102,55 +101,6 @@ const ExerciseSearchDropdown: React.FC<ExerciseSearchDropdownProps> = ({
     }
   };
 
-  const renderExerciseItem = ({ item }: { item: Exercise }) => (
-    <TouchableOpacity
-      style={styles.exerciseItem}
-      onPress={() => handleSelect(item)}
-    >
-      <View style={styles.exerciseHeader}>
-        <View style={styles.exerciseIconContainer}>
-          <Ionicons
-            name={getWorkoutIcon(item.name) as any}
-            size={20}
-            color={getWorkoutColor(item.name)}
-          />
-        </View>
-        <View style={styles.exerciseInfo}>
-          <Text style={styles.exerciseName}>{item.name}</Text>
-          <View style={styles.exerciseMeta}>
-            <View style={[styles.categoryBadge, { backgroundColor: getCategoryColor(item.category) + '20' }]}>
-              <Text style={[styles.categoryText, { color: getCategoryColor(item.category) }]}>
-                {item.category}
-              </Text>
-            </View>
-            <View style={[styles.difficultyBadge, { backgroundColor: getDifficultyColor(item.difficulty) + '20' }]}>
-              <Text style={[styles.difficultyText, { color: getDifficultyColor(item.difficulty) }]}>
-                {item.difficulty}
-              </Text>
-            </View>
-          </View>
-        </View>
-        <Ionicons name="chevron-forward" size={16} color={Colors.textSecondary} />
-      </View>
-      
-      {item.description && (
-        <Text style={styles.exerciseDescription} numberOfLines={2}>
-          {item.description}
-        </Text>
-      )}
-      
-      <View style={styles.exerciseDetails}>
-        <Text style={styles.equipmentText}>
-          <Ionicons name="fitness" size={12} color={Colors.textSecondary} />
-          {' '}{item.equipment}
-        </Text>
-        <Text style={styles.muscleGroupsText}>
-          <Ionicons name="body" size={12} color={Colors.textSecondary} />
-          {' '}{item.muscleGroups.join(', ')}
-        </Text>
-      </View>
-    </TouchableOpacity>
-  );
 
   return (
     <View style={[styles.container, style]}>
@@ -172,64 +122,85 @@ const ExerciseSearchDropdown: React.FC<ExerciseSearchDropdownProps> = ({
         <Ionicons name="chevron-down" size={16} color={Colors.textSecondary} />
       </TouchableOpacity>
 
-      <Modal
-        visible={isOpen}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={() => setIsOpen(false)}
-      >
-        <View style={styles.modalContainer}>
-          <View style={styles.modalHeader}>
-            <TouchableOpacity
-              onPress={() => setIsOpen(false)}
-              style={styles.closeButton}
-            >
-              <Ionicons name="close" size={24} color={Colors.textPrimary} />
-            </TouchableOpacity>
-            <Text style={styles.modalTitle}>Select Exercise</Text>
-            <View style={styles.placeholder} />
+      {isOpen && (
+        <View style={styles.dropdownContainer}>
+          <View style={styles.searchInputContainer}>
+            <Ionicons name="search" size={16} color={Colors.textSecondary} />
+            <TextInput
+              style={styles.searchInput}
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              placeholder="Search exercises..."
+              placeholderTextColor={Colors.textSecondary}
+              autoFocus
+            />
+            {searchQuery.length > 0 && (
+              <TouchableOpacity
+                onPress={() => setSearchQuery('')}
+                style={styles.clearSearchButton}
+              >
+                <Ionicons name="close-circle" size={16} color={Colors.textSecondary} />
+              </TouchableOpacity>
+            )}
           </View>
 
-          <View style={styles.searchContainer}>
-            <View style={styles.searchInputContainer}>
-              <Ionicons name="search" size={20} color={Colors.textSecondary} />
-              <TextInput
-                style={styles.searchInput}
-                value={searchQuery}
-                onChangeText={setSearchQuery}
-                placeholder="Search exercises..."
-                placeholderTextColor={Colors.textSecondary}
-                autoFocus
-              />
-              {searchQuery.length > 0 && (
-                <TouchableOpacity
-                  onPress={() => setSearchQuery('')}
-                  style={styles.clearSearchButton}
-                >
-                  <Ionicons name="close-circle" size={20} color={Colors.textSecondary} />
-                </TouchableOpacity>
-              )}
-            </View>
-          </View>
-
-          <FlatList
-            data={searchResults}
-            renderItem={renderExerciseItem}
-            keyExtractor={(item) => item.id}
+          <ScrollView
             style={styles.exercisesList}
             showsVerticalScrollIndicator={false}
-            ListEmptyComponent={
+            nestedScrollEnabled={true}
+          >
+            {searchResults.length > 0 ? (
+              searchResults.map((item) => (
+                <TouchableOpacity
+                  key={item.id}
+                  style={styles.exerciseItem}
+                  onPress={() => handleSelect(item)}
+                >
+                  <View style={styles.exerciseHeader}>
+                    <View style={styles.exerciseIconContainer}>
+                      <Ionicons
+                        name={getWorkoutIcon(item.name) as any}
+                        size={16}
+                        color={getWorkoutColor(item.name)}
+                      />
+                    </View>
+                    <View style={styles.exerciseInfo}>
+                      <Text style={styles.exerciseName}>{item.name}</Text>
+                      <View style={styles.exerciseMeta}>
+                        <View style={[styles.categoryBadge, { backgroundColor: getCategoryColor(item.category) + '20' }]}>
+                          <Text style={[styles.categoryText, { color: getCategoryColor(item.category) }]}>
+                            {item.category}
+                          </Text>
+                        </View>
+                        <View style={[styles.difficultyBadge, { backgroundColor: getDifficultyColor(item.difficulty) + '20' }]}>
+                          <Text style={[styles.difficultyText, { color: getDifficultyColor(item.difficulty) }]}>
+                            {item.difficulty}
+                          </Text>
+                        </View>
+                      </View>
+                    </View>
+                    <Ionicons name="chevron-forward" size={14} color={Colors.textSecondary} />
+                  </View>
+
+                  {item.description && (
+                    <Text style={styles.exerciseDescription} numberOfLines={1}>
+                      {item.description}
+                    </Text>
+                  )}
+                </TouchableOpacity>
+              ))
+            ) : (
               <View style={styles.emptyState}>
-                <Ionicons name="search" size={48} color={Colors.textSecondary} />
+                <Ionicons name="search" size={32} color={Colors.textSecondary} />
                 <Text style={styles.emptyStateTitle}>No exercises found</Text>
                 <Text style={styles.emptyStateSubtitle}>
                   Try searching with different keywords
                 </Text>
               </View>
-            }
-          />
+            )}
+          </ScrollView>
         </View>
-      </Modal>
+      )}
     </View>
   );
 };
@@ -262,42 +233,28 @@ const styles = StyleSheet.create({
   clearButton: {
     marginRight: Spacing.sm,
   },
-  modalContainer: {
-    flex: 1,
-    backgroundColor: Colors.background,
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: Layout.screenPadding,
-    paddingVertical: Spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
+  dropdownContainer: {
+    position: 'absolute',
+    top: '100%',
+    left: 0,
+    right: 0,
     backgroundColor: Colors.surface,
-  },
-  closeButton: {
-    padding: Spacing.sm,
-  },
-  modalTitle: {
-    ...Typography.h3,
-    flex: 1,
-    textAlign: 'center',
-  },
-  searchContainer: {
-    paddingHorizontal: Layout.screenPadding,
-    paddingVertical: Spacing.md,
-    backgroundColor: Colors.surface,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
+    borderRadius: Layout.radiusMedium,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    ...Layout.shadowMedium,
+    zIndex: 1000,
+    maxHeight: 300,
+    marginTop: Spacing.xs,
   },
   searchInputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: Colors.background,
-    borderRadius: Layout.radiusMedium,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
+    borderRadius: Layout.radiusSmall,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: Spacing.xs,
+    margin: Spacing.sm,
   },
   searchInput: {
     ...Typography.body,
@@ -308,34 +265,35 @@ const styles = StyleSheet.create({
     marginLeft: Spacing.sm,
   },
   exercisesList: {
-    flex: 1,
+    maxHeight: 200,
   },
   exerciseItem: {
-    ...CommonStyles.card,
-    marginHorizontal: Layout.screenPadding,
-    marginVertical: Spacing.xs,
-    padding: Spacing.md,
+    backgroundColor: Colors.background,
+    marginHorizontal: Spacing.sm,
+    marginVertical: 2,
+    padding: Spacing.sm,
+    borderRadius: Layout.radiusSmall,
   },
   exerciseHeader: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   exerciseIconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     backgroundColor: Colors.primaryLight,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: Spacing.md,
+    marginRight: Spacing.sm,
   },
   exerciseInfo: {
     flex: 1,
   },
   exerciseName: {
     ...Typography.label,
-    fontSize: 16,
-    marginBottom: Spacing.xs,
+    fontSize: 14,
+    marginBottom: 2,
   },
   exerciseMeta: {
     flexDirection: 'row',
@@ -348,7 +306,7 @@ const styles = StyleSheet.create({
   },
   categoryText: {
     ...Typography.caption,
-    fontSize: 12,
+    fontSize: 10,
     fontWeight: '600',
   },
   difficultyBadge: {
@@ -358,14 +316,14 @@ const styles = StyleSheet.create({
   },
   difficultyText: {
     ...Typography.caption,
-    fontSize: 12,
+    fontSize: 10,
     fontWeight: '600',
   },
   exerciseDescription: {
-    ...Typography.bodySmall,
+    ...Typography.caption,
     color: Colors.textSecondary,
-    marginTop: Spacing.sm,
-    lineHeight: 18,
+    marginTop: Spacing.xs,
+    lineHeight: 16,
   },
   exerciseDetails: {
     flexDirection: 'row',
@@ -385,15 +343,16 @@ const styles = StyleSheet.create({
   },
   emptyState: {
     alignItems: 'center',
-    paddingVertical: Layout.xxxl,
+    paddingVertical: Spacing.xl,
+    paddingHorizontal: Spacing.md,
   },
   emptyStateTitle: {
-    ...Typography.h3,
-    marginTop: Spacing.md,
-    marginBottom: Spacing.sm,
+    ...Typography.label,
+    marginTop: Spacing.sm,
+    marginBottom: Spacing.xs,
   },
   emptyStateSubtitle: {
-    ...Typography.body,
+    ...Typography.caption,
     color: Colors.textSecondary,
     textAlign: 'center',
   },
