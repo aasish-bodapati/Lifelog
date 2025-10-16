@@ -17,7 +17,6 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { databaseService } from '../../services/databaseService';
 import { apiService } from '../../services/api';
 import { hapticService } from '../../services/hapticService';
-import { notificationService } from '../../services/notificationService';
 import { calculationService } from '../../services/calculationService';
 import SyncIndicator from '../../components/SyncIndicator';
 import WeeklySummaryCard from '../../components/progress/WeeklySummaryCard';
@@ -263,7 +262,7 @@ const ProgressScreen: React.FC = () => {
 
       setAchievements(achievements);
 
-      // Check for newly unlocked achievements and schedule notifications
+      // Check for newly unlocked achievements
       for (const achievement of achievements) {
         if (achievement.unlocked) {
           // Check if this achievement was just unlocked (you might want to track this in AsyncStorage)
@@ -271,13 +270,7 @@ const ProgressScreen: React.FC = () => {
           const wasUnlocked = await AsyncStorage.getItem(wasUnlockedKey);
           
           if (!wasUnlocked) {
-            // Newly unlocked achievement
-            await notificationService.scheduleAchievementNotification({
-              title: achievement.title,
-              description: achievement.description,
-            });
-            
-            // Mark as unlocked to avoid duplicate notifications
+            // Newly unlocked achievement - just mark as unlocked
             await AsyncStorage.setItem(wasUnlockedKey, 'true');
           }
         }

@@ -15,7 +15,6 @@ import { databaseService } from '../../services/databaseService';
 import { calculationService } from '../../services/calculationService';
 import { hapticService } from '../../services/hapticService';
 import SyncIndicator from '../../components/SyncIndicator';
-import ExpoGoNotification from '../../components/ExpoGoNotification';
 import PersonalizedHeader from '../../components/dashboard/PersonalizedHeader';
 import AnimatedCard from '../../components/AnimatedCard';
 import EnergyCard from '../../components/dashboard/EnergyCard';
@@ -178,8 +177,6 @@ const DashboardScreen: React.FC = () => {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.content}>
-          {/* Expo Go Notification */}
-          <ExpoGoNotification />
           
           {/* Personalized Header */}
           <PersonalizedHeader onRefresh={handleRefresh} />
