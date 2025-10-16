@@ -18,6 +18,7 @@ import { databaseService } from '../../services/databaseService';
 import { apiService } from '../../services/api';
 import { hapticService } from '../../services/hapticService';
 import { notificationService } from '../../services/notificationService';
+import { calculationService } from '../../services/calculationService';
 import SyncIndicator from '../../components/SyncIndicator';
 import WeeklySummaryCard from '../../components/progress/WeeklySummaryCard';
 import TrendChart from '../../components/progress/TrendChart';

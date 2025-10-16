@@ -153,8 +153,8 @@ class BodyStat(BodyStatBase):
 
 # Summary schemas
 class DailySummary(BaseModel):
-    date: datetime
-    total_calories: float
+    date: str
+    total_calories: int
     total_protein: float
     total_carbs: float
     total_fat: float
@@ -163,8 +163,8 @@ class DailySummary(BaseModel):
     weight: Optional[float] = None
 
 class WeeklySummary(BaseModel):
-    week_start: datetime
-    week_end: datetime
+    week_start: str
+    week_end: str
     avg_daily_calories: float
     avg_daily_protein: float
     total_workouts: int

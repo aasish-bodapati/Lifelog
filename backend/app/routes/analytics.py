@@ -34,12 +34,12 @@ async def get_daily_analytics(
         # Get nutrition totals for the day
         nutrition_totals = db.query(
             func.sum(NutritionLog.calories).label('total_calories'),
-            func.sum(NutritionLog.protein_g).label('total_protein'),
-            func.sum(NutritionLog.carbs_g).label('total_carbs'),
-            func.sum(NutritionLog.fat_g).label('total_fat')
+            func.sum(NutritionLog.total_protein).label('total_protein'),
+            func.sum(NutritionLog.total_carbs).label('total_carbs'),
+            func.sum(NutritionLog.total_fat).label('total_fat')
         ).filter(
             NutritionLog.user_id == user_id,
-            NutritionLog.date == date
+            func.date(NutritionLog.date) == target_date
         ).first()
 
         # Get workout count and total duration for the day
@@ -48,14 +48,14 @@ async def get_daily_analytics(
             func.sum(Workout.duration_minutes).label('total_duration')
         ).filter(
             Workout.user_id == user_id,
-            Workout.date == date
+            func.date(Workout.date) == target_date
         ).first()
 
         # Get latest weight for the day
-        latest_weight = db.query(BodyStat.weight_kg).filter(
+        latest_weight = db.query(BodyStat.weight).filter(
             BodyStat.user_id == user_id,
-            BodyStat.date == date,
-            BodyStat.weight_kg.isnot(None)
+            func.date(BodyStat.date) == target_date,
+            BodyStat.weight.isnot(None)
         ).order_by(desc(BodyStat.created_at)).first()
 
         return DailySummary(
@@ -66,7 +66,7 @@ async def get_daily_analytics(
             total_fat=float(nutrition_totals.total_fat or 0),
             workout_count=int(workout_stats.workout_count or 0),
             total_workout_duration=int(workout_stats.total_duration or 0),
-            weight=float(latest_weight.weight_kg) if latest_weight else None
+            weight=float(latest_weight.weight) if latest_weight else None
         )
 
     except Exception as e:
@@ -98,11 +98,11 @@ async def get_weekly_analytics(
         # Get nutrition averages for the week
         nutrition_avg = db.query(
             func.avg(NutritionLog.calories).label('avg_calories'),
-            func.avg(NutritionLog.protein_g).label('avg_protein')
+            func.avg(NutritionLog.total_protein).label('avg_protein')
         ).filter(
             NutritionLog.user_id == user_id,
-            NutritionLog.date >= week_start,
-            NutritionLog.date <= week_end
+            func.date(NutritionLog.date) >= week_start,
+            func.date(NutritionLog.date) <= week_end
         ).first()
 
         # Get workout stats for the week
@@ -111,26 +111,26 @@ async def get_weekly_analytics(
             func.sum(Workout.duration_minutes).label('total_duration')
         ).filter(
             Workout.user_id == user_id,
-            Workout.date >= week_start,
-            Workout.date <= week_end
+            func.date(Workout.date) >= week_start,
+            func.date(Workout.date) <= week_end
         ).first()
 
         # Get weight change for the week
-        start_weight = db.query(BodyStat.weight_kg).filter(
+        start_weight = db.query(BodyStat.weight).filter(
             BodyStat.user_id == user_id,
-            BodyStat.date == week_start,
-            BodyStat.weight_kg.isnot(None)
+            func.date(BodyStat.date) == week_start,
+            BodyStat.weight.isnot(None)
         ).order_by(desc(BodyStat.created_at)).first()
 
-        end_weight = db.query(BodyStat.weight_kg).filter(
+        end_weight = db.query(BodyStat.weight).filter(
             BodyStat.user_id == user_id,
-            BodyStat.date == week_end,
-            BodyStat.weight_kg.isnot(None)
+            func.date(BodyStat.date) == week_end,
+            BodyStat.weight.isnot(None)
         ).order_by(desc(BodyStat.created_at)).first()
 
         weight_change = None
         if start_weight and end_weight:
-            weight_change = float(end_weight.weight_kg) - float(start_weight.weight_kg)
+            weight_change = float(end_weight.weight) - float(start_weight.weight)
 
         return WeeklySummary(
             week_start=week_start.isoformat(),
@@ -170,17 +170,17 @@ async def get_consistency_streak(
             # Check if user has any data for this date
             has_nutrition = db.query(NutritionLog).filter(
                 NutritionLog.user_id == user_id,
-                NutritionLog.date == date_str
+                func.date(NutritionLog.date) == check_date
             ).first()
             
             has_workout = db.query(Workout).filter(
                 Workout.user_id == user_id,
-                Workout.date == date_str
+                func.date(Workout.date) == check_date
             ).first()
             
             has_body_stat = db.query(BodyStat).filter(
                 BodyStat.user_id == user_id,
-                BodyStat.date == date_str
+                func.date(BodyStat.date) == check_date
             ).first()
             
             if has_nutrition or has_workout or has_body_stat:
