@@ -9,29 +9,36 @@ import {
   Modal,
   TextInput,
   Platform,
+  Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useUser } from '../../context/UserContext';
 import { databaseService, LocalWorkout } from '../../services/databaseService';
 import { apiService } from '../../services/api';
 import { hapticService } from '../../services/hapticService';
 import { toastService } from '../../services/toastService';
 import { exerciseProgressService, ExerciseProgress } from '../../services/exerciseProgressService';
+import { workoutRoutineService, WorkoutRoutine } from '../../services/workoutRoutineService';
 import { useScreenData, useWeeklyWorkoutStats } from '../../hooks';
 import { getWorkoutIcon, getWorkoutColor } from '../../utils';
 import { CommonStyles, Layout, Colors, Typography } from '../../styles/designSystem';
 import QuickWorkoutLogScreen from '../logging/QuickWorkoutLogScreen';
 import LoadingSkeleton from '../../components/LoadingSkeleton';
 import ExerciseProgressCard from '../../components/dashboard/ExerciseProgressCard';
+import { useOnboarding } from '../../context/OnboardingContext';
 
 const FitnessScreen: React.FC = () => {
   const { state: userState } = useUser();
+  const { state: onboardingState } = useOnboarding();
   const [showWorkoutLog, setShowWorkoutLog] = useState(false);
   const [exerciseProgress, setExerciseProgress] = useState<ExerciseProgress[]>([]);
   const [activeTab, setActiveTab] = useState<'overview' | 'routines' | 'logs'>('overview');
   const [editingWorkoutId, setEditingWorkoutId] = useState<string | null>(null);
+  const [selectedRoutine, setSelectedRoutine] = useState<WorkoutRoutine | null>(null);
+  const [selectedDay, setSelectedDay] = useState<number>(1);
   const [editValues, setEditValues] = useState<{
     sets?: string;
     reps?: string;
@@ -41,14 +48,60 @@ const FitnessScreen: React.FC = () => {
   }>({});
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [showCalendar, setShowCalendar] = useState(false);
+  const [showRoutineDetails, setShowRoutineDetails] = useState(false);
 
-  const quickWorkouts = [
-    { name: 'Morning Run', duration: 30, icon: 'walk', color: '#FF6B6B' },
-    { name: 'Weight Training', duration: 45, icon: 'barbell', color: '#4ECDC4' },
-    { name: 'Yoga Session', duration: 20, icon: 'leaf', color: '#45B7D1' },
-    { name: 'Cycling', duration: 60, icon: 'bicycle', color: '#FFD93D' },
-    { name: 'Swimming', duration: 30, icon: 'water', color: '#A29BFE' },
-  ];
+
+  // Load routine based on user's goal
+  React.useEffect(() => {
+    const loadRoutine = async () => {
+      console.log('Loading routine...');
+      console.log('Onboarding state isComplete:', onboardingState?.isComplete);
+      console.log('Onboarding data:', onboardingState?.data);
+      console.log('Goal from state:', onboardingState?.data?.goal);
+      
+      // First, try to load from onboarding context
+      if (onboardingState?.data?.goal?.type) {
+        const routine = workoutRoutineService.getRoutineByGoal(onboardingState.data.goal.type);
+        console.log('Loading routine from context for goal:', onboardingState.data.goal.type);
+        setSelectedRoutine(routine);
+        return;
+      }
+      
+      // If not in context, try to load directly from AsyncStorage
+      try {
+        const savedData = await AsyncStorage.getItem('onboardingData');
+        const isComplete = await AsyncStorage.getItem('onboardingComplete');
+        console.log('Saved data from AsyncStorage:', savedData);
+        console.log('Onboarding complete flag:', isComplete);
+        
+        if (savedData) {
+          const parsedData = JSON.parse(savedData);
+          console.log('Parsed data:', parsedData);
+          console.log('Goal from storage:', parsedData.goal);
+          
+          if (parsedData.goal?.type) {
+            const routine = workoutRoutineService.getRoutineByGoal(parsedData.goal.type);
+            console.log('Loading routine from storage for goal:', parsedData.goal.type);
+            setSelectedRoutine(routine);
+            return;
+          }
+        }
+        
+        // If we have onboarding data or completion flag, default to maintain
+        if (savedData || isComplete === 'true') {
+          console.log('Onboarding data exists but no goal found, defaulting to maintain');
+          const routine = workoutRoutineService.getRoutineByGoal('maintain');
+          setSelectedRoutine(routine);
+        } else {
+          console.log('No routine to load - onboarding not complete');
+        }
+      } catch (error) {
+        console.error('Error loading from storage:', error);
+      }
+    };
+    
+    loadRoutine();
+  }, [onboardingState?.data?.goal, onboardingState?.isComplete]);
 
   // Use the new useScreenData hook for workouts
   const { data: workouts, isLoading, isRefreshing, refresh, loadData } = useScreenData<LocalWorkout[]>({
@@ -108,12 +161,6 @@ const FitnessScreen: React.FC = () => {
     toastService.success('Workout logged successfully!');
   };
 
-  const handleQuickWorkout = (workout: { name: string; duration: number; icon: string; color: string }) => {
-    hapticService.light();
-    // For now, just open the modal with pre-filled duration
-    // TODO: In the future, we could pre-fill the exercise search with the workout name
-    setShowWorkoutLog(true);
-  };
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -419,25 +466,6 @@ const FitnessScreen: React.FC = () => {
               </TouchableOpacity>
             </View>
 
-            {/* Quick Workouts */}
-        <View style={styles.quickWorkoutsSection}>
-          <Text style={styles.sectionTitle}>Quick Workouts</Text>
-          <View style={styles.quickWorkoutsContainer}>
-            {quickWorkouts.map((workout, index) => (
-              <TouchableOpacity
-                key={index}
-                style={styles.quickWorkoutButton}
-                onPress={() => handleQuickWorkout(workout)}
-              >
-                <View style={[styles.quickWorkoutIconContainer, { backgroundColor: workout.color + '20' }]}>
-                  <Ionicons name={workout.icon as any} size={20} color={workout.color} />
-                </View>
-                <Text style={styles.quickWorkoutText}>{workout.name}</Text>
-                <Text style={styles.quickWorkoutDuration}>{workout.duration} min</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </View>
 
         {/* Weekly Stats */}
         <View style={styles.statsSection}>
@@ -572,38 +600,52 @@ const FitnessScreen: React.FC = () => {
         {/* Routines Tab */}
         {activeTab === 'routines' && (
           <>
-            <View style={styles.section}>
-              <View style={styles.sectionHeader}>
-                <Text style={styles.sectionTitle}>Workout Routines</Text>
-                <TouchableOpacity
+            {selectedRoutine ? (
+              <View style={styles.section}>
+                {/* Routine Summary Card */}
+                <TouchableOpacity 
+                  style={styles.routineSummaryCard}
                   onPress={() => {
                     hapticService.light();
-                    toastService.info('Coming Soon', 'Routine creation will be available soon!');
+                    console.log('Opening routine modal, selectedRoutine:', selectedRoutine);
+                    setShowRoutineDetails(true);
                   }}
-                  style={styles.addButton}
                 >
-                  <Ionicons name="add-circle-outline" size={24} color={Colors.primary} />
-                </TouchableOpacity>
-              </View>
+                  <View style={styles.routineSummaryHeader}>
+                    <Text style={styles.routineGoalBadge}>
+                      {selectedRoutine.goalType === 'maintain' ? '⚖️ Maintain' :
+                       selectedRoutine.goalType === 'gain' ? '💪 Gain' : '🔥 Lose'}
+                    </Text>
+                    <Ionicons name="chevron-forward" size={24} color={Colors.textSecondary} />
+                  </View>
+                  <Text style={styles.routineName}>{selectedRoutine.name}</Text>
+                  <Text style={styles.routineDescription}>{selectedRoutine.description}</Text>
+                  
+                  <View style={styles.routineMetaRow}>
+                    <View style={styles.routineMetaItem}>
+                      <Ionicons name="calendar-outline" size={16} color={Colors.primary} />
+                      <Text style={styles.routineMetaText}>{selectedRoutine.daysPerWeek} days/week</Text>
+                    </View>
+                    <View style={styles.routineMetaItem}>
+                      <Ionicons name="barbell-outline" size={16} color={Colors.primary} />
+                      <Text style={styles.routineMetaText}>{selectedRoutine.focusAreas[0]}</Text>
+                    </View>
+                  </View>
 
-              {/* Placeholder for routines */}
-              <View style={styles.emptyState}>
-                <Ionicons name="clipboard-outline" size={64} color="#CCC" />
-                <Text style={styles.emptyStateTitle}>No Routines Yet</Text>
-                <Text style={styles.emptyStateText}>
-                  Create custom workout routines to quickly log your regular workouts
-                </Text>
-                <TouchableOpacity
-                  style={styles.emptyStateButton}
-                  onPress={() => {
-                    hapticService.light();
-                    toastService.info('Coming Soon', 'Routine creation will be available soon!');
-                  }}
-                >
-                  <Text style={styles.emptyStateButtonText}>Create First Routine</Text>
+                  <Text style={styles.tapToViewText}>Tap to view full workout plan</Text>
                 </TouchableOpacity>
               </View>
-            </View>
+            ) : (
+              <View style={styles.section}>
+                <View style={styles.emptyState}>
+                  <Ionicons name="clipboard-outline" size={64} color="#CCC" />
+                  <Text style={styles.emptyStateTitle}>Complete Onboarding</Text>
+                  <Text style={styles.emptyStateText}>
+                    Complete your profile setup to get a personalized workout routine
+                  </Text>
+                </View>
+              </View>
+            )}
           </>
         )}
 
@@ -856,6 +898,183 @@ const FitnessScreen: React.FC = () => {
         />
       </Modal>
 
+      {/* Routine Details Modal */}
+      <Modal
+        visible={showRoutineDetails}
+        animationType="fade"
+        transparent={true}
+        onRequestClose={() => setShowRoutineDetails(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalPopup}>
+            {/* Modal Header */}
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Workout Routine</Text>
+              <TouchableOpacity 
+                onPress={() => {
+                  hapticService.light();
+                  setShowRoutineDetails(false);
+                }}
+                style={styles.modalCloseButton}
+              >
+                <Ionicons name="close" size={28} color={Colors.primary} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView 
+              style={{ flex: 1 }}
+              showsVerticalScrollIndicator={true}
+            >
+              {selectedRoutine ? (
+                <View style={styles.modalContent}>
+                {/* Routine Header */}
+                <View style={styles.routineHeader}>
+                  <View style={styles.routineHeaderContent}>
+                    <Text style={styles.routineGoalBadge}>
+                      {selectedRoutine.goalType === 'maintain' ? '⚖️ Maintain' :
+                       selectedRoutine.goalType === 'gain' ? '💪 Gain' : '🔥 Lose'}
+                    </Text>
+                    <Text style={styles.routineName}>{selectedRoutine.name}</Text>
+                    <Text style={styles.routineDescription}>{selectedRoutine.description}</Text>
+                    
+                    <View style={styles.routineMetaRow}>
+                      <View style={styles.routineMetaItem}>
+                        <Ionicons name="calendar-outline" size={16} color={Colors.primary} />
+                        <Text style={styles.routineMetaText}>{selectedRoutine.daysPerWeek} days/week</Text>
+                      </View>
+                      <View style={styles.routineMetaItem}>
+                        <Ionicons name="barbell-outline" size={16} color={Colors.primary} />
+                        <Text style={styles.routineMetaText}>{selectedRoutine.focusAreas[0]}</Text>
+                      </View>
+                    </View>
+
+                    {/* Equipment */}
+                    <View style={styles.equipmentContainer}>
+                      <Text style={styles.equipmentLabel}>Equipment:</Text>
+                      <View style={styles.equipmentList}>
+                        {selectedRoutine.equipment.map((item, idx) => (
+                          <View key={idx} style={styles.equipmentBadge}>
+                            <Text style={styles.equipmentText}>{item}</Text>
+                          </View>
+                        ))}
+                      </View>
+                    </View>
+                  </View>
+                </View>
+
+                {/* Day Selector */}
+                <View style={styles.daySelectorContainer}>
+                  <Text style={styles.daySelectorTitle}>Select Workout Day:</Text>
+                  <View style={styles.daySelector}>
+                    {selectedRoutine.days.map((day) => (
+                      <TouchableOpacity
+                        key={day.dayNumber}
+                        style={[
+                          styles.dayButton,
+                          selectedDay === day.dayNumber && styles.dayButtonActive,
+                        ]}
+                        onPress={() => {
+                          hapticService.light();
+                          setSelectedDay(day.dayNumber);
+                        }}
+                      >
+                        <Text style={[
+                          styles.dayButtonText,
+                          selectedDay === day.dayNumber && styles.dayButtonTextActive,
+                        ]}>
+                          Day {day.dayNumber}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </View>
+
+                {/* Selected Day Workout */}
+                {selectedRoutine.days.find(d => d.dayNumber === selectedDay) && (() => {
+                  const currentDay = selectedRoutine.days.find(d => d.dayNumber === selectedDay)!;
+                  return (
+                    <View style={styles.workoutDayCard}>
+                      <View style={styles.workoutDayHeader}>
+                        <Text style={styles.workoutDayTitle}>{currentDay.title}</Text>
+                        <Text style={styles.workoutDayFocus}>{currentDay.focus}</Text>
+                      </View>
+
+                      {/* Warmup */}
+                      <View style={styles.workoutSection}>
+                        <View style={styles.workoutSectionHeader}>
+                          <Ionicons name="flame-outline" size={20} color={Colors.warning} />
+                          <Text style={styles.workoutSectionTitle}>Warm-up</Text>
+                        </View>
+                        <Text style={styles.workoutSectionText}>{currentDay.warmup}</Text>
+                      </View>
+
+                      {/* Exercises */}
+                      <View style={styles.workoutSection}>
+                        <View style={styles.workoutSectionHeader}>
+                          <Ionicons name="barbell-outline" size={20} color={Colors.primary} />
+                          <Text style={styles.workoutSectionTitle}>
+                            {currentDay.isCircuit ? `Circuit (${currentDay.circuitRounds} rounds)` : 'Exercises'}
+                          </Text>
+                        </View>
+                        {currentDay.exercises.map((exercise, idx) => (
+                          <View key={idx} style={styles.exerciseItem}>
+                            <View style={styles.exerciseNumber}>
+                              <Text style={styles.exerciseNumberText}>{idx + 1}</Text>
+                            </View>
+                            <View style={styles.exerciseContent}>
+                              <Text style={styles.exerciseName}>{exercise.name}</Text>
+                              <View style={styles.exerciseDetails}>
+                                <Text style={styles.exerciseDetailText}>
+                                  {exercise.sets} × {exercise.reps ? `${exercise.reps} reps` : `${exercise.duration}s`}
+                                </Text>
+                                {exercise.notes && (
+                                  <Text style={styles.exerciseNotes}>{exercise.notes}</Text>
+                                )}
+                              </View>
+                            </View>
+                          </View>
+                        ))}
+                        {currentDay.isCircuit && (
+                          <Text style={styles.circuitNote}>Rest 45 sec between rounds</Text>
+                        )}
+                      </View>
+
+                      {/* Cooldown */}
+                      {currentDay.cooldown && (
+                        <View style={styles.workoutSection}>
+                          <View style={styles.workoutSectionHeader}>
+                            <Ionicons name="water-outline" size={20} color={Colors.info} />
+                            <Text style={styles.workoutSectionTitle}>Cool-down</Text>
+                          </View>
+                          <Text style={styles.workoutSectionText}>{currentDay.cooldown}</Text>
+                        </View>
+                      )}
+
+                      {/* Start Workout Button */}
+                      <TouchableOpacity
+                        style={styles.startWorkoutButton}
+                        onPress={() => {
+                          hapticService.medium();
+                          toastService.info('Coming Soon', 'Guided workout will be available soon!');
+                        }}
+                      >
+                        <Ionicons name="play-circle" size={24} color={Colors.textLight} />
+                        <Text style={styles.startWorkoutButtonText}>Start This Workout</Text>
+                      </TouchableOpacity>
+                    </View>
+                  );
+                })()}
+              </View>
+            ) : (
+              <View style={styles.modalContent}>
+                <Text style={styles.emptyStateText}>Loading routine...</Text>
+              </View>
+            )}
+          </ScrollView>
+        </View>
+      </View>
+    </Modal>
+
       {/* Calendar Picker */}
       {showCalendar && (
         <DateTimePicker
@@ -894,48 +1113,6 @@ const styles = StyleSheet.create({
   quickActions: {
     paddingHorizontal: Layout.screenPadding,
     paddingVertical: Layout.sectionSpacing,
-  },
-  quickWorkoutsSection: {
-    paddingHorizontal: Layout.screenPadding,
-    paddingBottom: Layout.sectionSpacing,
-  },
-  quickWorkoutsContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
-    justifyContent: 'space-between',
-  },
-  quickWorkoutButton: {
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-    borderRadius: 16,
-    backgroundColor: Colors.surface,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    minWidth: 120,
-    maxWidth: 140,
-    ...Layout.shadowSmall,
-  },
-  quickWorkoutIconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: Colors.primaryLight,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 8,
-  },
-  quickWorkoutText: {
-    ...Typography.bodySmall,
-    fontWeight: '600',
-    textAlign: 'center',
-    marginBottom: 4,
-  },
-  quickWorkoutDuration: {
-    ...Typography.caption,
-    color: Colors.textSecondary,
-    textAlign: 'center',
   },
   primaryButton: {
     ...CommonStyles.buttonPrimary,
@@ -1305,6 +1482,283 @@ const styles = StyleSheet.create({
   },
   addButton: {
     padding: 4,
+  },
+  // Routine Styles
+  routineSummaryCard: {
+    backgroundColor: Colors.surface,
+    padding: Layout.cardPadding,
+    borderRadius: Layout.radiusMedium,
+    marginBottom: Layout.cardSpacing,
+    ...Layout.shadowSmall,
+  },
+  routineSummaryHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  tapToViewText: {
+    ...Typography.caption,
+    color: Colors.primary,
+    marginTop: 12,
+    textAlign: 'center',
+    fontWeight: '600',
+  },
+  // Modal Styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  modalPopup: {
+    width: '100%',
+    maxWidth: 500,
+    height: '90%',
+    backgroundColor: Colors.background,
+    borderRadius: 20,
+    overflow: 'hidden',
+    ...Layout.shadowLarge,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+    backgroundColor: Colors.surface,
+  },
+  modalCloseButton: {
+    padding: 4,
+  },
+  modalTitle: {
+    ...Typography.h3,
+    color: Colors.text,
+    flex: 1,
+  },
+  modalContent: {
+    padding: 20,
+    paddingBottom: 40,
+  },
+  routineHeader: {
+    backgroundColor: Colors.surface,
+    padding: Layout.cardPadding,
+    borderRadius: Layout.radiusMedium,
+    marginBottom: Layout.cardSpacing,
+    ...Layout.shadowSmall,
+  },
+  routineHeaderContent: {
+    gap: 12,
+  },
+  routineGoalBadge: {
+    ...Typography.label,
+    fontSize: 12,
+    color: Colors.primary,
+    backgroundColor: Colors.primaryLight,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: Layout.radiusSmall,
+    alignSelf: 'flex-start',
+    fontWeight: '600',
+  },
+  routineName: {
+    ...Typography.h2,
+    color: Colors.textPrimary,
+  },
+  routineDescription: {
+    ...Typography.body,
+    color: Colors.textSecondary,
+  },
+  routineMetaRow: {
+    flexDirection: 'row',
+    gap: 16,
+  },
+  routineMetaItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  routineMetaText: {
+    ...Typography.bodySmall,
+    color: Colors.textSecondary,
+  },
+  equipmentContainer: {
+    gap: 8,
+  },
+  equipmentLabel: {
+    ...Typography.label,
+    color: Colors.textPrimary,
+    fontWeight: '600',
+  },
+  equipmentList: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  equipmentBadge: {
+    backgroundColor: Colors.background,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: Layout.radiusSmall,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  equipmentText: {
+    ...Typography.bodySmall,
+    color: Colors.textPrimary,
+  },
+  daySelectorContainer: {
+    paddingHorizontal: Layout.screenPadding,
+    marginBottom: Layout.cardSpacing,
+  },
+  daySelectorTitle: {
+    ...Typography.label,
+    color: Colors.textPrimary,
+    fontWeight: '600',
+    marginBottom: 12,
+  },
+  daySelector: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  dayButton: {
+    flex: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: Layout.radiusMedium,
+    backgroundColor: Colors.surface,
+    borderWidth: 2,
+    borderColor: Colors.border,
+    alignItems: 'center',
+  },
+  dayButtonActive: {
+    backgroundColor: Colors.primary,
+    borderColor: Colors.primary,
+  },
+  dayButtonText: {
+    ...Typography.label,
+    color: Colors.textPrimary,
+    fontWeight: '600',
+  },
+  dayButtonTextActive: {
+    color: Colors.textLight,
+  },
+  workoutDayCard: {
+    backgroundColor: Colors.surface,
+    borderRadius: Layout.radiusMedium,
+    padding: Layout.cardPadding,
+    ...Layout.shadowSmall,
+  },
+  workoutDayHeader: {
+    marginBottom: 20,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.divider,
+  },
+  workoutDayTitle: {
+    ...Typography.h3,
+    color: Colors.textPrimary,
+    marginBottom: 4,
+  },
+  workoutDayFocus: {
+    ...Typography.body,
+    color: Colors.textSecondary,
+  },
+  workoutSection: {
+    marginBottom: 20,
+  },
+  workoutSectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 12,
+  },
+  workoutSectionTitle: {
+    ...Typography.h4,
+    color: Colors.textPrimary,
+  },
+  workoutSectionText: {
+    ...Typography.body,
+    color: Colors.textSecondary,
+    fontStyle: 'italic',
+  },
+  exerciseItem: {
+    flexDirection: 'row',
+    gap: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    backgroundColor: Colors.background,
+    borderRadius: Layout.radiusMedium,
+    marginBottom: 8,
+  },
+  exerciseNumber: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: Colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  exerciseNumberText: {
+    ...Typography.label,
+    color: Colors.textLight,
+    fontWeight: '700',
+    fontSize: 14,
+  },
+  exerciseContent: {
+    flex: 1,
+  },
+  exerciseName: {
+    ...Typography.body,
+    color: Colors.textPrimary,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  exerciseDetails: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    gap: 8,
+  },
+  exerciseDetailText: {
+    ...Typography.bodySmall,
+    color: Colors.textSecondary,
+    fontWeight: '500',
+  },
+  exerciseNotes: {
+    ...Typography.caption,
+    color: Colors.textSecondary,
+    fontStyle: 'italic',
+  },
+  circuitNote: {
+    ...Typography.bodySmall,
+    color: Colors.info,
+    fontStyle: 'italic',
+    textAlign: 'center',
+    marginTop: 8,
+    padding: 8,
+    backgroundColor: Colors.background,
+    borderRadius: Layout.radiusSmall,
+  },
+  startWorkoutButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: Colors.primary,
+    paddingVertical: 16,
+    borderRadius: Layout.radiusMedium,
+    marginTop: 20,
+    ...Layout.shadowMedium,
+  },
+  startWorkoutButtonText: {
+    ...Typography.label,
+    color: Colors.textLight,
+    fontSize: 16,
+    fontWeight: '700',
   },
 });
 

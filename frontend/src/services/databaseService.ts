@@ -196,16 +196,24 @@ class DatabaseService {
   }
 
   async getUnsyncedItems(): Promise<SyncQueueItem[]> {
-    if (!this.db) throw new Error('Database not initialized');
+    if (!this.db) {
+      console.error('Database not initialized in getUnsyncedItems');
+      return []; // Return empty array instead of throwing
+    }
 
-    const query = `
-      SELECT * FROM sync_queue 
-      WHERE synced = FALSE 
-      ORDER BY created_at ASC
-    `;
+    try {
+      const query = `
+        SELECT * FROM sync_queue 
+        WHERE synced = FALSE 
+        ORDER BY created_at ASC
+      `;
 
-    const result = await this.db.getAllAsync(query);
-    return result as SyncQueueItem[];
+      const result = await this.db.getAllAsync(query);
+      return result as SyncQueueItem[];
+    } catch (error) {
+      console.error('Error fetching unsynced items from database:', error);
+      return []; // Return empty array instead of throwing
+    }
   }
 
   async markAsSynced(syncQueueId: number): Promise<void> {
@@ -279,7 +287,7 @@ class DatabaseService {
   async getWorkouts(userId: number, limit: number = 50): Promise<LocalWorkout[]> {
     if (!this.db) {
       console.error('Database not initialized in getWorkouts');
-      throw new Error('Database not initialized');
+      return []; // Return empty array instead of throwing
     }
 
     try {
@@ -294,7 +302,7 @@ class DatabaseService {
       return result as LocalWorkout[];
     } catch (error) {
       console.error('Error fetching workouts from database:', error);
-      throw error;
+      return []; // Return empty array instead of throwing
     }
   }
 
@@ -402,24 +410,32 @@ class DatabaseService {
   }
 
   async getNutritionLogs(userId: number, date?: string, limit: number = 50): Promise<LocalNutritionLog[]> {
-    if (!this.db) throw new Error('Database not initialized');
-
-    let query = `
-      SELECT * FROM local_nutrition_logs 
-      WHERE user_id = ?
-    `;
-    const params: any[] = [userId];
-
-    if (date) {
-      query += ` AND date = ?`;
-      params.push(date);
+    if (!this.db) {
+      console.error('Database not initialized in getNutritionLogs');
+      return []; // Return empty array instead of throwing
     }
 
-    query += ` ORDER BY date DESC, created_at DESC LIMIT ?`;
-    params.push(limit);
+    try {
+      let query = `
+        SELECT * FROM local_nutrition_logs 
+        WHERE user_id = ?
+      `;
+      const params: any[] = [userId];
 
-    const result = await this.db.getAllAsync(query, params);
-    return result as LocalNutritionLog[];
+      if (date) {
+        query += ` AND date = ?`;
+        params.push(date);
+      }
+
+      query += ` ORDER BY date DESC, created_at DESC LIMIT ?`;
+      params.push(limit);
+
+      const result = await this.db.getAllAsync(query, params);
+      return result as LocalNutritionLog[];
+    } catch (error) {
+      console.error('Error fetching nutrition logs from database:', error);
+      return []; // Return empty array instead of throwing
+    }
   }
 
   // Body Stats Operations
@@ -462,30 +478,46 @@ class DatabaseService {
   }
 
   async getBodyStats(userId: number, limit: number = 50): Promise<LocalBodyStat[]> {
-    if (!this.db) throw new Error('Database not initialized');
+    if (!this.db) {
+      console.error('Database not initialized in getBodyStats');
+      return []; // Return empty array instead of throwing
+    }
 
-    const query = `
-      SELECT * FROM local_body_stats 
-      WHERE user_id = ? 
-      ORDER BY date DESC, created_at DESC 
-      LIMIT ?
-    `;
+    try {
+      const query = `
+        SELECT * FROM local_body_stats 
+        WHERE user_id = ? 
+        ORDER BY date DESC, created_at DESC 
+        LIMIT ?
+      `;
 
-    const result = await this.db.getAllAsync(query, [userId, limit]);
-    return result as LocalBodyStat[];
+      const result = await this.db.getAllAsync(query, [userId, limit]);
+      return result as LocalBodyStat[];
+    } catch (error) {
+      console.error('Error fetching body stats from database:', error);
+      return []; // Return empty array instead of throwing
+    }
   }
 
   // Utility Methods
   async getUnsyncedCount(): Promise<number> {
-    if (!this.db) throw new Error('Database not initialized');
+    if (!this.db) {
+      console.error('Database not initialized in getUnsyncedCount');
+      return 0; // Return 0 instead of throwing
+    }
 
-    const query = `
-      SELECT COUNT(*) as count FROM sync_queue 
-      WHERE synced = FALSE
-    `;
+    try {
+      const query = `
+        SELECT COUNT(*) as count FROM sync_queue 
+        WHERE synced = FALSE
+      `;
 
-    const result = await this.db.getFirstAsync(query);
-    return (result as any)?.count || 0;
+      const result = await this.db.getFirstAsync(query);
+      return (result as any)?.count || 0;
+    } catch (error) {
+      console.error('Error getting unsynced count from database:', error);
+      return 0; // Return 0 instead of throwing
+    }
   }
 
   async clearAllData(): Promise<void> {
