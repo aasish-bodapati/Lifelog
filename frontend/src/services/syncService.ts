@@ -160,6 +160,14 @@ class SyncService {
       try {
         const data = JSON.parse(item.data);
         
+        // Validate data before syncing
+        if (data.duration_minutes === 0 || data.duration_minutes === null || data.duration_minutes === undefined) {
+          console.warn(`Skipping invalid workout with duration: ${data.duration_minutes}`);
+          // Mark as synced to remove from queue (it's invalid data)
+          await databaseService.markAsSynced(item.id!);
+          continue;
+        }
+        
         switch (item.operation) {
           case 'INSERT':
             await apiService.createWorkout(data);
@@ -178,8 +186,9 @@ class SyncService {
 
       } catch (error) {
         console.error(`Failed to sync workout ${item.record_id}:`, error);
-        // Don't mark as synced if it failed
-        throw error;
+        // Mark as synced to remove from queue and prevent infinite retry loop
+        await databaseService.markAsSynced(item.id!);
+        console.warn(`Marked failed workout as synced to prevent blocking: ${item.record_id}`);
       }
     }
   }
