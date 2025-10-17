@@ -183,7 +183,7 @@ const QuickMealLogScreen: React.FC<QuickMealLogScreenProps> = ({
           <Text style={styles.sectionTitle}>Food Details</Text>
           
           <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Search and select a food</Text>
+            <Text style={styles.inputLabel}>Search and select a food *</Text>
             <FoodSearchDropdown
               value=""
               onSelect={handleFoodSelect}
@@ -192,8 +192,8 @@ const QuickMealLogScreen: React.FC<QuickMealLogScreenProps> = ({
             />
           </View>
 
-          {/* Show selected food or allow custom input */}
-          {selectedFood ? (
+          {/* Show selected food */}
+          {selectedFood && (
             <View style={styles.selectedFoodCard}>
               <View style={styles.selectedFoodHeader}>
                 <View>
@@ -210,16 +210,6 @@ const QuickMealLogScreen: React.FC<QuickMealLogScreenProps> = ({
                   <Ionicons name="close-circle" size={20} color="#DC3545" />
                 </TouchableOpacity>
               </View>
-            </View>
-          ) : (
-            <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Or enter custom food name *</Text>
-              <TextInput
-                style={styles.textInput}
-                value={foodName}
-                onChangeText={setFoodName}
-                placeholder="e.g., Grilled Chicken Breast"
-              />
             </View>
           )}
         </View>
