@@ -162,7 +162,7 @@ const QuickMealLogScreen: React.FC<QuickMealLogScreenProps> = ({
               >
                 <Ionicons
                   name={type.icon as any}
-                  size={20}
+                  size={16}
                   color={mealType === type.key ? '#FFFFFF' : '#666'}
                 />
                 <Text
@@ -387,8 +387,8 @@ const styles = StyleSheet.create({
   mealTypeButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
     borderRadius: 20,
     borderWidth: 1,
     borderColor: '#E0E0E0',
@@ -400,7 +400,8 @@ const styles = StyleSheet.create({
   },
   mealTypeText: {
     marginLeft: 6,
-    fontSize: 14,
+    fontSize: 13,
+    fontWeight: '500',
     color: '#666',
   },
   mealTypeTextSelected: {
