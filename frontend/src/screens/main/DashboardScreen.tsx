@@ -260,51 +260,29 @@ const DashboardScreen: React.FC = () => {
       // Get today's date
       const today = new Date().toISOString().split('T')[0];
       
-      // Check if there's already a body stat entry for today via API
-      const todayStats = await bodyStatsService.getBodyStats(userState.user.id, {
-        start_date: today,
-        end_date: today,
-        limit: 10,
-      });
+      // Check local database first to see if we already have an entry for today
+      const localBodyStats = await databaseService.getBodyStats(userState.user.id, 10);
+      const existingLocalStat = localBodyStats.find(stat => stat.date === today || stat.date === `${today}T00:00:00`);
       
-      let savedStat;
-      
-      if (todayStats && todayStats.length > 0) {
-        // Update existing entry with new total
-        const currentStat = todayStats[0];
-        
-        savedStat = await bodyStatsService.updateBodyStat(userState.user.id, currentStat.id, {
+      if (existingLocalStat) {
+        // Update existing local entry
+        await databaseService.updateBodyStat(existingLocalStat.local_id, {
           water_intake: newWaterTotal,
         });
       } else {
-        // Create new entry for today with the total
-        savedStat = await bodyStatsService.createBodyStat(userState.user.id, {
-          water_intake: newWaterTotal,
-          date: today,
-        });
-      }
-      
-      // Save to local database immediately
-      if (savedStat) {
+        // Create new local entry only if one doesn't exist
         await databaseService.saveBodyStat({
-          local_id: `bodystat_${savedStat.id}`,
+          local_id: `bodystat_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
           user_id: userState.user.id,
-          date: savedStat.date.split('T')[0], // Extract just the date part
-          weight_kg: savedStat.weight,
-          body_fat_percentage: savedStat.body_fat_percentage,
-          muscle_mass_kg: savedStat.muscle_mass,
-          waist_cm: savedStat.waist,
-          chest_cm: savedStat.chest,
-          arm_cm: savedStat.bicep_left, // Using bicep as arm measurement
-          thigh_cm: savedStat.thigh_left,
-          water_intake: savedStat.water_intake,
+          date: today,
+          water_intake: newWaterTotal,
         });
       }
 
       toastService.success(`Added ${amount}L of water! 💧`);
       
-      // Reload data in background to sync with database
-      setTimeout(() => loadTodayData(), 500);
+      // Reload data to reflect changes
+      loadTodayData();
     } catch (error) {
       console.error('Error adding water:', error);
       toastService.error('Failed to log water intake');

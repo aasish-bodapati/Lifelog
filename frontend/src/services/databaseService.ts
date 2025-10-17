@@ -609,6 +609,72 @@ class DatabaseService {
     return localId;
   }
 
+  async updateBodyStat(localId: string, updates: Partial<Pick<LocalBodyStat, 'weight_kg' | 'body_fat_percentage' | 'muscle_mass_kg' | 'waist_cm' | 'chest_cm' | 'arm_cm' | 'thigh_cm' | 'water_intake'>>): Promise<void> {
+    if (!this.db) throw new Error('Database not initialized');
+
+    const now = new Date().toISOString();
+    const setClauses: string[] = [];
+    const values: any[] = [];
+
+    if (updates.weight_kg !== undefined) {
+      setClauses.push('weight_kg = ?');
+      values.push(updates.weight_kg);
+    }
+    if (updates.body_fat_percentage !== undefined) {
+      setClauses.push('body_fat_percentage = ?');
+      values.push(updates.body_fat_percentage);
+    }
+    if (updates.muscle_mass_kg !== undefined) {
+      setClauses.push('muscle_mass_kg = ?');
+      values.push(updates.muscle_mass_kg);
+    }
+    if (updates.waist_cm !== undefined) {
+      setClauses.push('waist_cm = ?');
+      values.push(updates.waist_cm);
+    }
+    if (updates.chest_cm !== undefined) {
+      setClauses.push('chest_cm = ?');
+      values.push(updates.chest_cm);
+    }
+    if (updates.arm_cm !== undefined) {
+      setClauses.push('arm_cm = ?');
+      values.push(updates.arm_cm);
+    }
+    if (updates.thigh_cm !== undefined) {
+      setClauses.push('thigh_cm = ?');
+      values.push(updates.thigh_cm);
+    }
+    if (updates.water_intake !== undefined) {
+      setClauses.push('water_intake = ?');
+      values.push(updates.water_intake);
+    }
+
+    setClauses.push('updated_at = ?');
+    values.push(now);
+    setClauses.push('synced = ?');
+    values.push(false);
+
+    values.push(localId);
+
+    const query = `
+      UPDATE local_body_stats 
+      SET ${setClauses.join(', ')}
+      WHERE local_id = ?
+    `;
+
+    await this.db.runAsync(query, values);
+
+    // Fetch the updated item for the sync queue
+    const updatedItem = await this.db.getFirstAsync<LocalBodyStat>(
+      'SELECT * FROM local_body_stats WHERE local_id = ?',
+      [localId]
+    );
+
+    if (updatedItem) {
+      await this.addToSyncQueue('body_stats', localId, 'UPDATE', updatedItem);
+    }
+  }
+
   async getBodyStats(userId: number, limit: number = 50): Promise<LocalBodyStat[]> {
     try {
       // Wait for database initialization if needed

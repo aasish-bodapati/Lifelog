@@ -17,8 +17,10 @@ const api = axios.create({
 // Request interceptor to add auth token
 api.interceptors.request.use(
   async (config) => {
-    const logData = config.data ? config.data : '';
-    console.log('API Request:', config.method?.toUpperCase(), config.url, logData);
+    // Only log in development mode, and only for non-sync operations
+    if (__DEV__ && !config.url?.includes('/body') && !config.url?.includes('/sync')) {
+      console.log('API Request:', config.method?.toUpperCase(), config.url);
+    }
     try {
       const token = await AsyncStorage.getItem('auth_token');
       if (token) {
@@ -38,16 +40,19 @@ api.interceptors.request.use(
 // Response interceptor for error handling
 api.interceptors.response.use(
   (response) => {
-    console.log('API Response:', response.status, response.config.url);
+    // Only log in development mode, and only for non-sync operations
+    if (__DEV__ && !response.config.url?.includes('/body') && !response.config.url?.includes('/sync')) {
+      console.log('API Response:', response.status, response.config.url);
+    }
     return response;
   },
   async (error) => {
+    // Always log errors
     console.error('API Error:', {
       message: error.message,
       code: error.code,
       status: error.response?.status,
-      url: error.config?.url,
-      baseURL: error.config?.baseURL
+      url: error.config?.url
     });
     
     if (error.response?.status === 401) {

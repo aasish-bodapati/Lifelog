@@ -279,6 +279,26 @@ class SyncService {
           notes: data.notes
         };
         
+        // Skip if all meaningful fields are empty (null/undefined)
+        const hasMeaningfulData = 
+          cleanData.weight != null ||
+          cleanData.body_fat_percentage != null ||
+          cleanData.muscle_mass != null ||
+          cleanData.height != null ||
+          cleanData.chest != null ||
+          cleanData.waist != null ||
+          cleanData.hips != null ||
+          cleanData.water_intake != null ||
+          cleanData.sleep_hours != null ||
+          (cleanData.notes && cleanData.notes.trim().length > 0);
+        
+        if (!hasMeaningfulData) {
+          console.log(`Skipping empty body stat: ${item.record_id}`);
+          // Mark as synced to remove from queue (it's empty data)
+          await databaseService.markAsSynced(item.id!);
+          continue;
+        }
+        
         switch (item.operation) {
           case 'INSERT':
             // Pass user_id with the clean data
@@ -294,7 +314,6 @@ class SyncService {
 
         // Mark as synced
         await databaseService.markAsSynced(item.id!);
-        console.log(`Synced body stat ${item.operation}: ${item.record_id}`);
 
       } catch (error) {
         console.error(`Failed to sync body stat ${item.record_id}:`, error);
