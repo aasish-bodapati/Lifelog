@@ -14,6 +14,8 @@ import { databaseService, LocalNutritionLog } from '../../services/databaseServi
 import { useUser } from '../../context/UserContext';
 import { useSync } from '../../context/SyncContext';
 import { toastService } from '../../services/toastService';
+import FoodSearchDropdown from '../../components/FoodSearchDropdown';
+import { Food } from '../../services/foodLibraryService';
 
 interface QuickMealLogScreenProps {
   onClose: () => void;
@@ -30,6 +32,7 @@ const QuickMealLogScreen: React.FC<QuickMealLogScreenProps> = ({
 
   // Form state
   const [foodName, setFoodName] = useState('');
+  const [selectedFood, setSelectedFood] = useState<Food | null>(null);
   const [mealType, setMealType] = useState<'breakfast' | 'lunch' | 'dinner' | 'snack'>('breakfast');
 
   // Recent foods for autofill
@@ -53,6 +56,11 @@ const QuickMealLogScreen: React.FC<QuickMealLogScreenProps> = ({
   const handleQuickFill = (food: LocalNutritionLog) => {
     setFoodName(food.food_name);
     setMealType(food.meal_type);
+  };
+
+  const handleFoodSelect = (food: Food) => {
+    setSelectedFood(food);
+    setFoodName(food.name);
   };
 
   const handleSave = async () => {
@@ -175,15 +183,45 @@ const QuickMealLogScreen: React.FC<QuickMealLogScreenProps> = ({
           <Text style={styles.sectionTitle}>Food Details</Text>
           
           <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Food Name *</Text>
-            <TextInput
-              style={styles.textInput}
-              value={foodName}
-              onChangeText={setFoodName}
-              placeholder="e.g., Grilled Chicken Breast"
-              autoFocus
+            <Text style={styles.inputLabel}>Search and select a food</Text>
+            <FoodSearchDropdown
+              value=""
+              onSelect={handleFoodSelect}
+              placeholder="Search for a food..."
+              style={styles.foodDropdown}
             />
           </View>
+
+          {/* Show selected food or allow custom input */}
+          {selectedFood ? (
+            <View style={styles.selectedFoodCard}>
+              <View style={styles.selectedFoodHeader}>
+                <View>
+                  <Text style={styles.selectedFoodName}>{selectedFood.name}</Text>
+                  <Text style={styles.selectedFoodServing}>{selectedFood.commonServing}</Text>
+                </View>
+                <TouchableOpacity
+                  onPress={() => {
+                    setSelectedFood(null);
+                    setFoodName('');
+                  }}
+                  style={styles.removeFoodButton}
+                >
+                  <Ionicons name="close-circle" size={20} color="#DC3545" />
+                </TouchableOpacity>
+              </View>
+            </View>
+          ) : (
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Or enter custom food name *</Text>
+              <TextInput
+                style={styles.textInput}
+                value={foodName}
+                onChangeText={setFoodName}
+                placeholder="e.g., Grilled Chicken Breast"
+              />
+            </View>
+          )}
         </View>
       </ScrollView>
 
@@ -372,6 +410,34 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     fontSize: 16,
     color: '#333',
+  },
+  foodDropdown: {
+    marginBottom: 0,
+  },
+  selectedFoodCard: {
+    backgroundColor: '#F8F9FA',
+    borderRadius: 8,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+  },
+  selectedFoodHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  selectedFoodName: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 4,
+  },
+  selectedFoodServing: {
+    fontSize: 13,
+    color: '#666',
+  },
+  removeFoodButton: {
+    padding: 4,
   },
 });
 
