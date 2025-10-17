@@ -111,9 +111,20 @@ const DashboardScreen: React.FC = () => {
         7
       );
 
-      // Find today's water intake from body stats
-      const todayBodyStat = bodyStats.find(stat => stat.date === today);
+      // Find today's water intake from body stats (normalize date formats for comparison)
+      const todayBodyStat = bodyStats.find(stat => {
+        const statDate = stat.date.split('T')[0]; // Get YYYY-MM-DD part
+        return statDate === today;
+      });
       const waterIntake = todayBodyStat?.water_intake || 0;
+      
+      console.log('Water intake debug:', {
+        today,
+        bodyStatsCount: bodyStats.length,
+        bodyStatsDates: bodyStats.map(s => s.date),
+        foundStat: !!todayBodyStat,
+        waterIntake
+      });
 
       // Calculate totals
       const totals: DailyTotals = {
@@ -262,15 +273,31 @@ const DashboardScreen: React.FC = () => {
       
       // Check local database first to see if we already have an entry for today
       const localBodyStats = await databaseService.getBodyStats(userState.user.id, 10);
-      const existingLocalStat = localBodyStats.find(stat => stat.date === today || stat.date === `${today}T00:00:00`);
+      const existingLocalStat = localBodyStats.find(stat => {
+        const statDate = stat.date.split('T')[0]; // Normalize date format
+        return statDate === today;
+      });
+      
+      console.log('Adding water:', {
+        amount,
+        currentWater: dailyTotals.water,
+        newWaterTotal,
+        today,
+        localBodyStatsCount: localBodyStats.length,
+        localBodyStatsDates: localBodyStats.map(s => s.date),
+        foundExisting: !!existingLocalStat,
+        existingWater: existingLocalStat?.water_intake
+      });
       
       if (existingLocalStat) {
         // Update existing local entry
+        console.log('Updating existing body stat:', existingLocalStat.local_id);
         await databaseService.updateBodyStat(existingLocalStat.local_id, {
           water_intake: newWaterTotal,
         });
       } else {
         // Create new local entry only if one doesn't exist
+        console.log('Creating new body stat for today');
         await databaseService.saveBodyStat({
           local_id: `bodystat_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
           user_id: userState.user.id,
