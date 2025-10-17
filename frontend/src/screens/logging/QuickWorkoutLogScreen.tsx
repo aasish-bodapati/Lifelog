@@ -279,7 +279,16 @@ const QuickWorkoutLogScreen: React.FC<QuickWorkoutLogScreenProps> = ({
                         </View>
                       </View>
                     </View>
-                    <View style={styles.exerciseInputs}>
+                    <TouchableOpacity
+                      onPress={() => handleRemoveExercise(index)}
+                      style={styles.removeExerciseButton}
+                    >
+                      <Ionicons name="close-circle" size={24} color="#DC3545" />
+                    </TouchableOpacity>
+                  </View>
+                  
+                  {/* Dynamic Inputs - Outside of header */}
+                  <View style={styles.exerciseInputs}>
                       {exercise.category === 'strength' && (
                         <View style={styles.inputRow}>
                           <View style={styles.inputField}>
@@ -441,13 +450,6 @@ const QuickWorkoutLogScreen: React.FC<QuickWorkoutLogScreenProps> = ({
           </View>
                         </View>
                       )}
-                    </View>
-                    <TouchableOpacity
-                      onPress={() => handleRemoveExercise(index)}
-                      style={styles.removeExerciseButton}
-                    >
-                      <Ionicons name="close-circle" size={24} color="#DC3545" />
-                    </TouchableOpacity>
                   </View>
                 </View>
               ))}
@@ -600,10 +602,11 @@ const styles = StyleSheet.create({
     marginBottom: 0,
   },
   inputLabel: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#333',
-    marginBottom: 6,
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#666',
+    marginBottom: 4,
+    textTransform: 'uppercase',
   },
   textInput: {
     backgroundColor: '#F8F9FA',
@@ -674,6 +677,7 @@ const styles = StyleSheet.create({
   },
   removeExerciseButton: {
     padding: 4,
+    marginLeft: 8,
   },
   exerciseDescription: {
     fontSize: 14,
@@ -770,32 +774,33 @@ const styles = StyleSheet.create({
   },
   inputField: {
     flex: 1,
-    minWidth: 80,
+    minWidth: 90,
+    maxWidth: 150,
   },
   numberInput: {
-    backgroundColor: '#F8F9FA',
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#E0E0E0',
-    borderRadius: 6,
-    paddingHorizontal: 8,
-    paddingVertical: 6,
-    fontSize: 14,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 16,
+    fontWeight: '600',
     textAlign: 'center',
-    marginTop: 4,
+    color: '#1A1A1A',
   },
   intensityButtons: {
     flexDirection: 'row',
-    gap: 4,
-    marginTop: 4,
+    gap: 6,
   },
   intensityButton: {
     flex: 1,
-    paddingVertical: 6,
+    paddingVertical: 10,
     paddingHorizontal: 8,
-    borderRadius: 6,
+    borderRadius: 8,
     borderWidth: 1,
     borderColor: '#E0E0E0',
-    backgroundColor: '#F8F9FA',
+    backgroundColor: '#FFFFFF',
     alignItems: 'center',
   },
   intensityButtonActive: {
@@ -803,9 +808,10 @@ const styles = StyleSheet.create({
     borderColor: '#007AFF',
   },
   intensityButtonText: {
-    fontSize: 12,
+    fontSize: 11,
     color: '#666',
-    fontWeight: '500',
+    fontWeight: '600',
+    textTransform: 'uppercase',
   },
   intensityButtonTextActive: {
     color: '#FFFFFF',
