@@ -24,7 +24,7 @@ import LoadingSkeleton from '../../components/LoadingSkeleton';
 const NutritionScreen: React.FC = () => {
   const { state: userState } = useUser();
   const [showMealLog, setShowMealLog] = useState(false);
-  const [activeTab, setActiveTab] = useState<'overview' | 'meals'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'logs'>('overview');
 
   // Use the new useScreenData hook for data loading
   const { data: nutritionLogs, isLoading, isRefreshing, refresh, loadData } = useScreenData<LocalNutritionLog[]>({
@@ -110,14 +110,14 @@ const NutritionScreen: React.FC = () => {
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.tab, activeTab === 'meals' && styles.activeTab]}
+          style={[styles.tab, activeTab === 'logs' && styles.activeTab]}
           onPress={() => {
             hapticService.light();
-            setActiveTab('meals');
+            setActiveTab('logs');
           }}
         >
-          <Text style={[styles.tabText, activeTab === 'meals' && styles.activeTabText]}>
-            Meals
+          <Text style={[styles.tabText, activeTab === 'logs' && styles.activeTabText]}>
+            Logs
           </Text>
         </TouchableOpacity>
       </View>
@@ -265,8 +265,8 @@ const NutritionScreen: React.FC = () => {
         </View>
         )}
 
-        {/* Meals Tab */}
-        {activeTab === 'meals' && (
+        {/* Logs Tab */}
+        {activeTab === 'logs' && (
           <View>
             {/* Meal Logs List */}
             <View style={styles.section}>
