@@ -23,12 +23,23 @@ const RegisterScreen: React.FC = () => {
     goal: 'maintain',
     activity_level: 'moderate',
   });
+  const [confirmPassword, setConfirmPassword] = useState('');
   const { register, state } = useUser();
   const navigation = useNavigation();
 
   const handleRegister = async () => {
     if (!formData.email || !formData.username || !formData.password) {
       toastService.error('Error', 'Please fill in all required fields');
+      return;
+    }
+
+    if (formData.password !== confirmPassword) {
+      toastService.error('Error', 'Passwords do not match');
+      return;
+    }
+
+    if (formData.password.length < 6) {
+      toastService.error('Error', 'Password must be at least 6 characters long');
       return;
     }
 
@@ -105,6 +116,16 @@ const RegisterScreen: React.FC = () => {
             value={formData.password}
             onChangeText={(value) => updateField('password', value)}
             secureTextEntry
+            autoCapitalize="none"
+          />
+          
+          <TextInput
+            style={styles.input}
+            placeholder="Confirm Password *"
+            value={confirmPassword}
+            onChangeText={setConfirmPassword}
+            secureTextEntry
+            autoCapitalize="none"
           />
           
           <TouchableOpacity
