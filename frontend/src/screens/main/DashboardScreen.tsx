@@ -19,6 +19,7 @@ import { getProgressIcon, getMacroColor, getStreakIcon, getConsistencyColor } fr
 import { CommonStyles, Layout, Colors, Typography } from '../../styles/designSystem';
 import SyncIndicator from '../../components/SyncIndicator';
 import PersonalizedHeader from '../../components/dashboard/PersonalizedHeader';
+import RecentAchievements from '../../components/dashboard/RecentAchievements';
 import AnimatedCard from '../../components/AnimatedCard';
 import EnergyCard from '../../components/dashboard/EnergyCard';
 import MacrosCard from '../../components/dashboard/MacrosCard';
@@ -231,6 +232,9 @@ const DashboardScreen: React.FC = () => {
         showsVerticalScrollIndicator={false}
       >
         <View style={CommonStyles.content}>
+          
+          {/* Personalized Header (Greeting & Tips) */}
+          <PersonalizedHeader onRefresh={handleRefresh} />
 
           {/* Dashboard Cards */}
           <View style={styles.cardsContainer}>
@@ -283,8 +287,8 @@ const DashboardScreen: React.FC = () => {
               />
             </AnimatedCard>
           
-          {/* Personalized Header with Recent Achievements */}
-          <PersonalizedHeader onRefresh={handleRefresh} />
+          {/* Recent Achievements */}
+          <RecentAchievements />
 
             {/* Advanced Analytics Card */}
             {dailyInsights && weeklyTrends && consistencyStreak && (
