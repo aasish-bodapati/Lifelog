@@ -3,6 +3,8 @@ import { View, Text, StyleSheet, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 interface MacrosCardProps {
+  calories: number;
+  caloriesTarget: number;
   protein: number;
   carbs: number;
   fat: number;
@@ -13,6 +15,8 @@ interface MacrosCardProps {
 }
 
 const MacrosCard: React.FC<MacrosCardProps> = ({
+  calories,
+  caloriesTarget,
   protein,
   carbs,
   fat,
@@ -25,6 +29,7 @@ const MacrosCard: React.FC<MacrosCardProps> = ({
   const carbsAnim = useRef(new Animated.Value(0)).current;
   const fatAnim = useRef(new Animated.Value(0)).current;
 
+  const caloriesProgress = caloriesTarget > 0 ? Math.min(calories / caloriesTarget, 1) : 0;
   const proteinProgress = proteinTarget > 0 ? Math.min(protein / proteinTarget, 1) : 0;
   const carbsProgress = carbsTarget > 0 ? Math.min(carbs / carbsTarget, 1) : 0;
   const fatProgress = fatTarget > 0 ? Math.min(fat / fatTarget, 1) : 0;
@@ -116,16 +121,54 @@ const MacrosCard: React.FC<MacrosCardProps> = ({
     </View>
   );
 
+  const getCalorieColor = (progress: number) => {
+    if (progress < 0.5) return '#FF6B6B';
+    if (progress < 0.8) return '#FFE66D';
+    if (progress < 1) return '#4ECDC4';
+    return '#45B7D1';
+  };
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
         <View style={styles.titleContainer}>
           <Ionicons name="nutrition" size={24} color="#4ECDC4" />
-          <Text style={styles.title}>Macros</Text>
+          <Text style={styles.title}>Nutrition</Text>
         </View>
         <Text style={styles.subtitle}>Today's breakdown</Text>
       </View>
 
+      {/* Calories Section */}
+      <View style={styles.caloriesSection}>
+        <View style={styles.caloriesHeader}>
+          <View style={styles.caloriesTitleContainer}>
+            <Ionicons name="flame" size={20} color={getCalorieColor(caloriesProgress)} />
+            <Text style={styles.caloriesLabel}>Calories</Text>
+          </View>
+          <Text style={[styles.caloriesValue, { color: getCalorieColor(caloriesProgress) }]}>
+            {Math.round(calories)} / {Math.round(caloriesTarget)}
+          </Text>
+        </View>
+        <View style={styles.caloriesBarContainer}>
+          <View style={styles.caloriesBar}>
+            <View
+              style={[
+                styles.caloriesBarFill,
+                {
+                  backgroundColor: getCalorieColor(caloriesProgress),
+                  width: `${Math.min(caloriesProgress * 100, 100)}%`,
+                },
+              ]}
+            />
+          </View>
+          <Text style={styles.caloriesPercentage}>
+            {Math.round(caloriesProgress * 100)}%
+          </Text>
+        </View>
+      </View>
+
+      {/* Macros Section */}
+      <View style={styles.macrosDivider} />
       <View style={styles.content}>
         <MacroBar
           label="Protein"
@@ -256,6 +299,57 @@ const styles = StyleSheet.create({
     color: '#666666',
     minWidth: 80,
     textAlign: 'right',
+  },
+  caloriesSection: {
+    marginBottom: 16,
+  },
+  caloriesHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  caloriesTitleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  caloriesLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1A1A1A',
+    marginLeft: 8,
+  },
+  caloriesValue: {
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  caloriesBarContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  caloriesBar: {
+    flex: 1,
+    height: 12,
+    backgroundColor: '#F0F0F0',
+    borderRadius: 6,
+    overflow: 'hidden',
+  },
+  caloriesBarFill: {
+    height: '100%',
+    borderRadius: 6,
+  },
+  caloriesPercentage: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#666666',
+    minWidth: 50,
+    textAlign: 'right',
+  },
+  macrosDivider: {
+    height: 1,
+    backgroundColor: '#F0F0F0',
+    marginVertical: 16,
   },
   summary: {
     marginTop: 16,

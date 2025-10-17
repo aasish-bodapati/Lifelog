@@ -21,7 +21,6 @@ import SyncIndicator from '../../components/SyncIndicator';
 import PersonalizedHeader from '../../components/dashboard/PersonalizedHeader';
 import RecentAchievements from '../../components/dashboard/RecentAchievements';
 import AnimatedCard from '../../components/AnimatedCard';
-import EnergyCard from '../../components/dashboard/EnergyCard';
 import MacrosCard from '../../components/dashboard/MacrosCard';
 import HydrationCard from '../../components/dashboard/HydrationCard';
 import BodyTrendCard from '../../components/dashboard/BodyTrendCard';
@@ -238,18 +237,11 @@ const DashboardScreen: React.FC = () => {
 
           {/* Dashboard Cards */}
           <View style={styles.cardsContainer}>
-            {/* Energy Card */}
+            {/* Nutrition Card (Calories + Macros) */}
             <AnimatedCard delay={100}>
-              <EnergyCard
-                current={dailyTotals.calories}
-                target={dailyTargets?.calories || 0}
-                isLoading={isLoading}
-              />
-            </AnimatedCard>
-
-            {/* Macros Card */}
-            <AnimatedCard delay={200}>
               <MacrosCard
+                calories={dailyTotals.calories}
+                caloriesTarget={dailyTargets?.calories || 0}
                 protein={dailyTotals.protein}
                 carbs={dailyTotals.carbs}
                 fat={dailyTotals.fat}
@@ -261,7 +253,7 @@ const DashboardScreen: React.FC = () => {
             </AnimatedCard>
 
             {/* Hydration Card */}
-            <AnimatedCard delay={300}>
+            <AnimatedCard delay={200}>
               <HydrationCard
                 current={dailyTotals.water}
                 target={dailyTargets?.hydration || 0}
@@ -270,7 +262,7 @@ const DashboardScreen: React.FC = () => {
             </AnimatedCard>
 
             {/* Body Trend Card */}
-            <AnimatedCard delay={400}>
+            <AnimatedCard delay={300}>
               <BodyTrendCard
                 userId={userState.user?.id || 0}
                 isLoading={isLoading}
@@ -278,7 +270,7 @@ const DashboardScreen: React.FC = () => {
             </AnimatedCard>
 
             {/* Consistency Card */}
-            <AnimatedCard delay={500}>
+            <AnimatedCard delay={400}>
               <ConsistencyCard
                 streak={streak}
                 lastSyncTime={lastSyncTime}
@@ -292,7 +284,7 @@ const DashboardScreen: React.FC = () => {
 
             {/* Advanced Analytics Card */}
             {dailyInsights && weeklyTrends && consistencyStreak && (
-              <AnimatedCard delay={600}>
+              <AnimatedCard delay={500}>
                 <AdvancedAnalyticsCard
                   dailyInsights={dailyInsights}
                   weeklyTrends={weeklyTrends}
@@ -304,7 +296,7 @@ const DashboardScreen: React.FC = () => {
 
             {/* Calories Trend Chart */}
             {caloriesTrend.length > 0 && (
-              <AnimatedCard delay={700}>
+              <AnimatedCard delay={600}>
                 <TrendChart
                   title="Calories Trend"
                   data={caloriesTrend}
@@ -316,7 +308,7 @@ const DashboardScreen: React.FC = () => {
 
             {/* Progress Insights */}
             {dailyInsights && weeklyTrends && consistencyStreak && (
-              <AnimatedCard delay={800}>
+              <AnimatedCard delay={700}>
                 <ProgressInsights
                   dailyInsights={dailyInsights}
                   weeklyTrends={weeklyTrends}
