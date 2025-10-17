@@ -38,7 +38,6 @@ const QuickWorkoutLogScreen: React.FC<QuickWorkoutLogScreenProps> = ({
     weight?: number;
     duration?: number;
     distance?: number;
-    intensity?: 'low' | 'moderate' | 'high';
   }>>([]);
 
   // Recent workouts for autofill
@@ -91,20 +90,17 @@ const QuickWorkoutLogScreen: React.FC<QuickWorkoutLogScreenProps> = ({
         defaultData = {
           duration: 30, // minutes
           distance: 5, // km
-          intensity: 'moderate' as const,
         };
         break;
       case 'flexibility':
         defaultData = {
           duration: 15, // minutes
-          intensity: 'low' as const,
         };
         break;
       case 'sports':
         defaultData = {
           duration: 45, // minutes
           distance: 0, // varies by sport
-          intensity: 'moderate' as const,
         };
         break;
       default:
@@ -176,7 +172,6 @@ const QuickWorkoutLogScreen: React.FC<QuickWorkoutLogScreenProps> = ({
         if (exercise.weight && exercise.weight > 0) details.push(`${exercise.weight}kg`);
         if (exercise.duration) details.push(`${exercise.duration} minutes`);
         if (exercise.distance && exercise.distance > 0) details.push(`${exercise.distance}km`);
-        if (exercise.intensity) details.push(`Intensity: ${exercise.intensity}`);
         
         const notes = details.length > 0 ? details.join(' • ') : undefined;
 
@@ -379,32 +374,6 @@ const QuickWorkoutLogScreen: React.FC<QuickWorkoutLogScreenProps> = ({
                               keyboardType="numeric"
                               selectTextOnFocus
                             />
-                          </View>
-                          <View style={styles.inputField}>
-                            <Text style={styles.inputLabel}>Intensity</Text>
-                            <View style={styles.intensityButtons}>
-                              {(['low', 'moderate', 'high'] as const).map((level) => (
-                                <TouchableOpacity
-                                  key={level}
-                                  style={[
-                                    styles.intensityButton,
-                                    exercise.intensity === level && styles.intensityButtonActive
-                                  ]}
-                                  onPress={() => {
-                                    const updatedExercises = [...selectedExercises];
-                                    updatedExercises[index].intensity = level;
-                                    setSelectedExercises(updatedExercises);
-                                  }}
-                                >
-                                  <Text style={[
-                                    styles.intensityButtonText,
-                                    exercise.intensity === level && styles.intensityButtonTextActive
-                                  ]}>
-                                    {level.charAt(0).toUpperCase() + level.slice(1)}
-                                  </Text>
-                                </TouchableOpacity>
-                              ))}
-                            </View>
                           </View>
                         </View>
                       )}
@@ -800,33 +769,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     textAlign: 'center',
     color: '#1A1A1A',
-  },
-  intensityButtons: {
-    flexDirection: 'row',
-    gap: 4,
-  },
-  intensityButton: {
-    flex: 1,
-    paddingVertical: 6,
-    paddingHorizontal: 6,
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
-    backgroundColor: '#FFFFFF',
-    alignItems: 'center',
-  },
-  intensityButtonActive: {
-    backgroundColor: '#007AFF',
-    borderColor: '#007AFF',
-  },
-  intensityButtonText: {
-    fontSize: 10,
-    color: '#666',
-    fontWeight: '600',
-    textTransform: 'uppercase',
-  },
-  intensityButtonTextActive: {
-    color: '#FFFFFF',
   },
 });
 

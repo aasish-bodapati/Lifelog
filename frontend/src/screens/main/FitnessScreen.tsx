@@ -29,8 +29,14 @@ const FitnessScreen: React.FC = () => {
   const [showWorkoutLog, setShowWorkoutLog] = useState(false);
   const [exerciseProgress, setExerciseProgress] = useState<ExerciseProgress[]>([]);
   const [activeTab, setActiveTab] = useState<'overview' | 'logs'>('overview');
-  const [selectedWorkout, setSelectedWorkout] = useState<LocalWorkout | null>(null);
-  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingWorkoutId, setEditingWorkoutId] = useState<string | null>(null);
+  const [editValues, setEditValues] = useState<{
+    sets?: string;
+    reps?: string;
+    weight?: string;
+    duration?: string;
+    distance?: string;
+  }>({});
 
   const quickWorkouts = [
     { name: 'Morning Run', duration: 30, icon: 'walk', color: '#FF6B6B' },
@@ -45,8 +51,17 @@ const FitnessScreen: React.FC = () => {
     fetchData: async () => {
       const userId = userState.user?.id || 0;
       
-      // Load recent workouts from local database
-      const recentWorkouts = await databaseService.getWorkouts(userId, 30);
+      let recentWorkouts: LocalWorkout[] = [];
+      
+      // Load recent workouts from local database with error handling
+      try {
+        recentWorkouts = await databaseService.getWorkouts(userId, 30);
+        console.log('Local workouts loaded:', recentWorkouts.length);
+      } catch (error) {
+        console.error('Error loading recent workouts:', error);
+        // Return empty array if database fails
+        return [];
+      }
       
       // Try to fetch from backend for sync (silent failure)
       try {
@@ -118,10 +133,145 @@ const FitnessScreen: React.FC = () => {
     return 'No duration';
   };
 
+  const parseWorkoutDetails = (notes: string | undefined | null) => {
+    if (!notes) return null;
+
+    // Parse notes like "3 sets × 10 reps • 20kg"
+    const details: Array<{ icon: string; text: string; color: string }> = [];
+
+    // Check for sets and reps
+    const setsRepsMatch = notes.match(/(\d+)\s*sets?\s*×\s*(\d+)\s*reps?/i);
+    if (setsRepsMatch) {
+      details.push({
+        icon: 'fitness',
+        text: `Sets: ${setsRepsMatch[1]}`,
+        color: Colors.primary,
+      });
+      details.push({
+        icon: 'repeat',
+        text: `Reps: ${setsRepsMatch[2]}`,
+        color: Colors.primary,
+      });
+    }
+
+    // Check for weight
+    const weightMatch = notes.match(/(\d+(?:\.\d+)?)\s*kg/i);
+    if (weightMatch) {
+      details.push({
+        icon: 'barbell',
+        text: `Weight: ${weightMatch[1]} kg`,
+        color: Colors.success,
+      });
+    }
+
+    // Check for duration (minutes)
+    const durationMatch = notes.match(/(\d+)\s*minutes?/i);
+    if (durationMatch) {
+      details.push({
+        icon: 'time',
+        text: `Duration: ${durationMatch[1]} min`,
+        color: Colors.info,
+      });
+    }
+
+    // Check for distance
+    const distanceMatch = notes.match(/(\d+(?:\.\d+)?)\s*km/i);
+    if (distanceMatch) {
+      details.push({
+        icon: 'location',
+        text: `Distance: ${distanceMatch[1]} km`,
+        color: Colors.warning,
+      });
+    }
+
+    return details.length > 0 ? details : null;
+  };
+
+  const parseWorkoutValues = (notes: string | undefined | null) => {
+    const values: { sets?: string; reps?: string; weight?: string; duration?: string; distance?: string } = {};
+    
+    if (!notes) return values;
+
+    const setsMatch = notes.match(/(\d+)\s*sets?/i);
+    if (setsMatch) values.sets = setsMatch[1];
+
+    const repsMatch = notes.match(/×\s*(\d+)\s*reps?/i);
+    if (repsMatch) values.reps = repsMatch[1];
+
+    const weightMatch = notes.match(/(\d+(?:\.\d+)?)\s*kg/i);
+    if (weightMatch) values.weight = weightMatch[1];
+
+    const durationMatch = notes.match(/(\d+)\s*minutes?/i);
+    if (durationMatch) values.duration = durationMatch[1];
+
+    const distanceMatch = notes.match(/(\d+(?:\.\d+)?)\s*km/i);
+    if (distanceMatch) values.distance = distanceMatch[1];
+
+    return values;
+  };
+
   const handleEditWorkout = (workout: LocalWorkout) => {
     hapticService.light();
-    setSelectedWorkout(workout);
-    setShowEditModal(true);
+    setEditingWorkoutId(workout.local_id);
+    const parsedValues = parseWorkoutValues(workout.notes);
+    
+    // Only set values that actually exist in the workout
+    const values: typeof editValues = {};
+    if (parsedValues.sets) values.sets = parsedValues.sets;
+    if (parsedValues.reps) values.reps = parsedValues.reps;
+    if (parsedValues.weight) values.weight = parsedValues.weight;
+    
+    // Only include duration if it's explicitly in the notes (not from workout.duration_minutes)
+    // Strength exercises shouldn't show duration field
+    if (parsedValues.duration) {
+      values.duration = parsedValues.duration;
+    }
+    
+    if (parsedValues.distance) values.distance = parsedValues.distance;
+    
+    setEditValues(values);
+  };
+
+  const handleCancelEdit = () => {
+    hapticService.light();
+    setEditingWorkoutId(null);
+    setEditValues({});
+  };
+
+  const handleSaveEdit = async (workoutId: string) => {
+    try {
+      hapticService.medium();
+      
+      // Build new notes from edited values
+      const noteParts = [];
+      if (editValues.sets && editValues.reps) {
+        noteParts.push(`${editValues.sets} sets × ${editValues.reps} reps`);
+      }
+      if (editValues.weight) {
+        noteParts.push(`${editValues.weight}kg`);
+      }
+      if (editValues.duration) {
+        noteParts.push(`${editValues.duration} minutes`);
+      }
+      if (editValues.distance) {
+        noteParts.push(`${editValues.distance}km`);
+      }
+      
+      const newNotes = noteParts.join(' • ');
+      
+      await databaseService.updateWorkout(workoutId, {
+        duration_minutes: parseInt(editValues.duration || '0') || 0,
+        notes: newNotes,
+      });
+      
+      toastService.success('Success', 'Workout updated successfully');
+      setEditingWorkoutId(null);
+      setEditValues({});
+      loadData();
+    } catch (error) {
+      console.error('Error updating workout:', error);
+      toastService.error('Error', 'Failed to update workout');
+    }
   };
 
   const handleDeleteWorkout = async (workout: LocalWorkout) => {
@@ -133,22 +283,6 @@ const FitnessScreen: React.FC = () => {
     } catch (error) {
       console.error('Error deleting workout:', error);
       toastService.error('Error', 'Failed to delete workout');
-    }
-  };
-
-  const handleSaveEdit = async (updatedData: { name: string; duration_minutes: number; notes?: string }) => {
-    if (!selectedWorkout) return;
-
-    try {
-      hapticService.medium();
-      await databaseService.updateWorkout(selectedWorkout.local_id, updatedData);
-      toastService.success('Success', 'Workout updated successfully');
-      setShowEditModal(false);
-      setSelectedWorkout(null);
-      loadData();
-    } catch (error) {
-      console.error('Error updating workout:', error);
-      toastService.error('Error', 'Failed to update workout');
     }
   };
 
@@ -393,41 +527,161 @@ const FitnessScreen: React.FC = () => {
                       key={workout.local_id}
                       style={styles.workoutLogCard}
                     >
-                      <View style={styles.workoutLogHeader}>
-                        <View style={[styles.workoutIconContainer, { backgroundColor: getWorkoutColor(workout.name) + '20' }]}>
-                          <Ionicons
-                            name={getWorkoutIcon(workout.name) as any}
-                            size={24}
-                            color={getWorkoutColor(workout.name)}
-                          />
-                        </View>
-                        <View style={styles.workoutLogInfo}>
-                          <Text style={styles.workoutLogName}>{workout.name}</Text>
-                          <Text style={styles.workoutLogDate}>{formatDate(workout.date)}</Text>
-                        </View>
-                        <View style={styles.workoutLogActions}>
-                          <Text style={styles.workoutLogDuration}>{getWorkoutDuration(workout)}</Text>
-                          <View style={styles.workoutLogButtons}>
-                            <TouchableOpacity
-                              onPress={() => handleEditWorkout(workout)}
-                              style={styles.actionButton}
-                            >
-                              <Ionicons name="create-outline" size={20} color={Colors.primary} />
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                              onPress={() => handleDeleteWorkout(workout)}
-                              style={styles.actionButton}
-                            >
-                              <Ionicons name="trash-outline" size={20} color={Colors.error} />
-                            </TouchableOpacity>
+                      <>
+                        {/* Card Header - Always Same */}
+                        <View style={styles.workoutLogHeader}>
+                          <View style={[styles.workoutIconContainer, { backgroundColor: getWorkoutColor(workout.name) + '20' }]}>
+                            <Ionicons
+                              name={getWorkoutIcon(workout.name) as any}
+                              size={24}
+                              color={getWorkoutColor(workout.name)}
+                            />
+                          </View>
+                          <View style={styles.workoutLogInfo}>
+                            <Text style={styles.workoutLogName}>{workout.name}</Text>
+                            <Text style={styles.workoutLogDate}>{formatDate(workout.date)}</Text>
+                          </View>
+                          <View style={styles.workoutLogActions}>
+                            <View style={styles.workoutLogButtons}>
+                              {editingWorkoutId === workout.local_id ? (
+                                <>
+                                  <TouchableOpacity
+                                    onPress={handleCancelEdit}
+                                    style={styles.actionButton}
+                                  >
+                                    <Ionicons name="close" size={20} color={Colors.textSecondary} />
+                                  </TouchableOpacity>
+                                  <TouchableOpacity
+                                    onPress={() => handleSaveEdit(workout.local_id)}
+                                    style={styles.actionButton}
+                                  >
+                                    <Ionicons name="checkmark" size={20} color={Colors.success} />
+                                  </TouchableOpacity>
+                                </>
+                              ) : (
+                                <>
+                                  <TouchableOpacity
+                                    onPress={() => handleEditWorkout(workout)}
+                                    style={styles.actionButton}
+                                  >
+                                    <Ionicons name="create-outline" size={20} color={Colors.primary} />
+                                  </TouchableOpacity>
+                                  <TouchableOpacity
+                                    onPress={() => handleDeleteWorkout(workout)}
+                                    style={styles.actionButton}
+                                  >
+                                    <Ionicons name="trash-outline" size={20} color={Colors.error} />
+                                  </TouchableOpacity>
+                                </>
+                              )}
+                            </View>
                           </View>
                         </View>
-                      </View>
-                      {workout.notes && (
-                        <Text style={styles.workoutLogNotes} numberOfLines={2}>
-                          {workout.notes}
-                        </Text>
-                      )}
+                        
+                        {/* Workout Details - Editable or Display */}
+                        {editingWorkoutId === workout.local_id ? (
+                          <View style={styles.workoutDetails}>
+                            {/* Sets */}
+                            {editValues.sets && (
+                              <View style={styles.editDetailItem}>
+                                <View style={[styles.detailIconContainer, { backgroundColor: Colors.primary + '20' }]}>
+                                  <Ionicons name="fitness" size={14} color={Colors.primary} />
+                                </View>
+                                <Text style={styles.editDetailLabel}>Sets:</Text>
+                                <TextInput
+                                  style={styles.editDetailInput}
+                                  value={editValues.sets}
+                                  onChangeText={(text) => setEditValues({ ...editValues, sets: text })}
+                                  keyboardType="numeric"
+                                  selectTextOnFocus
+                                />
+                              </View>
+                            )}
+                            {/* Reps */}
+                            {editValues.reps && (
+                              <View style={styles.editDetailItem}>
+                                <View style={[styles.detailIconContainer, { backgroundColor: Colors.primary + '20' }]}>
+                                  <Ionicons name="repeat" size={14} color={Colors.primary} />
+                                </View>
+                                <Text style={styles.editDetailLabel}>Reps:</Text>
+                                <TextInput
+                                  style={styles.editDetailInput}
+                                  value={editValues.reps}
+                                  onChangeText={(text) => setEditValues({ ...editValues, reps: text })}
+                                  keyboardType="numeric"
+                                  selectTextOnFocus
+                                />
+                              </View>
+                            )}
+                            {/* Weight */}
+                            {editValues.weight && (
+                              <View style={styles.editDetailItem}>
+                                <View style={[styles.detailIconContainer, { backgroundColor: Colors.success + '20' }]}>
+                                  <Ionicons name="barbell" size={14} color={Colors.success} />
+                                </View>
+                                <Text style={styles.editDetailLabel}>Weight:</Text>
+                                <TextInput
+                                  style={styles.editDetailInput}
+                                  value={editValues.weight}
+                                  onChangeText={(text) => setEditValues({ ...editValues, weight: text })}
+                                  keyboardType="decimal-pad"
+                                  selectTextOnFocus
+                                />
+                                <Text style={styles.editDetailUnit}>kg</Text>
+                              </View>
+                            )}
+                            {/* Duration */}
+                            {editValues.duration && (
+                              <View style={styles.editDetailItem}>
+                                <View style={[styles.detailIconContainer, { backgroundColor: Colors.info + '20' }]}>
+                                  <Ionicons name="time" size={14} color={Colors.info} />
+                                </View>
+                                <Text style={styles.editDetailLabel}>Duration:</Text>
+                                <TextInput
+                                  style={styles.editDetailInput}
+                                  value={editValues.duration}
+                                  onChangeText={(text) => setEditValues({ ...editValues, duration: text })}
+                                  keyboardType="numeric"
+                                  selectTextOnFocus
+                                />
+                                <Text style={styles.editDetailUnit}>min</Text>
+                              </View>
+                            )}
+                            {/* Distance */}
+                            {editValues.distance && (
+                              <View style={styles.editDetailItem}>
+                                <View style={[styles.detailIconContainer, { backgroundColor: Colors.warning + '20' }]}>
+                                  <Ionicons name="location" size={14} color={Colors.warning} />
+                                </View>
+                                <Text style={styles.editDetailLabel}>Distance:</Text>
+                                <TextInput
+                                  style={styles.editDetailInput}
+                                  value={editValues.distance}
+                                  onChangeText={(text) => setEditValues({ ...editValues, distance: text })}
+                                  keyboardType="decimal-pad"
+                                  selectTextOnFocus
+                                />
+                                <Text style={styles.editDetailUnit}>km</Text>
+                              </View>
+                            )}
+                          </View>
+                        ) : parseWorkoutDetails(workout.notes) ? (
+                          <View style={styles.workoutDetails}>
+                            {parseWorkoutDetails(workout.notes)!.map((detail, idx) => (
+                              <View key={idx} style={styles.workoutDetailItem}>
+                                <View style={[styles.detailIconContainer, { backgroundColor: detail.color + '20' }]}>
+                                  <Ionicons name={detail.icon as any} size={14} color={detail.color} />
+                                </View>
+                                <Text style={styles.workoutDetailText}>{detail.text}</Text>
+                              </View>
+                            ))}
+                          </View>
+                        ) : workout.notes ? (
+                          <Text style={styles.workoutLogNotes} numberOfLines={2}>
+                            {workout.notes}
+                          </Text>
+                        ) : null}
+                      </>
                     </View>
                   ))}
                 </View>
@@ -466,71 +720,6 @@ const FitnessScreen: React.FC = () => {
           onClose={() => setShowWorkoutLog(false)}
           onSuccess={handleWorkoutLogSuccess}
         />
-      </Modal>
-
-      {/* Edit Workout Modal */}
-      <Modal
-        visible={showEditModal}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={() => setShowEditModal(false)}
-      >
-        <SafeAreaView style={styles.modalContainer}>
-          <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Edit Workout</Text>
-            <TouchableOpacity onPress={() => setShowEditModal(false)}>
-              <Ionicons name="close" size={28} color={Colors.textPrimary} />
-            </TouchableOpacity>
-          </View>
-          
-          {selectedWorkout && (
-            <ScrollView style={styles.modalContent}>
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Workout Name</Text>
-                <TextInput
-                  style={styles.textInput}
-                  value={selectedWorkout.name}
-                  onChangeText={(text) => setSelectedWorkout({ ...selectedWorkout, name: text })}
-                  placeholder="Enter workout name"
-                />
-              </View>
-
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Duration (minutes)</Text>
-                <TextInput
-                  style={styles.textInput}
-                  value={selectedWorkout.duration_minutes?.toString() || ''}
-                  onChangeText={(text) => setSelectedWorkout({ ...selectedWorkout, duration_minutes: parseInt(text) || 0 })}
-                  keyboardType="numeric"
-                  placeholder="Enter duration"
-                />
-              </View>
-
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Notes</Text>
-                <TextInput
-                  style={[styles.textInput, styles.textArea]}
-                  value={selectedWorkout.notes || ''}
-                  onChangeText={(text) => setSelectedWorkout({ ...selectedWorkout, notes: text })}
-                  placeholder="Add notes (optional)"
-                  multiline
-                  numberOfLines={4}
-                />
-              </View>
-
-              <TouchableOpacity
-                style={styles.saveButton}
-                onPress={() => handleSaveEdit({
-                  name: selectedWorkout.name,
-                  duration_minutes: selectedWorkout.duration_minutes || 0,
-                  notes: selectedWorkout.notes
-                })}
-              >
-                <Text style={styles.saveButtonText}>Save Changes</Text>
-              </TouchableOpacity>
-            </ScrollView>
-          )}
-        </SafeAreaView>
       </Modal>
 
     </SafeAreaView>
@@ -829,30 +1018,37 @@ const styles = StyleSheet.create({
   workoutLogHeader: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 12,
   },
   workoutLogInfo: {
     flex: 1,
-    marginLeft: 12,
   },
   workoutLogName: {
     ...Typography.h4,
-    marginBottom: 4,
+    marginBottom: 2,
   },
   workoutLogDate: {
     ...Typography.caption,
-  },
-  workoutLogActions: {
-    flexDirection: 'column',
-    alignItems: 'flex-end',
-    gap: 8,
-  },
-  workoutLogButtons: {
-    flexDirection: 'row',
-    gap: 8,
+    marginBottom: 4,
   },
   workoutLogDuration: {
     ...Typography.label,
+    fontSize: 12,
     color: Colors.primary,
+    backgroundColor: Colors.primaryLight,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: Layout.radiusSmall,
+    alignSelf: 'flex-start',
+  },
+  workoutLogActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  workoutLogButtons: {
+    flexDirection: 'row',
+    gap: 4,
   },
   workoutLogNotes: {
     ...Typography.bodySmall,
@@ -862,65 +1058,76 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: Colors.divider,
   },
+  workoutDetails: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginTop: 12,
+  },
+  workoutDetailItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.background,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: Layout.radiusMedium,
+    gap: 6,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  detailIconContainer: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  workoutDetailText: {
+    ...Typography.label,
+    fontSize: 13,
+    color: Colors.textPrimary,
+    fontWeight: '500',
+  },
   actionButton: {
     padding: 8,
     borderRadius: Layout.radiusSmall,
     backgroundColor: Colors.background,
   },
-  // Edit Modal Styles
-  modalContainer: {
-    flex: 1,
-    backgroundColor: Colors.background,
-  },
-  modalHeader: {
+  // Inline Edit Styles
+  editDetailItem: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: Layout.screenPadding,
-    paddingVertical: Layout.headerPadding,
-    backgroundColor: Colors.surface,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
+    backgroundColor: Colors.background,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: Layout.radiusMedium,
+    gap: 6,
+    borderWidth: 2,
+    borderColor: Colors.primary,
   },
-  modalTitle: {
-    ...Typography.h2,
-  },
-  modalContent: {
-    flex: 1,
-    padding: Layout.screenPadding,
-  },
-  inputGroup: {
-    marginBottom: Layout.sectionSpacing,
-  },
-  inputLabel: {
+  editDetailLabel: {
     ...Typography.label,
-    marginBottom: 8,
+    fontSize: 12,
+    color: Colors.textPrimary,
+    fontWeight: '600',
   },
-  textInput: {
+  editDetailInput: {
     backgroundColor: Colors.surface,
     borderWidth: 1,
     borderColor: Colors.border,
-    borderRadius: Layout.radiusMedium,
-    paddingHorizontal: Layout.cardPadding,
-    paddingVertical: 12,
-    ...Typography.body,
-  },
-  textArea: {
-    minHeight: 100,
-    textAlignVertical: 'top',
-  },
-  saveButton: {
-    backgroundColor: Colors.primary,
-    paddingVertical: 16,
-    borderRadius: Layout.radiusMedium,
-    alignItems: 'center',
-    marginTop: Layout.sectionSpacing,
-    ...Layout.shadowMedium,
-  },
-  saveButtonText: {
+    borderRadius: Layout.radiusSmall,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
     ...Typography.label,
-    color: Colors.textLight,
-    fontSize: 16,
+    fontSize: 13,
+    minWidth: 40,
+    textAlign: 'center',
+    color: Colors.textPrimary,
+  },
+  editDetailUnit: {
+    ...Typography.label,
+    fontSize: 12,
+    color: Colors.textSecondary,
   },
 });
 

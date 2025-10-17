@@ -106,7 +106,10 @@ class ApiService {
   }
 
   async deleteWorkout(workoutId: string) {
-    const response = await api.delete(`/fitness/${workoutId}`);
+    const userId = await AsyncStorage.getItem('userId');
+    const response = await api.delete(`/fitness/${workoutId}`, {
+      params: { user_id: userId }
+    });
     return response.data;
   }
 

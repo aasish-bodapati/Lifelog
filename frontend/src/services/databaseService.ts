@@ -233,51 +233,69 @@ class DatabaseService {
 
   // Workout Operations
   async saveWorkout(workout: Omit<LocalWorkout, 'id' | 'synced' | 'created_at' | 'updated_at'>): Promise<string> {
-    if (!this.db) throw new Error('Database not initialized');
+    if (!this.db) {
+      console.error('Database not initialized');
+      throw new Error('Database not initialized');
+    }
 
-    const localId = `workout_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    const now = new Date().toISOString();
+    try {
+      const localId = `workout_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      const now = new Date().toISOString();
 
-    const query = `
-      INSERT INTO local_workouts (local_id, user_id, name, date, duration_minutes, notes, synced, created_at, updated_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `;
+      const query = `
+        INSERT INTO local_workouts (local_id, user_id, name, date, duration_minutes, notes, synced, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `;
 
-    await this.db.runAsync(query, [
-      localId,
-      workout.user_id,
-      workout.name,
-      workout.date,
-      workout.duration_minutes || null,
-      workout.notes || null,
-      false,
-      now,
-      now
-    ]);
+      await this.db.runAsync(query, [
+        localId,
+        workout.user_id,
+        workout.name,
+        workout.date,
+        workout.duration_minutes || null,
+        workout.notes || null,
+        false,
+        now,
+        now
+      ]);
 
-    // Add to sync queue
-    await this.addToSyncQueue('workouts', localId, 'INSERT', {
-      ...workout,
-      local_id: localId,
-      created_at: now,
-      updated_at: now
-    });
+      console.log(`Workout saved successfully: ${localId}`);
 
-    return localId;
+      // Add to sync queue
+      await this.addToSyncQueue('workouts', localId, 'INSERT', {
+        ...workout,
+        local_id: localId,
+        created_at: now,
+        updated_at: now
+      });
+
+      return localId;
+    } catch (error) {
+      console.error('Error saving workout:', error);
+      throw error;
+    }
   }
 
   async getWorkouts(userId: number, limit: number = 50): Promise<LocalWorkout[]> {
-    if (!this.db) throw new Error('Database not initialized');
+    if (!this.db) {
+      console.error('Database not initialized in getWorkouts');
+      throw new Error('Database not initialized');
+    }
 
-    const query = `
-      SELECT * FROM local_workouts 
-      WHERE user_id = ? 
-      ORDER BY date DESC, created_at DESC 
-      LIMIT ?
-    `;
+    try {
+      const query = `
+        SELECT * FROM local_workouts 
+        WHERE user_id = ? 
+        ORDER BY date DESC, created_at DESC 
+        LIMIT ?
+      `;
 
-    const result = await this.db.getAllAsync(query, [userId, limit]);
-    return result as LocalWorkout[];
+      const result = await this.db.getAllAsync(query, [userId, limit]);
+      return result as LocalWorkout[];
+    } catch (error) {
+      console.error('Error fetching workouts from database:', error);
+      throw error;
+    }
   }
 
   async updateWorkout(localId: string, updates: Partial<Pick<LocalWorkout, 'name' | 'duration_minutes' | 'notes'>>): Promise<void> {
