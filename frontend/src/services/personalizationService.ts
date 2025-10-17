@@ -76,7 +76,7 @@ class PersonalizationService {
       }
 
       // Calculate weekly workouts
-      let workouts = [];
+      let workouts: Array<{ date: string }> = [];
       let weeklyWorkouts = 0;
       try {
         workouts = await databaseService.getWorkouts(userId, 50);

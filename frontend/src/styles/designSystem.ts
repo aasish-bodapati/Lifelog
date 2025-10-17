@@ -27,10 +27,13 @@ export const Colors = {
   textPrimary: '#1A1A1A',
   textSecondary: '#666666',
   textTertiary: '#999999',
+  text: '#1A1A1A',
+  textLight: '#999999',
   
   // Border colors
   border: '#E0E0E0',
   borderLight: '#F0F0F0',
+  divider: '#E0E0E0',
   
   // Status colors
   success: '#28A745',

@@ -34,6 +34,8 @@ def create_body_stat(body_stat: BodyStatCreate, user_id: int, db: Session = Depe
         blood_pressure_systolic=body_stat.blood_pressure_systolic,
         blood_pressure_diastolic=body_stat.blood_pressure_diastolic,
         resting_heart_rate=body_stat.resting_heart_rate,
+        water_intake=body_stat.water_intake,
+        sleep_hours=body_stat.sleep_hours,
         notes=body_stat.notes
     )
     

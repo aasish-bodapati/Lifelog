@@ -320,7 +320,7 @@ class ExerciseLibraryService {
    * Get all muscle groups
    */
   getMuscleGroups(): string[] {
-    const allMuscles = this.exercises.flatMap(exercise => exercise.muscleGroups);
+    const allMuscles = this.exercises.flatMap((exercise: Exercise) => exercise.muscleGroups);
     return [...new Set(allMuscles)].sort();
   }
 

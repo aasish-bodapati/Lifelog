@@ -337,7 +337,7 @@ const ProgressScreen: React.FC = () => {
     const avgProtein = dailyData.reduce((sum, d) => sum + d.total_protein, 0) / dailyData.length;
     const totalWorkouts = dailyData.reduce((sum, d) => sum + d.workout_count, 0);
     
-    const targetCalories = onboardingData.profile ? 
+    const targetCalories = onboardingData.profile && onboardingData.goal && onboardingData.activity ? 
       calculationService.calculateDailyTargets(
         onboardingData.profile as any,
         onboardingData.goal,

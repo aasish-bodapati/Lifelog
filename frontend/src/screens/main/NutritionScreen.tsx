@@ -8,6 +8,7 @@ import {
   RefreshControl,
   Modal,
   Alert,
+  TextInput,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -1066,14 +1067,6 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: Colors.textPrimary,
     flex: 1,
-  },
-  mealMacros: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    paddingTop: 12,
-    marginTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: '#F0F0F0',
   },
   macroItem: {
     alignItems: 'center',

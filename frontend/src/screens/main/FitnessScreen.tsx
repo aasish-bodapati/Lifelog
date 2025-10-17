@@ -32,7 +32,7 @@ import { useOnboarding } from '../../context/OnboardingContext';
 
 const FitnessScreen: React.FC = () => {
   const { state: userState } = useUser();
-  const { state: onboardingState } = useOnboarding();
+  const { data: onboardingData, isComplete: onboardingComplete } = useOnboarding();
   const [showWorkoutLog, setShowWorkoutLog] = useState(false);
   const [exerciseProgress, setExerciseProgress] = useState<ExerciseProgress[]>([]);
   const [activeTab, setActiveTab] = useState<'overview' | 'routines' | 'logs'>('overview');
@@ -55,14 +55,14 @@ const FitnessScreen: React.FC = () => {
   React.useEffect(() => {
     const loadRoutine = async () => {
       console.log('Loading routine...');
-      console.log('Onboarding state isComplete:', onboardingState?.isComplete);
-      console.log('Onboarding data:', onboardingState?.data);
-      console.log('Goal from state:', onboardingState?.data?.goal);
+      console.log('Onboarding state isComplete:', onboardingComplete);
+      console.log('Onboarding data:', onboardingData);
+      console.log('Goal from state:', onboardingData?.goal);
       
       // First, try to load from onboarding context
-      if (onboardingState?.data?.goal?.type) {
-        const routine = workoutRoutineService.getRoutineByGoal(onboardingState.data.goal.type);
-        console.log('Loading routine from context for goal:', onboardingState.data.goal.type);
+      if (onboardingData?.goal?.type) {
+        const routine = workoutRoutineService.getRoutineByGoal(onboardingData.goal.type);
+        console.log('Loading routine from context for goal:', onboardingData.goal.type);
         setSelectedRoutine(routine);
         return;
       }
@@ -101,7 +101,7 @@ const FitnessScreen: React.FC = () => {
     };
     
     loadRoutine();
-  }, [onboardingState?.data?.goal, onboardingState?.isComplete]);
+  }, [onboardingData?.goal, onboardingComplete]);
 
   // Use the new useScreenData hook for workouts
   const { data: workouts, isLoading, isRefreshing, refresh, loadData } = useScreenData<LocalWorkout[]>({
@@ -586,7 +586,7 @@ const FitnessScreen: React.FC = () => {
                   <View style={styles.tipContent}>
                     <Text style={styles.tipTitle}>Pro Tip</Text>
                     <Text style={styles.tipText}>
-                      {weeklyStats.totalWorkouts >= 3
+                      {weeklyStats.totalItems >= 3
                         ? "You're crushing it! Consider adding rest days for recovery."
                         : "Aim for 3-5 workouts per week for optimal results."}
                     </Text>
@@ -640,7 +640,7 @@ const FitnessScreen: React.FC = () => {
                 <View style={styles.emptyState}>
                   <Ionicons name="clipboard-outline" size={64} color="#CCC" />
                   <Text style={styles.emptyStateTitle}>Complete Onboarding</Text>
-                  <Text style={styles.emptyStateText}>
+                  <Text style={styles.emptyState}>
                     Complete your profile setup to get a personalized workout routine
                   </Text>
                 </View>
@@ -865,7 +865,7 @@ const FitnessScreen: React.FC = () => {
                 <View style={styles.emptyState}>
                   <Ionicons name="barbell-outline" size={64} color="#CCC" />
                   <Text style={styles.emptyStateTitle}>No workouts logged yet</Text>
-                  <Text style={styles.emptyStateText}>
+                  <Text style={styles.emptyState}>
                     Start tracking your fitness journey by logging your first workout!
                   </Text>
                   <TouchableOpacity
@@ -1067,7 +1067,7 @@ const FitnessScreen: React.FC = () => {
               </View>
             ) : (
               <View style={styles.modalContent}>
-                <Text style={styles.emptyStateText}>Loading routine...</Text>
+                <Text style={styles.emptyState}>Loading routine...</Text>
               </View>
             )}
           </ScrollView>

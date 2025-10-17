@@ -82,6 +82,7 @@ const QuickBodyStatLogScreen: React.FC<QuickBodyStatLogScreenProps> = ({
 
     try {
       const bodyStatData = {
+        local_id: `bodystat_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         user_id: userState.user.id,
         weight_kg: weight ? parseFloat(weight) : undefined,
         body_fat_percentage: bodyFat ? parseFloat(bodyFat) : undefined,

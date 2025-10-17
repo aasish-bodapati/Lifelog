@@ -176,6 +176,7 @@ const QuickWorkoutLogScreen: React.FC<QuickWorkoutLogScreenProps> = ({
         const notes = details.length > 0 ? details.join(' • ') : undefined;
 
       const workoutData = {
+        local_id: `workout_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         user_id: userState.user.id,
           name: exercise.name,
           date: currentDate,

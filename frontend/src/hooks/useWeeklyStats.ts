@@ -1,13 +1,13 @@
 import { useMemo } from 'react';
 
-interface WeeklyStatsOptions<T> {
+export interface WeeklyStatsOptions<T> {
   data: T[];
   getDateField: (item: T) => string;
   getValueField?: (item: T) => number;
   daysBack?: number;
 }
 
-interface WeeklyStatsResult {
+export interface WeeklyStatsResult {
   totalItems: number;
   totalValue: number;
   avgValue: number;

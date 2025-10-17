@@ -118,6 +118,10 @@ class BodyStat(Base):
     blood_pressure_diastolic = Column(Integer)
     resting_heart_rate = Column(Integer)
     
+    # Lifestyle metrics
+    water_intake = Column(Float)  # in liters
+    sleep_hours = Column(Float)
+    
     notes = Column(Text)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     

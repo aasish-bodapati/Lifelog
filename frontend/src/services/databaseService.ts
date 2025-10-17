@@ -21,6 +21,7 @@ export interface LocalWorkout {
   synced: boolean;
   created_at: string;
   updated_at: string;
+  exercises?: LocalExercise[];
 }
 
 export interface LocalExercise {
@@ -51,6 +52,7 @@ export interface LocalNutritionLog {
   fiber_g?: number;
   sugar_g?: number;
   sodium_mg?: number;
+  notes?: string;
   date: string;
   synced: boolean;
   created_at: string;
@@ -68,6 +70,7 @@ export interface LocalBodyStat {
   chest_cm?: number;
   arm_cm?: number;
   thigh_cm?: number;
+  water_intake?: number;
   date: string;
   synced: boolean;
   created_at: string;
@@ -181,6 +184,17 @@ class DatabaseService {
     `);
 
     console.log('Local database tables created successfully');
+    
+    // Add water_intake column if it doesn't exist (migration)
+    try {
+      await this.db.execAsync(`
+        ALTER TABLE local_body_stats ADD COLUMN water_intake REAL;
+      `);
+      console.log('Added water_intake column to local_body_stats');
+    } catch (error) {
+      // Column might already exist, ignore error
+      console.log('water_intake column already exists or migration failed:', error);
+    }
   }
 
   // Sync Queue Operations
@@ -200,7 +214,7 @@ class DatabaseService {
       // Wait for database initialization if needed
       if (!this.db) {
         console.warn('Database not initialized in getUnsyncedItems, waiting...');
-        await this.initDatabase();
+        await this.init();
       }
 
       // Double-check after potential initialization
@@ -302,7 +316,7 @@ class DatabaseService {
       // Wait for database initialization if needed
       if (!this.db) {
         console.warn('Database not initialized in getWorkouts, waiting...');
-        await this.initDatabase();
+        await this.init();
       }
 
       // Double-check after potential initialization
@@ -442,7 +456,7 @@ class DatabaseService {
       // Wait for database initialization if needed
       if (!this.db) {
         console.warn('Database not initialized in getNutritionLogs, waiting...');
-        await this.initDatabase();
+        await this.init();
       }
 
       // Double-check after potential initialization
@@ -563,8 +577,8 @@ class DatabaseService {
     const now = new Date().toISOString();
 
     const query = `
-      INSERT INTO local_body_stats (local_id, user_id, weight_kg, body_fat_percentage, muscle_mass_kg, waist_cm, chest_cm, arm_cm, thigh_cm, date, synced, created_at, updated_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO local_body_stats (local_id, user_id, weight_kg, body_fat_percentage, muscle_mass_kg, waist_cm, chest_cm, arm_cm, thigh_cm, water_intake, date, synced, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
 
     await this.db.runAsync(query, [
@@ -577,6 +591,7 @@ class DatabaseService {
       bodyStat.chest_cm || null,
       bodyStat.arm_cm || null,
       bodyStat.thigh_cm || null,
+      bodyStat.water_intake || null,
       bodyStat.date,
       false,
       now,
@@ -599,7 +614,7 @@ class DatabaseService {
       // Wait for database initialization if needed
       if (!this.db) {
         console.warn('Database not initialized in getBodyStats, waiting...');
-        await this.initDatabase();
+        await this.init();
       }
 
       // Double-check after potential initialization
@@ -635,7 +650,7 @@ class DatabaseService {
       // Wait for database initialization if needed
       if (!this.db) {
         console.warn('Database not initialized in getUnsyncedCount, waiting...');
-        await this.initDatabase();
+        await this.init();
       }
 
       // Double-check after potential initialization

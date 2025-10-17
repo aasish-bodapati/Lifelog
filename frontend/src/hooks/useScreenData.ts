@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { toastService } from '../services/toastService';
 
-interface UseScreenDataOptions<T> {
+export interface UseScreenDataOptions<T> {
   fetchData: () => Promise<T>;
   dependencies?: any[];
   onSuccess?: (data: T) => void;
@@ -10,7 +10,7 @@ interface UseScreenDataOptions<T> {
   autoLoad?: boolean;
 }
 
-interface UseScreenDataReturn<T> {
+export interface UseScreenDataReturn<T> {
   data: T | null;
   isLoading: boolean;
   isRefreshing: boolean;

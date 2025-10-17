@@ -32,7 +32,7 @@ const ExerciseSearchDropdown: React.FC<ExerciseSearchDropdownProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<Exercise[]>([]);
   const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(null);
-  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Search exercises with debounce - wait 500ms after user stops typing
   useEffect(() => {

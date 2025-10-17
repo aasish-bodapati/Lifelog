@@ -1,13 +1,13 @@
 import { useCallback } from 'react';
 import { toastService } from '../services/toastService';
 
-interface ErrorHandlerOptions {
+export interface ErrorHandlerOptions {
   defaultMessage?: string;
   onError?: (error: any, message: string) => void;
   logErrors?: boolean;
 }
 
-interface ErrorHandlerReturn {
+export interface ErrorHandlerReturn {
   handleError: (error: any, customMessage?: string) => void;
   parseErrorMessage: (error: any) => string;
 }

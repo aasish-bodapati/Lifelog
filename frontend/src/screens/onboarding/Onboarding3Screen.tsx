@@ -63,7 +63,7 @@ const Onboarding3Screen: React.FC = () => {
             <Text style={styles.sectionTitle}>Your Profile</Text>
             <View style={styles.profileInfo}>
               <Text style={styles.profileText}>
-                {userState.user?.name || 'User'}, {data.profile.age} years old
+                {userState.user?.full_name || userState.user?.username || 'User'}, {data.profile.age} years old
               </Text>
               <Text style={styles.profileText}>
                 {data.profile.height}cm, {data.profile.weight}kg

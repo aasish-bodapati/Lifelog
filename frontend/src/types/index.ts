@@ -117,6 +117,8 @@ export interface BodyStat {
   blood_pressure_systolic?: number;
   blood_pressure_diastolic?: number;
   resting_heart_rate?: number;
+  water_intake?: number;
+  sleep_hours?: number;
   notes?: string;
   created_at: string;
 }
@@ -138,6 +140,8 @@ export interface BodyStatCreate {
   blood_pressure_systolic?: number;
   blood_pressure_diastolic?: number;
   resting_heart_rate?: number;
+  water_intake?: number;
+  sleep_hours?: number;
   notes?: string;
 }
 

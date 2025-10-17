@@ -63,6 +63,7 @@ class RepeatYesterdayService {
 
       for (const workout of yesterdayData.workouts) {
         const newWorkoutData = {
+          local_id: `workout_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
           user_id: userId,
           name: workout.name,
           date: today,
@@ -98,6 +99,7 @@ class RepeatYesterdayService {
 
       for (const nutrition of yesterdayData.nutrition) {
         const newNutritionData = {
+          local_id: `nutrition_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
           user_id: userId,
           meal_type: nutrition.meal_type,
           food_name: nutrition.food_name,
@@ -139,6 +141,7 @@ class RepeatYesterdayService {
 
       for (const bodyStat of yesterdayData.bodyStats) {
         const newBodyStatData = {
+          local_id: `bodystat_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
           user_id: userId,
           weight_kg: bodyStat.weight_kg,
           body_fat_percentage: bodyStat.body_fat_percentage,

@@ -57,10 +57,11 @@ const MacrosCard: React.FC<MacrosCardProps> = ({
   }, [proteinProgress, carbsProgress, fatProgress, isLoading, proteinAnim, carbsAnim, fatAnim]);
 
   const getMacroColor = (progress: number) => {
-    if (progress < 0.5) return '#FF6B6B';
-    if (progress < 0.8) return '#FFE66D';
-    if (progress < 1) return '#4ECDC4';
-    return '#45B7D1';
+    if (progress < 0.5) return '#FF6B6B';      // Red: Low (<50%)
+    if (progress < 0.8) return '#FFE66D';      // Yellow: Good (50-80%)
+    if (progress < 1) return '#4ECDC4';        // Teal: Great (80-100%)
+    if (progress < 1.2) return '#45B7D1';      // Blue: Complete (100-120%)
+    return '#FF9800';                          // Orange: Over (>120%)
   };
 
   const MacroBar = ({ 
@@ -112,10 +113,11 @@ const MacrosCard: React.FC<MacrosCardProps> = ({
   );
 
   const getCalorieColor = (progress: number) => {
-    if (progress < 0.5) return '#FF6B6B';
-    if (progress < 0.8) return '#FFE66D';
-    if (progress < 1) return '#4ECDC4';
-    return '#45B7D1';
+    if (progress < 0.5) return '#FF6B6B';      // Red: Low (<50%)
+    if (progress < 0.8) return '#FFE66D';      // Yellow: Good (50-80%)
+    if (progress < 1) return '#4ECDC4';        // Teal: Great (80-100%)
+    if (progress < 1.2) return '#45B7D1';      // Blue: Complete (100-120%)
+    return '#FF9800';                          // Orange: Over (>120%)
   };
 
   return (
@@ -210,7 +212,7 @@ const styles = StyleSheet.create({
   container: {
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
-    padding: 20,
+    padding: 16,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
@@ -221,123 +223,123 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   header: {
-    marginBottom: 20,
+    marginBottom: 14,
   },
   titleContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 4,
+    marginBottom: 2,
   },
   title: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '600',
     color: '#1A1A1A',
     marginLeft: 8,
   },
   subtitle: {
-    fontSize: 14,
+    fontSize: 13,
     color: '#666666',
     marginLeft: 32,
   },
   content: {
-    gap: 16,
+    gap: 12,
   },
   macroItem: {
-    marginBottom: 4,
+    marginBottom: 0,
   },
   macroHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 6,
   },
   macroTitleContainer: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   macroLabel: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600',
     marginLeft: 6,
   },
   macroBarContainer: {
-    marginTop: 8,
+    marginTop: 6,
   },
   macroBar: {
-    height: 8,
+    height: 6,
     backgroundColor: '#F0F0F0',
-    borderRadius: 4,
+    borderRadius: 3,
     overflow: 'hidden',
   },
   macroBarFill: {
     height: '100%',
-    borderRadius: 4,
+    borderRadius: 3,
     transformOrigin: 'left center',
   },
   macroNumbers: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '600',
     textAlign: 'right',
   },
   caloriesSection: {
-    marginBottom: 16,
+    marginBottom: 12,
   },
   caloriesHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 8,
   },
   caloriesTitleContainer: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   caloriesLabel: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '600',
     color: '#1A1A1A',
     marginLeft: 8,
   },
   caloriesValue: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '700',
   },
   caloriesBarContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 10,
   },
   caloriesBar: {
     flex: 1,
-    height: 12,
+    height: 10,
     backgroundColor: '#F0F0F0',
-    borderRadius: 6,
+    borderRadius: 5,
     overflow: 'hidden',
   },
   caloriesBarFill: {
     height: '100%',
-    borderRadius: 6,
+    borderRadius: 5,
   },
   caloriesPercentage: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '700',
     color: '#666666',
-    minWidth: 50,
+    minWidth: 45,
     textAlign: 'right',
   },
   macrosDivider: {
     height: 1,
     backgroundColor: '#F0F0F0',
-    marginVertical: 16,
+    marginVertical: 12,
   },
   summary: {
-    marginTop: 16,
-    paddingTop: 16,
+    marginTop: 12,
+    paddingTop: 12,
     borderTopWidth: 1,
     borderTopColor: '#F0F0F0',
   },
   summaryText: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '500',
     color: '#666666',
     textAlign: 'center',

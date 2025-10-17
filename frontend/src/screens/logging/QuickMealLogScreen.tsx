@@ -89,6 +89,7 @@ const QuickMealLogScreen: React.FC<QuickMealLogScreenProps> = ({
       const fat = Math.round(baseCalories * 0.3 * weight / 100 / 9);
 
       const nutritionData = {
+        local_id: `nutrition_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         user_id: userState.user.id,
         meal_type: mealType,
         food_name: foodName.trim(),
@@ -169,9 +170,11 @@ const QuickMealLogScreen: React.FC<QuickMealLogScreenProps> = ({
           </View>
 
           <ScrollView 
-            style={styles.content} 
+            style={styles.content}
+            contentContainerStyle={styles.scrollContent}
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
+            nestedScrollEnabled={true}
           >
         {/* Recent Foods */}
         {recentFoods.length > 0 && (
@@ -382,6 +385,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 20,
   },
+  scrollContent: {
+    paddingBottom: 300, // Extra padding to allow scrolling when dropdown is open
+  },
   footer: {
     flexDirection: 'row',
     paddingHorizontal: 20,
@@ -484,6 +490,7 @@ const styles = StyleSheet.create({
   },
   inputGroup: {
     marginBottom: 20,
+    zIndex: 1000, // Ensure dropdown appears above other content
   },
   inputLabel: {
     fontSize: 12,

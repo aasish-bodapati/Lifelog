@@ -80,19 +80,11 @@ class ExerciseProgressService {
     const cached = await this.getCachedData<ExerciseProgress[]>(cacheKey);
     if (cached) return cached;
 
-    try {
-      // Try to get from backend first
-      const data = await apiService.getExerciseProgress(userId, limit);
-      await this.setCachedData(cacheKey, data);
-      return data;
-    } catch (error) {
-      console.log('Backend exercise progress unavailable, calculating from local data');
-      
-      // Fallback to local calculation
-      const localData = await this.calculateLocalExerciseProgress(userId, limit);
-      await this.setCachedData(cacheKey, localData);
-      return localData;
-    }
+    // Backend API not implemented yet, use local calculation
+    console.log('Using local data for exercise progress');
+    const localData = await this.calculateLocalExerciseProgress(userId, limit);
+    await this.setCachedData(cacheKey, localData);
+    return localData;
   }
 
   async getPersonalRecords(userId: number, exerciseName?: string): Promise<PersonalRecord[]> {
@@ -100,19 +92,11 @@ class ExerciseProgressService {
     const cached = await this.getCachedData<PersonalRecord[]>(cacheKey);
     if (cached) return cached;
 
-    try {
-      // Try to get from backend first
-      const data = await apiService.getPersonalRecords(userId, exerciseName);
-      await this.setCachedData(cacheKey, data);
-      return data;
-    } catch (error) {
-      console.log('Backend personal records unavailable, calculating from local data');
-      
-      // Fallback to local calculation
-      const localData = await this.calculateLocalPersonalRecords(userId, exerciseName);
-      await this.setCachedData(cacheKey, localData);
-      return localData;
-    }
+    // Backend API not implemented yet, use local calculation
+    console.log('Using local data for personal records');
+    const localData = await this.calculateLocalPersonalRecords(userId, exerciseName);
+    await this.setCachedData(cacheKey, localData);
+    return localData;
   }
 
   async getExerciseStats(userId: number): Promise<ExerciseStats> {
@@ -120,19 +104,11 @@ class ExerciseProgressService {
     const cached = await this.getCachedData<ExerciseStats>(cacheKey);
     if (cached) return cached;
 
-    try {
-      // Try to get from backend first
-      const data = await apiService.getExerciseStats(userId);
-      await this.setCachedData(cacheKey, data);
-      return data;
-    } catch (error) {
-      console.log('Backend exercise stats unavailable, calculating from local data');
-      
-      // Fallback to local calculation
-      const localData = await this.calculateLocalExerciseStats(userId);
-      await this.setCachedData(cacheKey, localData);
-      return localData;
-    }
+    // Backend API not implemented yet, use local calculation
+    console.log('Using local data for exercise stats');
+    const localData = await this.calculateLocalExerciseStats(userId);
+    await this.setCachedData(cacheKey, localData);
+    return localData;
   }
 
   private async calculateLocalExerciseProgress(userId: number, limit: number): Promise<ExerciseProgress[]> {

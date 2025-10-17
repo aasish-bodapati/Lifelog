@@ -1,37 +1,45 @@
-import { Alert, Platform } from 'react-native';
+// Custom Toast Service - Compatible with React 19
+// This is a placeholder that will be overridden by the ToastProvider context
+let toastInstance: any = null;
 
-// Simple toast service using Alert for cross-platform compatibility
-// No native dependencies required
+export const setToastInstance = (instance: any) => {
+  toastInstance = instance;
+};
+
 export const toastService = {
   success: (title: string, message?: string) => {
-    if (Platform.OS === 'web') {
-      console.log(`✅ ${title}${message ? `: ${message}` : ''}`);
-      return;
+    const text = message ? `${title}: ${message}` : title;
+    if (toastInstance) {
+      toastInstance.showToast(text, 'success');
+    } else {
+      console.log(`✅ ${text}`);
     }
-    Alert.alert(title, message, [{ text: 'OK' }]);
   },
 
   error: (title: string, message?: string) => {
-    if (Platform.OS === 'web') {
-      console.error(`❌ ${title}${message ? `: ${message}` : ''}`);
-      return;
+    const text = message ? `${title}: ${message}` : title;
+    if (toastInstance) {
+      toastInstance.showToast(text, 'error', 4000);
+    } else {
+      console.error(`❌ ${text}`);
     }
-    Alert.alert(title, message, [{ text: 'OK' }]);
   },
 
   info: (title: string, message?: string) => {
-    if (Platform.OS === 'web') {
-      console.info(`ℹ️ ${title}${message ? `: ${message}` : ''}`);
-      return;
+    const text = message ? `${title}: ${message}` : title;
+    if (toastInstance) {
+      toastInstance.showToast(text, 'info');
+    } else {
+      console.info(`ℹ️ ${text}`);
     }
-    Alert.alert(title, message, [{ text: 'OK' }]);
   },
 
   warning: (title: string, message?: string) => {
-    if (Platform.OS === 'web') {
-      console.warn(`⚠️ ${title}${message ? `: ${message}` : ''}`);
-      return;
+    const text = message ? `${title}: ${message}` : title;
+    if (toastInstance) {
+      toastInstance.showToast(text, 'warning');
+    } else {
+      console.warn(`⚠️ ${text}`);
     }
-    Alert.alert(title, message, [{ text: 'OK' }]);
   },
 };

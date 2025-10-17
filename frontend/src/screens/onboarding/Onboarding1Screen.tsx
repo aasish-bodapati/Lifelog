@@ -52,8 +52,8 @@ const Onboarding1Screen: React.FC = () => {
     setErrors([]);
     updateData({ 
       profile: profile as OnboardingProfile,
-      goal: selectedGoal,
-      activity: selectedActivity
+      goal: selectedGoal ?? undefined,
+      activity: selectedActivity ?? undefined
     });
     nextStep();
   };
@@ -109,7 +109,7 @@ const Onboarding1Screen: React.FC = () => {
                 <TextInput
                   style={styles.textInput}
                   value={profile.age?.toString() || ''}
-                  onChangeText={(value) => updateField('age', value ? parseInt(value) : undefined)}
+                  onChangeText={(value) => updateField('age', value ? parseInt(value) || 0 : 0)}
                   placeholder="25"
                   keyboardType="numeric"
                   maxLength={3}
@@ -120,7 +120,7 @@ const Onboarding1Screen: React.FC = () => {
                 <TextInput
                   style={styles.textInput}
                   value={profile.height?.toString() || ''}
-                  onChangeText={(value) => updateField('height', value ? parseInt(value) : undefined)}
+                  onChangeText={(value) => updateField('height', value ? parseInt(value) || 0 : 0)}
                   placeholder="175"
                   keyboardType="numeric"
                   maxLength={3}
@@ -131,7 +131,7 @@ const Onboarding1Screen: React.FC = () => {
                 <TextInput
                   style={styles.textInput}
                   value={profile.weight?.toString() || ''}
-                  onChangeText={(value) => updateField('weight', value ? parseInt(value) : undefined)}
+                  onChangeText={(value) => updateField('weight', value ? parseInt(value) || 0 : 0)}
                   placeholder="70"
                   keyboardType="numeric"
                   maxLength={3}

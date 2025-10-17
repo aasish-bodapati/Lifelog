@@ -127,10 +127,11 @@ class ApiService {
     // Extract and map fields to match backend schema
     const { user_id, meal_type, food_name, calories, protein_g, carbs_g, fat_g, date, notes } = nutritionData;
     const cleanData = {
-      user_id,
+      // user_id is passed as query param, NOT in body
       meal_type,
       food_name,
       quantity: 1, // Default quantity
+      unit: 'serving', // Required field - default to 'serving'
       calories: Number(calories) || 0,
       protein: Number(protein_g) || 0,  // Map protein_g to protein
       carbs: Number(carbs_g) || 0,      // Map carbs_g to carbs
@@ -141,7 +142,7 @@ class ApiService {
       date,
       ...(notes && { notes }), // Only include notes if it exists
     };
-    const response = await api.post('/nutrition/', cleanData);
+    const response = await api.post(`/nutrition/?user_id=${user_id}`, cleanData);
     return response.data;
   }
 

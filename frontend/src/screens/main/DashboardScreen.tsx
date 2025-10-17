@@ -8,12 +8,15 @@ import {
   Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useFocusEffect } from '@react-navigation/native';
 import { useUser } from '../../context/UserContext';
 import { useSync } from '../../context/SyncContext';
 import { useOnboarding } from '../../context/OnboardingContext';
 import { databaseService } from '../../services/databaseService';
 import { calculationService } from '../../services/calculationService';
 import { hapticService } from '../../services/hapticService';
+import { toastService } from '../../services/toastService';
+import { bodyStatsService } from '../../services/bodyStatsService';
 import { advancedAnalyticsService, DailyInsights, WeeklyTrends, ConsistencyStreak } from '../../services/advancedAnalyticsService';
 import { getProgressIcon, getMacroColor, getStreakIcon, getConsistencyColor } from '../../utils';
 import { CommonStyles, Layout, Colors, Typography } from '../../styles/designSystem';
@@ -102,11 +105,19 @@ const DashboardScreen: React.FC = () => {
         100
       );
 
-      // Get today's body stats (for hydration if we track it)
+      // Get today's body stats (for hydration)
       const bodyStats = await databaseService.getBodyStats(
         userState.user.id,
         7
       );
+
+      // Find today's water intake from body stats
+      const todayBodyStat = bodyStats.find(stat => stat.date === today);
+      const waterIntake = todayBodyStat?.water_intake || 0;
+      
+      console.log('Loading today data. Body stats:', bodyStats);
+      console.log('Today body stat:', todayBodyStat);
+      console.log('Water intake:', waterIntake);
 
       // Calculate totals
       const totals: DailyTotals = {
@@ -114,9 +125,10 @@ const DashboardScreen: React.FC = () => {
         protein: nutritionLogs.reduce((sum, log) => sum + log.protein_g, 0),
         carbs: nutritionLogs.reduce((sum, log) => sum + log.carbs_g, 0),
         fat: nutritionLogs.reduce((sum, log) => sum + log.fat_g, 0),
-        water: 0, // TODO: Implement hydration tracking
+        water: waterIntake,
       };
 
+      console.log('Setting daily totals:', totals);
       setDailyTotals(totals);
 
       // Calculate streak (simplified - check last 7 days)
@@ -203,6 +215,15 @@ const DashboardScreen: React.FC = () => {
     }
   }, [syncStatus.lastSyncTime]);
 
+  // Refresh data when screen comes into focus (e.g., after logging a meal)
+  useFocusEffect(
+    useCallback(() => {
+      if (userState.user?.id) {
+        loadTodayData();
+      }
+    }, [userState.user?.id, loadTodayData])
+  );
+
   const handleRefresh = async () => {
     hapticService.light();
     setIsLoading(true);
@@ -216,6 +237,85 @@ const DashboardScreen: React.FC = () => {
       console.error('Error refreshing dashboard:', error);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleAddWater = async (amount: number) => {
+    if (!userState.user?.id) return;
+
+    try {
+      hapticService.light();
+      
+      // Calculate new total based on current UI state
+      const newWaterTotal = dailyTotals.water + amount;
+      
+      // Update UI immediately for instant feedback
+      setDailyTotals(prev => ({
+        ...prev,
+        water: newWaterTotal,
+      }));
+      
+      // Get today's date
+      const today = new Date().toISOString().split('T')[0];
+      
+      // Check if there's already a body stat entry for today via API
+      const todayStats = await bodyStatsService.getBodyStats(userState.user.id, {
+        start_date: today,
+        end_date: today,
+        limit: 10,
+      });
+      
+      console.log('Today stats found:', todayStats);
+      console.log('Current water in UI:', dailyTotals.water, 'Adding:', amount, 'New total:', newWaterTotal);
+      
+      let savedStat;
+      
+      if (todayStats && todayStats.length > 0) {
+        // Update existing entry with new total
+        const currentStat = todayStats[0];
+        
+        console.log('Updating existing stat ID:', currentStat.id, 'New water total:', newWaterTotal);
+        
+        savedStat = await bodyStatsService.updateBodyStat(userState.user.id, currentStat.id, {
+          water_intake: newWaterTotal,
+        });
+      } else {
+        // Create new entry for today with the total
+        console.log('Creating new stat with water:', newWaterTotal);
+        
+        savedStat = await bodyStatsService.createBodyStat(userState.user.id, {
+          water_intake: newWaterTotal,
+          date: today,
+        });
+      }
+      
+      // Save to local database immediately
+      if (savedStat) {
+        console.log('Saving to local database:', savedStat);
+        await databaseService.saveBodyStat({
+          local_id: `bodystat_${savedStat.id}`,
+          user_id: userState.user.id,
+          date: savedStat.date.split('T')[0], // Extract just the date part
+          weight_kg: savedStat.weight,
+          body_fat_percentage: savedStat.body_fat_percentage,
+          muscle_mass_kg: savedStat.muscle_mass,
+          waist_cm: savedStat.waist,
+          chest_cm: savedStat.chest,
+          arm_cm: savedStat.bicep_left, // Using bicep as arm measurement
+          thigh_cm: savedStat.thigh_left,
+          water_intake: savedStat.water_intake,
+        });
+      }
+
+      toastService.success(`Added ${amount}L of water! 💧`);
+      
+      // Reload data in background to sync with database
+      setTimeout(() => loadTodayData(), 500);
+    } catch (error) {
+      console.error('Error adding water:', error);
+      toastService.error('Failed to log water intake');
+      // Reload to get correct state on error
+      loadTodayData();
     }
   };
 
@@ -258,6 +358,7 @@ const DashboardScreen: React.FC = () => {
                 current={dailyTotals.water}
                 target={dailyTargets?.hydration || 0}
                 isLoading={isLoading}
+                onAddWater={handleAddWater}
               />
             </AnimatedCard>
 

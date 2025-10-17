@@ -231,29 +231,29 @@ class AdvancedAnalyticsService {
     return Math.min(score, 100);
   }
 
-  private calculateWeeklyGoalsAchieved(weeklyData: WeeklyTrends): number {
+  private calculateWeeklyGoalsAchieved(weeklyData: Partial<WeeklyTrends>): number {
     let goalsAchieved = 0;
     
     // Calorie goals (5+ days with good calorie intake)
-    if (weeklyData.avg_daily_calories > 1500) goalsAchieved++;
+    if ((weeklyData.avg_daily_calories ?? 0) > 1500) goalsAchieved++;
     
     // Protein goals (5+ days with good protein)
-    if (weeklyData.avg_daily_protein > 80) goalsAchieved++;
+    if ((weeklyData.avg_daily_protein ?? 0) > 80) goalsAchieved++;
     
     // Workout goals (3+ workouts per week)
-    if (weeklyData.total_workouts >= 3) goalsAchieved++;
+    if ((weeklyData.total_workouts ?? 0) >= 3) goalsAchieved++;
     
     // Duration goals (150+ minutes per week)
-    if (weeklyData.total_workout_duration >= 150) goalsAchieved++;
+    if ((weeklyData.total_workout_duration ?? 0) >= 150) goalsAchieved++;
     
     // Weight goals (if applicable)
     if (weeklyData.weight_change !== undefined) goalsAchieved++;
     
     // Consistency goals (5+ days of activity)
-    if (weeklyData.consistency_streak >= 5) goalsAchieved++;
+    if ((weeklyData.consistency_streak ?? 0) >= 5) goalsAchieved++;
     
     // Progress goals (positive trend)
-    if (weeklyData.trend_direction === 'up') goalsAchieved++;
+    if (weeklyData.trend_direction && weeklyData.trend_direction === 'up') goalsAchieved++;
     
     return goalsAchieved;
   }

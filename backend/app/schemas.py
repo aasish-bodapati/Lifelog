@@ -132,6 +132,8 @@ class BodyStatBase(BaseModel):
     blood_pressure_systolic: Optional[int] = None
     blood_pressure_diastolic: Optional[int] = None
     resting_heart_rate: Optional[int] = None
+    water_intake: Optional[float] = None
+    sleep_hours: Optional[float] = None
     notes: Optional[str] = None
 
 class BodyStatCreate(BodyStatBase):
@@ -141,6 +143,8 @@ class BodyStatUpdate(BaseModel):
     weight: Optional[float] = None
     body_fat_percentage: Optional[float] = None
     muscle_mass: Optional[float] = None
+    water_intake: Optional[float] = None
+    sleep_hours: Optional[float] = None
     notes: Optional[str] = None
 
 class BodyStat(BodyStatBase):
