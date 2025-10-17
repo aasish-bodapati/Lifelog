@@ -136,7 +136,7 @@ const AchievementCard: React.FC<AchievementCardProps> = ({ achievement }) => {
           <View style={[styles.iconContainer, { backgroundColor: categoryColor }]}>
             <Ionicons
               name={achievement.icon as any}
-              size={24}
+              size={28}
               color="#FFFFFF"
             />
           </View>
@@ -230,11 +230,19 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   iconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     justifyContent: 'center',
     alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.15,
+    shadowRadius: 3,
+    elevation: 3,
   },
   categoryContainer: {
     flexDirection: 'row',

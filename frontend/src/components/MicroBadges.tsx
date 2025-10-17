@@ -126,7 +126,7 @@ const MicroBadges: React.FC<MicroBadgesProps> = ({
                 <View style={styles.badgeCategory}>
                   <Ionicons
                     name={getCategoryIcon(badge.category) as any}
-                    size={10}
+                    size={12}
                     color={getRarityColor(badge.rarity)}
                   />
                   <Text style={[styles.badgeCategoryText, { color: getRarityColor(badge.rarity) }]}>
@@ -163,39 +163,39 @@ const styles = StyleSheet.create({
   badge: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 20,
-    borderWidth: 1,
-    minWidth: 120,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 24,
+    borderWidth: 2,
+    minWidth: 140,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
       height: 2,
     },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowOpacity: 0.15,
+    shadowRadius: 5,
+    elevation: 4,
   },
   badgeEmoji: {
-    fontSize: 20,
-    marginRight: 8,
+    fontSize: 28,
+    marginRight: 10,
   },
   badgeContent: {
     flex: 1,
   },
   badgeTitle: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '600',
     color: '#1A1A1A',
-    marginBottom: 2,
+    marginBottom: 3,
   },
   badgeCategory: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   badgeCategoryText: {
-    fontSize: 8,
+    fontSize: 9,
     fontWeight: '500',
     marginLeft: 4,
   },

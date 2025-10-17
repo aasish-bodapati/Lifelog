@@ -231,9 +231,6 @@ const DashboardScreen: React.FC = () => {
         showsVerticalScrollIndicator={false}
       >
         <View style={CommonStyles.content}>
-          
-          {/* Personalized Header */}
-          <PersonalizedHeader onRefresh={handleRefresh} />
 
           {/* Dashboard Cards */}
           <View style={styles.cardsContainer}>
@@ -285,6 +282,9 @@ const DashboardScreen: React.FC = () => {
                 isLoading={isLoading}
               />
             </AnimatedCard>
+          
+          {/* Personalized Header with Recent Achievements */}
+          <PersonalizedHeader onRefresh={handleRefresh} />
 
             {/* Advanced Analytics Card */}
             {dailyInsights && weeklyTrends && consistencyStreak && (
