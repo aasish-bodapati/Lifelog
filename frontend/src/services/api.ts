@@ -17,7 +17,8 @@ const api = axios.create({
 // Request interceptor to add auth token
 api.interceptors.request.use(
   async (config) => {
-    console.log('API Request:', config.method?.toUpperCase(), config.url, config.data);
+    const logData = config.data ? config.data : '';
+    console.log('API Request:', config.method?.toUpperCase(), config.url, logData);
     try {
       const token = await AsyncStorage.getItem('auth_token');
       if (token) {

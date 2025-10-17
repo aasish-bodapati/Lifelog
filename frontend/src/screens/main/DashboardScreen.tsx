@@ -169,20 +169,18 @@ const DashboardScreen: React.FC = () => {
       setConsistencyStreak(streakData);
       setStreak(streakData.current_streak);
 
-      // Load calories trend for last 7 days
-      const trendData: Array<{ date: string; value: number }> = [];
-      for (let i = 6; i >= 0; i--) {
-        const date = new Date();
-        date.setDate(date.getDate() - i);
-        const dateStr = date.toISOString().split('T')[0];
-        
-        const dayData = await advancedAnalyticsService.getDailyInsights(userState.user.id, dateStr);
-        trendData.push({
-          date: dateStr,
-          value: dayData.total_calories,
-        });
+      // Load calories trend using progress metrics (more efficient than 7 daily calls)
+      try {
+        const progressData = await advancedAnalyticsService.getProgressMetrics(userState.user.id, 7);
+        const trendData = progressData.calories_trend.map((value, index) => ({
+          date: new Date(Date.now() - (6 - index) * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+          value: value
+        }));
+        setCaloriesTrend(trendData);
+      } catch (error) {
+        console.log('Progress metrics unavailable for trend, using empty data');
+        setCaloriesTrend([]);
       }
-      setCaloriesTrend(trendData);
 
     } catch (error) {
       console.error('Error loading advanced analytics:', error);

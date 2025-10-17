@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -147,35 +147,40 @@ const ProgressScreen: React.FC = () => {
         setWeeklyData(null);
       }
 
-      // Load daily data for charts
-      const dailyDataArray: DailyData[] = [];
-      for (let i = 0; i < 7; i++) {
-        const date = new Date();
-        date.setDate(date.getDate() - (6 - i));
-        const dateStr = date.toISOString().split('T')[0];
-        
-        try {
-          const daily = await apiService.getDailyAnalytics(userState.user.id, dateStr);
-          dailyDataArray.push(daily);
-        } catch (error) {
-          // Fallback to local data
-          const nutritionLogs = await databaseService.getNutritionLogs(userState.user.id, dateStr, 100);
-          const workouts = await databaseService.getWorkouts(userState.user.id, 50);
-          const dayWorkouts = workouts.filter(w => w.date === dateStr);
+      // Load daily data for charts - only for week view to avoid excessive API calls
+      // For month and year views, we use the trend data from progressMetrics
+      if (selectedPeriod === 'week') {
+        const dailyDataArray: DailyData[] = [];
+        for (let i = 0; i < 7; i++) {
+          const date = new Date();
+          date.setDate(date.getDate() - (6 - i));
+          const dateStr = date.toISOString().split('T')[0];
           
-          dailyDataArray.push({
-            date: dateStr,
-            total_calories: nutritionLogs.reduce((sum, log) => sum + log.calories, 0),
-            total_protein: nutritionLogs.reduce((sum, log) => sum + log.protein_g, 0),
-            total_carbs: nutritionLogs.reduce((sum, log) => sum + log.carbs_g, 0),
-            total_fat: nutritionLogs.reduce((sum, log) => sum + log.fat_g, 0),
-            workout_count: dayWorkouts.length,
-            total_workout_duration: dayWorkouts.reduce((sum, w) => sum + (w.duration_minutes || 0), 0),
-          });
+          try {
+            const daily = await apiService.getDailyAnalytics(userState.user.id, dateStr);
+            dailyDataArray.push(daily);
+          } catch (error) {
+            // Fallback to local data
+            const nutritionLogs = await databaseService.getNutritionLogs(userState.user.id, dateStr, 100);
+            const workouts = await databaseService.getWorkouts(userState.user.id, 50);
+            const dayWorkouts = workouts.filter(w => w.date === dateStr);
+            
+            dailyDataArray.push({
+              date: dateStr,
+              total_calories: nutritionLogs.reduce((sum, log) => sum + log.calories, 0),
+              total_protein: nutritionLogs.reduce((sum, log) => sum + log.protein_g, 0),
+              total_carbs: nutritionLogs.reduce((sum, log) => sum + log.carbs_g, 0),
+              total_fat: nutritionLogs.reduce((sum, log) => sum + log.fat_g, 0),
+              workout_count: dayWorkouts.length,
+              total_workout_duration: dayWorkouts.reduce((sum, w) => sum + (w.duration_minutes || 0), 0),
+            });
+          }
         }
+        setDailyData(dailyDataArray);
+      } else {
+        // For month/year views, use the trend data from progressMetrics (already fetched above)
+        setDailyData([]);
       }
-      
-      setDailyData(dailyDataArray);
 
       // Load achievements
       await loadAchievements();
