@@ -84,18 +84,18 @@ const ProgressScreen: React.FC = () => {
   const [caloriesTrend, setCaloriesTrend] = useState<Array<{ date: string; value: number }>>([]);
   const [weightTrend, setWeightTrend] = useState<Array<{ date: string; value: number }>>([]);
 
-  // Load progress data
-  const loadProgressData = useCallback(async () => {
+  // Load progress data (initial load only, not on period changes)
+  const loadProgressData = useCallback(async (period: 'week' | 'month' | 'year' = 'week') => {
     if (!userState.user?.id) return;
 
     try {
       setIsLoading(true);
 
-      // Calculate date range based on selected period
+      // Calculate date range based on provided period
       const endDate = new Date();
       const startDate = new Date();
       
-      switch (selectedPeriod) {
+      switch (period) {
         case 'week':
           startDate.setDate(endDate.getDate() - 7);
           break;
@@ -126,7 +126,7 @@ const ProgressScreen: React.FC = () => {
         setConsistencyStreak(streakData);
 
         // Load progress metrics
-        const days = selectedPeriod === 'week' ? 7 : selectedPeriod === 'month' ? 30 : 365;
+        const days = period === 'week' ? 7 : period === 'month' ? 30 : 365;
         const progressData = await advancedAnalyticsService.getProgressMetrics(userState.user.id, days);
         setProgressMetrics(progressData);
 
@@ -149,8 +149,10 @@ const ProgressScreen: React.FC = () => {
 
       // Load daily data for charts - only for week view to avoid excessive API calls
       // For month and year views, we use the trend data from progressMetrics
-      if (selectedPeriod === 'week') {
-        const dailyDataArray: DailyData[] = [];
+      console.log('Loading progress data for period:', period);
+      let dailyDataArray: DailyData[] = [];
+      if (period === 'week') {
+        console.log('Fetching 7 daily analytics calls...');
         for (let i = 0; i < 7; i++) {
           const date = new Date();
           date.setDate(date.getDate() - (6 - i));
@@ -179,6 +181,7 @@ const ProgressScreen: React.FC = () => {
         setDailyData(dailyDataArray);
       } else {
         // For month/year views, use the trend data from progressMetrics (already fetched above)
+        console.log('Skipping daily calls for', period, 'view - using progressMetrics');
         setDailyData([]);
       }
 
@@ -361,12 +364,83 @@ const ProgressScreen: React.FC = () => {
     await forceSync();
   }, [loadProgressData, forceSync]);
 
-  // Load data on mount and when period changes
+  // Load data on mount only
   useEffect(() => {
     if (userState.user) {
-      loadProgressData();
+      loadProgressData(selectedPeriod);
     }
-  }, [userState.user, selectedPeriod, loadProgressData]);
+  }, [userState.user]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // When period changes, only reload the period-specific data
+  useEffect(() => {
+    const reloadPeriodData = async () => {
+      if (!userState.user?.id) return;
+      
+      try {
+        const days = selectedPeriod === 'week' ? 7 : selectedPeriod === 'month' ? 30 : 365;
+        console.log('Reloading progress metrics for period change:', selectedPeriod);
+        
+        // Only reload progress metrics
+        const progressData = await advancedAnalyticsService.getProgressMetrics(userState.user.id, days);
+        setProgressMetrics(progressData);
+
+        // Update trend data
+        setCaloriesTrend(progressData.calories_trend.map((value, index) => ({
+          date: new Date(Date.now() - (days - 1 - index) * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+          value: value
+        })));
+        
+        setWeightTrend(progressData.weight_trend.map((value, index) => ({
+          date: new Date(Date.now() - (days - 1 - index) * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+          value: value
+        })));
+
+        // Only reload daily data if switching to/from week view
+        if (selectedPeriod === 'week') {
+          console.log('Fetching 7 daily analytics for week view...');
+          const dailyDataArray: DailyData[] = [];
+          for (let i = 0; i < 7; i++) {
+            const date = new Date();
+            date.setDate(date.getDate() - (6 - i));
+            const dateStr = date.toISOString().split('T')[0];
+            
+            try {
+              const daily = await apiService.getDailyAnalytics(userState.user.id, dateStr);
+              dailyDataArray.push(daily);
+            } catch (error) {
+              // Fallback to local data
+              const nutritionLogs = await databaseService.getNutritionLogs(userState.user.id, dateStr, 100);
+              const workouts = await databaseService.getWorkouts(userState.user.id, 50);
+              const dayWorkouts = workouts.filter(w => w.date === dateStr);
+              
+              dailyDataArray.push({
+                date: dateStr,
+                total_calories: nutritionLogs.reduce((sum, log) => sum + log.calories, 0),
+                total_protein: nutritionLogs.reduce((sum, log) => sum + log.protein_g, 0),
+                total_carbs: nutritionLogs.reduce((sum, log) => sum + log.carbs_g, 0),
+                total_fat: nutritionLogs.reduce((sum, log) => sum + log.fat_g, 0),
+                workout_count: dayWorkouts.length,
+                total_workout_duration: dayWorkouts.reduce((sum, w) => sum + (w.duration_minutes || 0), 0),
+              });
+            }
+          }
+          setDailyData(dailyDataArray);
+          generateProgressMessage(dailyDataArray, weeklyData);
+        } else {
+          console.log('Skipping daily calls for', selectedPeriod, 'view');
+          setDailyData([]);
+          generateProgressMessage([], weeklyData);
+        }
+      } catch (error) {
+        console.error('Error reloading period data:', error);
+      }
+    };
+
+    // Only reload if user exists and it's not the first mount
+    if (userState.user?.id) {
+      reloadPeriodData();
+    }
+  }, [selectedPeriod]); // Only depend on selectedPeriod
 
   const getPeriodText = () => {
     switch (selectedPeriod) {
