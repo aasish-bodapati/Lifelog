@@ -172,7 +172,8 @@ class ApiService {
 
   // Body stats endpoints
   async createBodyStat(bodyStatData: any) {
-    const response = await api.post('/body', bodyStatData);
+    const { user_id, ...data } = bodyStatData;
+    const response = await api.post(`/body?user_id=${user_id}`, data);
     return response.data;
   }
 

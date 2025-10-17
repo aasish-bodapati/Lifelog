@@ -256,12 +256,36 @@ class SyncService {
       try {
         const data = JSON.parse(item.data);
         
+        // Clean the data - remove local-only fields
+        const cleanData = {
+          date: data.date,
+          weight: data.weight_kg || data.weight,
+          body_fat_percentage: data.body_fat_percentage,
+          muscle_mass: data.muscle_mass_kg || data.muscle_mass,
+          bone_density: data.bone_density,
+          height: data.height,
+          chest: data.chest_cm || data.chest,
+          waist: data.waist_cm || data.waist,
+          hips: data.hips,
+          bicep_left: data.arm_cm || data.bicep_left,
+          bicep_right: data.bicep_right,
+          thigh_left: data.thigh_cm || data.thigh_left,
+          thigh_right: data.thigh_right,
+          blood_pressure_systolic: data.blood_pressure_systolic,
+          blood_pressure_diastolic: data.blood_pressure_diastolic,
+          resting_heart_rate: data.resting_heart_rate,
+          water_intake: data.water_intake,
+          sleep_hours: data.sleep_hours,
+          notes: data.notes
+        };
+        
         switch (item.operation) {
           case 'INSERT':
-            await apiService.createBodyStat(data);
+            // Pass user_id with the clean data
+            await apiService.createBodyStat({ ...cleanData, user_id: data.user_id });
             break;
           case 'UPDATE':
-            await apiService.updateBodyStat(data.local_id, data);
+            await apiService.updateBodyStat(data.local_id, cleanData);
             break;
           case 'DELETE':
             await apiService.deleteBodyStat(data.local_id);
