@@ -1,23 +1,37 @@
-import Toast from 'react-native-simple-toast';
+import { Alert, Platform } from 'react-native';
 
+// Simple toast service using Alert for cross-platform compatibility
+// No native dependencies required
 export const toastService = {
-  success: (message: string, description?: string) => {
-    const fullMessage = description ? `${message}: ${description}` : message;
-    Toast.show(fullMessage, Toast.LONG);
+  success: (title: string, message?: string) => {
+    if (Platform.OS === 'web') {
+      console.log(`✅ ${title}${message ? `: ${message}` : ''}`);
+      return;
+    }
+    Alert.alert(title, message, [{ text: 'OK' }]);
   },
 
-  error: (message: string, description?: string) => {
-    const fullMessage = description ? `${message}: ${description}` : message;
-    Toast.show(fullMessage, Toast.LONG);
+  error: (title: string, message?: string) => {
+    if (Platform.OS === 'web') {
+      console.error(`❌ ${title}${message ? `: ${message}` : ''}`);
+      return;
+    }
+    Alert.alert(title, message, [{ text: 'OK' }]);
   },
 
-  info: (message: string, description?: string) => {
-    const fullMessage = description ? `${message}: ${description}` : message;
-    Toast.show(fullMessage, Toast.SHORT);
+  info: (title: string, message?: string) => {
+    if (Platform.OS === 'web') {
+      console.info(`ℹ️ ${title}${message ? `: ${message}` : ''}`);
+      return;
+    }
+    Alert.alert(title, message, [{ text: 'OK' }]);
   },
 
-  warning: (message: string, description?: string) => {
-    const fullMessage = description ? `${message}: ${description}` : message;
-    Toast.show(fullMessage, Toast.LONG);
+  warning: (title: string, message?: string) => {
+    if (Platform.OS === 'web') {
+      console.warn(`⚠️ ${title}${message ? `: ${message}` : ''}`);
+      return;
+    }
+    Alert.alert(title, message, [{ text: 'OK' }]);
   },
 };
