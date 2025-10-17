@@ -8,6 +8,8 @@ import {
   ScrollView,
   Alert,
   Dimensions,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { databaseService, LocalWorkout } from '../../services/databaseService';
@@ -17,6 +19,7 @@ import { toastService } from '../../services/toastService';
 import ExerciseSearchDropdown from '../../components/ExerciseSearchDropdown';
 import { Exercise } from '../../services/exerciseLibraryService';
 import { getWorkoutIcon, getWorkoutColor } from '../../utils';
+import { Colors, Layout, Spacing } from '../../styles/designSystem';
 
 interface QuickWorkoutLogScreenProps {
   onClose: () => void;
@@ -208,15 +211,23 @@ const QuickWorkoutLogScreen: React.FC<QuickWorkoutLogScreenProps> = ({
 
   return (
     <View style={styles.overlay}>
-      <View style={styles.popupContainer}>
-      <View style={styles.header}>
-          <Text style={styles.title}>Quick Log Workout</Text>
-        <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-          <Ionicons name="close" size={24} color="#666" />
-        </TouchableOpacity>
-      </View>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.keyboardAvoidingView}
+      >
+        <View style={styles.popupContainer}>
+          <View style={styles.header}>
+            <Text style={styles.title}>Quick Log Workout</Text>
+            <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+              <Ionicons name="close" size={24} color="#666" />
+            </TouchableOpacity>
+          </View>
 
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+          <ScrollView 
+            style={styles.content} 
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+          >
         {/* Recent Workouts */}
         {recentWorkouts.length > 0 && (
           <View style={styles.section}>
@@ -239,16 +250,12 @@ const QuickWorkoutLogScreen: React.FC<QuickWorkoutLogScreenProps> = ({
         )}
 
 
-        {/* Workout Details */}
+        {/* Add New Exercise */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Workout Details</Text>
-          
-          {/* Add New Exercise - Fixed at top */}
           <View style={styles.addExerciseSection}>
             <Text style={styles.addExerciseTitle}>Add Exercise</Text>
           
-          <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Search and select exercises to add them automatically</Text>
+            <View style={styles.inputGroup}>
               <ExerciseSearchDropdown
                 value=""
                 onSelect={handleExerciseSelect}
@@ -440,24 +447,25 @@ const QuickWorkoutLogScreen: React.FC<QuickWorkoutLogScreenProps> = ({
         </View>
       </ScrollView>
 
-        <View style={styles.footer}>
-          <TouchableOpacity
-            onPress={onClose}
-            style={styles.cancelButton}
-          >
-            <Text style={styles.cancelButtonText}>Cancel</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={handleSave}
-            style={[styles.saveButton, isLoading && styles.saveButtonDisabled]}
-            disabled={isLoading}
-          >
-            <Text style={styles.saveButtonText}>
-              {isLoading ? 'Logging...' : 'Log Workout'}
-            </Text>
-          </TouchableOpacity>
+          <View style={styles.footer}>
+            <TouchableOpacity
+              onPress={onClose}
+              style={styles.cancelButton}
+            >
+              <Text style={styles.cancelButtonText}>Cancel</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={handleSave}
+              style={[styles.saveButton, isLoading && styles.saveButtonDisabled]}
+              disabled={isLoading}
+            >
+              <Text style={styles.saveButtonText}>
+                {isLoading ? 'Logging...' : 'Log Workout'}
+              </Text>
+            </TouchableOpacity>
+          </View>
         </View>
-      </View>
+      </KeyboardAvoidingView>
     </View>
   );
 };
@@ -467,32 +475,31 @@ const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: Colors.overlay,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
+    padding: Spacing.xl,
+  },
+  keyboardAvoidingView: {
+    width: '100%',
+    maxWidth: 400,
   },
   popupContainer: {
     width: '100%',
-    maxWidth: 400,
     maxHeight: screenHeight * 0.9,
     minHeight: screenHeight * 0.6,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.25,
-    shadowRadius: 20,
-    elevation: 10,
+    backgroundColor: Colors.surface,
+    borderRadius: Layout.radiusLarge,
+    ...Layout.shadowLarge,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 20,
+    paddingHorizontal: Spacing.xl,
+    paddingVertical: Spacing.xl,
     borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
+    borderBottomColor: Colors.border,
   },
   closeButton: {
     padding: 4,
@@ -500,81 +507,81 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#333',
+    color: Colors.text,
     flex: 1,
     textAlign: 'center',
   },
   content: {
     flex: 1,
-    paddingHorizontal: 20,
-    paddingVertical: 20,
+    paddingHorizontal: Spacing.xl,
+    paddingVertical: Spacing.xl,
   },
   footer: {
     flexDirection: 'row',
-    paddingHorizontal: 20,
-    paddingVertical: 20,
+    paddingHorizontal: Spacing.xl,
+    paddingVertical: Spacing.xl,
     borderTopWidth: 1,
-    borderTopColor: '#E0E0E0',
-    gap: 12,
+    borderTopColor: Colors.border,
+    gap: Spacing.md,
   },
   cancelButton: {
     flex: 1,
     paddingVertical: 14,
-    borderRadius: 8,
+    borderRadius: Layout.radiusSmall,
     borderWidth: 1,
-    borderColor: '#E0E0E0',
+    borderColor: Colors.border,
     alignItems: 'center',
     justifyContent: 'center',
   },
   cancelButtonText: {
     fontSize: 16,
     fontWeight: '500',
-    color: '#666',
+    color: Colors.textSecondary,
   },
   saveButton: {
     flex: 2,
-    backgroundColor: '#007AFF',
+    backgroundColor: Colors.primary,
     paddingVertical: 14,
-    borderRadius: 8,
+    borderRadius: Layout.radiusSmall,
     alignItems: 'center',
     justifyContent: 'center',
   },
   saveButtonDisabled: {
-    backgroundColor: '#CCCCCC',
+    backgroundColor: Colors.disabled,
   },
   saveButtonText: {
-    color: '#FFFFFF',
+    color: Colors.textLight,
     fontSize: 16,
     fontWeight: '600',
   },
   section: {
-    marginBottom: 24,
+    marginBottom: Spacing.xxl,
   },
   sectionTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#333',
-    marginBottom: 12,
+    color: Colors.text,
+    marginBottom: Spacing.md,
   },
   recentWorkoutCard: {
-    backgroundColor: '#F8F9FA',
+    backgroundColor: Colors.background,
     padding: 10,
-    borderRadius: 8,
-    marginRight: 8,
+    borderRadius: Layout.radiusSmall,
+    marginRight: Spacing.sm,
     minWidth: 100,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#E0E0E0',
+    borderColor: Colors.border,
   },
   recentWorkoutName: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#333',
+    color: Colors.text,
     textAlign: 'center',
   },
   recentWorkoutDuration: {
     fontSize: 10,
-    color: '#666',
+    color: Colors.textSecondary,
     marginTop: 2,
   },
   inputGroup: {
@@ -586,31 +593,27 @@ const styles = StyleSheet.create({
   inputLabel: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#666',
+    color: Colors.textSecondary,
     marginBottom: 4,
     textTransform: 'uppercase',
   },
   textInput: {
-    backgroundColor: '#F8F9FA',
+    backgroundColor: Colors.background,
     borderWidth: 1,
-    borderColor: '#E0E0E0',
-    borderRadius: 8,
-    paddingHorizontal: 12,
+    borderColor: Colors.border,
+    borderRadius: Layout.radiusSmall,
+    paddingHorizontal: Spacing.md,
     paddingVertical: 10,
     fontSize: 16,
   },
   selectedExerciseCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: Colors.surface,
     borderRadius: 10,
-    padding: 12,
-    marginBottom: 12,
+    padding: Spacing.md,
+    marginBottom: Spacing.md,
     borderWidth: 1,
-    borderColor: '#E0E0E0',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.08,
-    shadowRadius: 2,
-    elevation: 2,
+    borderColor: Colors.border,
+    ...Layout.shadowSmall,
   },
   exerciseCardHeader: {
     flexDirection: 'row',
@@ -621,7 +624,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#F0F8FF',
+    backgroundColor: Colors.primaryLight,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 10,
@@ -632,7 +635,7 @@ const styles = StyleSheet.create({
   exerciseName: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#333',
+    color: Colors.text,
     marginBottom: 4,
   },
   exerciseMeta: {
@@ -663,8 +666,8 @@ const styles = StyleSheet.create({
   },
   exerciseDescription: {
     fontSize: 14,
-    color: '#666',
-    marginBottom: 12,
+    color: Colors.textSecondary,
+    marginBottom: Spacing.md,
     lineHeight: 20,
   },
   exerciseDetails: {
@@ -678,27 +681,27 @@ const styles = StyleSheet.create({
   },
   exerciseDetailText: {
     fontSize: 12,
-    color: '#666',
+    color: Colors.textSecondary,
     marginLeft: 6,
   },
   durationInputContainer: {
-    marginTop: 12,
-    paddingTop: 12,
+    marginTop: Spacing.md,
+    paddingTop: Spacing.md,
     borderTopWidth: 1,
-    borderTopColor: '#F0F0F0',
+    borderTopColor: Colors.borderLight,
   },
   durationLabel: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#333',
+    color: Colors.text,
     marginBottom: 6,
   },
   durationInput: {
-    backgroundColor: '#F8F9FA',
+    backgroundColor: Colors.background,
     borderWidth: 1,
-    borderColor: '#E0E0E0',
-    borderRadius: 8,
-    paddingHorizontal: 12,
+    borderColor: Colors.border,
+    borderRadius: Layout.radiusSmall,
+    paddingHorizontal: Spacing.md,
     paddingVertical: 10,
     fontSize: 16,
     textAlign: 'center',
@@ -709,45 +712,45 @@ const styles = StyleSheet.create({
   selectedExercisesTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#333',
-    marginBottom: 12,
+    color: Colors.text,
+    marginBottom: Spacing.md,
   },
   exerciseDuration: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 8,
+    marginRight: Spacing.sm,
   },
   durationEditInput: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#007AFF',
+    color: Colors.primary,
     textAlign: 'center',
     minWidth: 40,
     maxWidth: 60,
     borderBottomWidth: 1,
-    borderBottomColor: '#007AFF',
+    borderBottomColor: Colors.primary,
     paddingVertical: 2,
   },
   durationUnit: {
     fontSize: 12,
-    color: '#666',
+    color: Colors.textSecondary,
     marginLeft: 4,
   },
   addExerciseSection: {
-    marginBottom: 20,
+    marginBottom: Spacing.xl,
   },
   addExerciseTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#333',
-    marginBottom: 12,
+    color: Colors.text,
+    marginBottom: Spacing.md,
   },
   exerciseInputs: {
     marginTop: 10,
     paddingTop: 10,
     borderTopWidth: 1,
-    borderTopColor: '#F0F0F0',
+    borderTopColor: Colors.borderLight,
   },
   inputRow: {
     flexDirection: 'row',
@@ -760,16 +763,16 @@ const styles = StyleSheet.create({
     maxWidth: 120,
   },
   numberInput: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: Colors.surface,
     borderWidth: 1,
-    borderColor: '#E0E0E0',
+    borderColor: Colors.border,
     borderRadius: 6,
-    paddingHorizontal: 8,
-    paddingVertical: 8,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: Spacing.sm,
     fontSize: 14,
     fontWeight: '600',
     textAlign: 'center',
-    color: '#1A1A1A',
+    color: Colors.text,
   },
 });
 

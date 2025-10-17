@@ -179,7 +179,11 @@ const CreateRoutineModal: React.FC<CreateRoutineModalProps> = ({
     const isDaySaved = !!currentDay;
 
     return (
-      <ScrollView style={styles.stepContainer} showsVerticalScrollIndicator={false}>
+      <ScrollView 
+        style={styles.stepContainer} 
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
         {/* Routine Name Input */}
         <View style={styles.inputGroup}>
           <Text style={styles.label}>Routine Name *</Text>

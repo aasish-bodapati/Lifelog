@@ -12,6 +12,7 @@ import { useOnboarding } from '../../context/OnboardingContext';
 import { useUser } from '../../context/UserContext';
 import { calculationService } from '../../services/calculationService';
 import { toastService } from '../../services/toastService';
+import { Colors, Layout, Spacing } from '../../styles/designSystem';
 
 const Onboarding3Screen: React.FC = () => {
   const { data, completeOnboarding, isLoading } = useOnboarding();
@@ -168,7 +169,7 @@ const Onboarding3Screen: React.FC = () => {
           disabled={isLoading || isCompleting}
         >
           {isLoading || isCompleting ? (
-            <ActivityIndicator color="#FFFFFF" />
+            <ActivityIndicator color={Colors.textLight} />
           ) : (
             <Text style={styles.primaryButtonText}>Start Logging</Text>
           )}
@@ -181,11 +182,11 @@ const Onboarding3Screen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8F9FA',
+    backgroundColor: Colors.background,
   },
   content: {
     flex: 1,
-    paddingHorizontal: 24,
+    paddingHorizontal: Spacing.xxl,
   },
   header: {
     paddingTop: 40,
@@ -194,18 +195,18 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#333333',
-    marginBottom: 8,
+    color: Colors.text,
+    marginBottom: Spacing.sm,
   },
   subtitle: {
     fontSize: 16,
-    color: '#666666',
+    color: Colors.textSecondary,
   },
   errorContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 24,
+    padding: Spacing.xxl,
   },
   errorText: {
     fontSize: 16,
@@ -216,25 +217,25 @@ const styles = StyleSheet.create({
     marginBottom: 32,
   },
   section: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 20,
-    marginBottom: 16,
+    backgroundColor: Colors.surface,
+    borderRadius: Layout.radiusMedium,
+    padding: Spacing.xl,
+    marginBottom: Spacing.lg,
     borderWidth: 1,
-    borderColor: '#E0E0E0',
+    borderColor: Colors.border,
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#333333',
-    marginBottom: 12,
+    color: Colors.text,
+    marginBottom: Spacing.md,
   },
   profileInfo: {
     gap: 4,
   },
   profileText: {
     fontSize: 16,
-    color: '#333333',
+    color: Colors.text,
   },
   goalInfo: {
     gap: 8,
@@ -242,61 +243,61 @@ const styles = StyleSheet.create({
   goalText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#007AFF',
+    color: Colors.primary,
   },
   goalDescription: {
     fontSize: 14,
-    color: '#666666',
+    color: Colors.textSecondary,
     lineHeight: 20,
   },
   activityInfo: {
-    gap: 8,
+    gap: Spacing.sm,
   },
   activityText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#333333',
+    color: Colors.text,
   },
   activityDescription: {
     fontSize: 14,
-    color: '#666666',
+    color: Colors.textSecondary,
     lineHeight: 20,
   },
   targetsContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 12,
-    marginBottom: 16,
+    gap: Spacing.md,
+    marginBottom: Spacing.lg,
   },
   targetCard: {
     flex: 1,
     minWidth: '45%',
-    backgroundColor: '#F8F9FA',
-    borderRadius: 8,
-    padding: 16,
+    backgroundColor: Colors.background,
+    borderRadius: Layout.radiusSmall,
+    padding: Spacing.lg,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#E0E0E0',
+    borderColor: Colors.border,
   },
   targetValue: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#007AFF',
+    color: Colors.primary,
     marginBottom: 4,
   },
   targetLabel: {
     fontSize: 12,
-    color: '#666666',
+    color: Colors.textSecondary,
     textAlign: 'center',
   },
   hydrationInfo: {
-    backgroundColor: '#E8F4FD',
-    padding: 12,
-    borderRadius: 8,
+    backgroundColor: Colors.primaryLight,
+    padding: Spacing.md,
+    borderRadius: Layout.radiusSmall,
   },
   hydrationText: {
     fontSize: 14,
-    color: '#007AFF',
+    color: Colors.primary,
     textAlign: 'center',
   },
   preferencesInfo: {
@@ -304,42 +305,42 @@ const styles = StyleSheet.create({
   },
   preferenceText: {
     fontSize: 14,
-    color: '#333333',
+    color: Colors.text,
   },
   infoContainer: {
-    backgroundColor: '#E8F4FD',
-    padding: 16,
-    borderRadius: 8,
-    marginBottom: 20,
+    backgroundColor: Colors.primaryLight,
+    padding: Spacing.lg,
+    borderRadius: Layout.radiusSmall,
+    marginBottom: Spacing.xl,
   },
   infoTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#007AFF',
-    marginBottom: 8,
+    color: Colors.primary,
+    marginBottom: Spacing.sm,
   },
   infoText: {
     fontSize: 14,
-    color: '#333333',
+    color: Colors.text,
     lineHeight: 20,
   },
   buttonContainer: {
-    paddingHorizontal: 24,
+    paddingHorizontal: Spacing.xxl,
     paddingBottom: 40,
-    paddingTop: 20,
+    paddingTop: Spacing.xl,
   },
   primaryButton: {
-    backgroundColor: '#007AFF',
-    paddingVertical: 16,
+    backgroundColor: Colors.primary,
+    paddingVertical: Spacing.lg,
     paddingHorizontal: 32,
-    borderRadius: 12,
+    borderRadius: Layout.radiusMedium,
     alignItems: 'center',
   },
   primaryButtonDisabled: {
-    backgroundColor: '#CCCCCC',
+    backgroundColor: Colors.disabled,
   },
   primaryButtonText: {
-    color: '#FFFFFF',
+    color: Colors.textLight,
     fontSize: 18,
     fontWeight: '600',
   },

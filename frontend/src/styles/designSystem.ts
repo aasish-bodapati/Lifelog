@@ -24,16 +24,20 @@ export const Colors = {
   surfaceSecondary: '#F8F9FA',
   
   // Text colors
-  textPrimary: '#1A1A1A',
-  textSecondary: '#666666',
-  textTertiary: '#999999',
-  text: '#1A1A1A',
-  textLight: '#999999',
+  text: '#1A1A1A',          // Primary text
+  textSecondary: '#666666',  // Secondary text
+  textTertiary: '#999999',   // Tertiary text / placeholders
+  textLight: '#FFFFFF',      // Light text (on dark backgrounds)
   
   // Border colors
   border: '#E0E0E0',
   borderLight: '#F0F0F0',
   divider: '#E0E0E0',
+  
+  // Semantic colors
+  disabled: '#CCCCCC',
+  placeholder: '#999999',
+  overlay: 'rgba(0, 0, 0, 0.5)',
   
   // Status colors
   success: '#28A745',
@@ -237,6 +241,71 @@ export const CommonStyles = {
     borderRadius: Layout.radiusSmall,
     alignItems: 'center' as const,
     justifyContent: 'center' as const,
+  },
+  
+  // Button outline
+  buttonOutline: {
+    backgroundColor: 'transparent' as const,
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.lg,
+    borderRadius: Layout.radiusMedium,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+  },
+  
+  // Button text
+  buttonText: {
+    fontSize: 16,
+    fontWeight: '600' as const,
+    color: Colors.textLight,
+  },
+  
+  // Input styles
+  input: {
+    backgroundColor: Colors.surface,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: Layout.radiusMedium,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.md,
+    fontSize: 16,
+    color: Colors.text,
+  },
+  
+  inputLabel: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+    color: Colors.text,
+    marginBottom: Spacing.sm,
+  },
+  
+  // Modal styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: Colors.overlay,
+    justifyContent: 'center' as const,
+    alignItems: 'center' as const,
+    padding: Spacing.xl,
+  },
+  
+  modalContainer: {
+    backgroundColor: Colors.surface,
+    borderRadius: Layout.radiusLarge,
+    padding: Spacing.xl,
+    width: '100%' as const,
+    maxWidth: 400,
+    ...Layout.shadowLarge,
+  },
+  
+  modalHeader: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'space-between' as const,
+    paddingBottom: Spacing.lg,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
   },
   
   // Empty state

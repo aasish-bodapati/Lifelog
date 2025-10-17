@@ -13,6 +13,7 @@ import { useNavigation } from '@react-navigation/native';
 import { useUser } from '../../context/UserContext';
 import { UserCreate } from '../../types';
 import { toastService } from '../../services/toastService';
+import { Colors, Layout, Spacing } from '../../styles/designSystem';
 
 const RegisterScreen: React.FC = () => {
   const [formData, setFormData] = useState<UserCreate>({
@@ -153,51 +154,51 @@ const RegisterScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: Colors.surface,
   },
   content: {
     flexGrow: 1,
     justifyContent: 'center',
-    paddingHorizontal: 24,
+    paddingHorizontal: Spacing.xxl,
     paddingVertical: 48,
   },
   title: {
     fontSize: 32,
     fontWeight: 'bold',
     textAlign: 'center',
-    marginBottom: 8,
-    color: '#333333',
+    marginBottom: Spacing.sm,
+    color: Colors.text,
   },
   subtitle: {
     fontSize: 16,
     textAlign: 'center',
     marginBottom: 48,
-    color: '#666666',
+    color: Colors.textSecondary,
   },
   form: {
-    gap: 16,
+    gap: Spacing.lg,
   },
   input: {
     borderWidth: 1,
-    borderColor: '#E0E0E0',
-    borderRadius: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    borderColor: Colors.border,
+    borderRadius: Layout.radiusSmall,
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.md,
     fontSize: 16,
-    backgroundColor: '#F8F8F8',
+    backgroundColor: Colors.background,
   },
   button: {
-    backgroundColor: '#007AFF',
-    borderRadius: 8,
-    paddingVertical: 16,
+    backgroundColor: Colors.primary,
+    borderRadius: Layout.radiusSmall,
+    paddingVertical: Spacing.lg,
     alignItems: 'center',
-    marginTop: 8,
+    marginTop: Spacing.sm,
   },
   buttonDisabled: {
-    backgroundColor: '#CCCCCC',
+    backgroundColor: Colors.disabled,
   },
   buttonText: {
-    color: '#ffffff',
+    color: Colors.textLight,
     fontSize: 16,
     fontWeight: '600',
   },
@@ -205,15 +206,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 24,
+    marginTop: Spacing.xxl,
   },
   loginText: {
     fontSize: 16,
-    color: '#666666',
+    color: Colors.textSecondary,
   },
   loginLink: {
     fontSize: 16,
-    color: '#007AFF',
+    color: Colors.primary,
     fontWeight: '600',
   },
 });

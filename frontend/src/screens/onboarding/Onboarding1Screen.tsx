@@ -12,6 +12,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useOnboarding } from '../../context/OnboardingContext';
 import { OnboardingProfile, OnboardingGoal, OnboardingActivity } from '../../types/onboarding';
 import { calculationService } from '../../services/calculationService';
+import { Colors, Layout, Spacing } from '../../styles/designSystem';
 
 const Onboarding1Screen: React.FC = () => {
   const { nextStep, updateData, data } = useOnboarding();
@@ -59,7 +60,9 @@ const Onboarding1Screen: React.FC = () => {
   };
 
   const updateField = (field: keyof OnboardingProfile, value: string | number) => {
-    setProfile(prev => ({ ...prev, [field]: value }));
+    // Don't set 0 for numeric fields, leave as undefined to show placeholder
+    const finalValue = (typeof value === 'number' && value === 0) ? undefined : value;
+    setProfile(prev => ({ ...prev, [field]: finalValue }));
     // Clear errors when user starts typing
     if (errors.length > 0) {
       setErrors([]);
@@ -111,6 +114,7 @@ const Onboarding1Screen: React.FC = () => {
                   value={profile.age?.toString() || ''}
                   onChangeText={(value) => updateField('age', value ? parseInt(value) || 0 : 0)}
                   placeholder="25"
+                  placeholderTextColor="#999"
                   keyboardType="numeric"
                   maxLength={3}
                 />
@@ -122,6 +126,7 @@ const Onboarding1Screen: React.FC = () => {
                   value={profile.height?.toString() || ''}
                   onChangeText={(value) => updateField('height', value ? parseInt(value) || 0 : 0)}
                   placeholder="175"
+                  placeholderTextColor="#999"
                   keyboardType="numeric"
                   maxLength={3}
                 />
@@ -133,6 +138,7 @@ const Onboarding1Screen: React.FC = () => {
                   value={profile.weight?.toString() || ''}
                   onChangeText={(value) => updateField('weight', value ? parseInt(value) || 0 : 0)}
                   placeholder="70"
+                  placeholderTextColor="#999"
                   keyboardType="numeric"
                   maxLength={3}
                 />
@@ -295,35 +301,35 @@ const Onboarding1Screen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8F9FA',
+    backgroundColor: Colors.background,
   },
   content: {
     flex: 1,
-    paddingHorizontal: 24,
+    paddingHorizontal: Spacing.xxl,
   },
   header: {
     paddingTop: 30,
-    marginBottom: 24,
+    marginBottom: Spacing.xxl,
     alignItems: 'center',
   },
   title: {
     fontSize: 28,
     fontWeight: '700',
-    color: '#1A1A1A',
+    color: Colors.text,
     marginBottom: 6,
     textAlign: 'center',
   },
   subtitle: {
     fontSize: 15,
-    color: '#666666',
+    color: Colors.textSecondary,
     textAlign: 'center',
     lineHeight: 22,
   },
   errorContainer: {
     backgroundColor: '#FFEBEE',
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 16,
+    padding: Spacing.md,
+    borderRadius: Layout.radiusSmall,
+    marginBottom: Spacing.lg,
     borderWidth: 1,
     borderColor: '#EF5350',
   },
@@ -337,31 +343,24 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   card: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 20,
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
+    backgroundColor: Colors.surface,
+    borderRadius: Layout.radiusMedium,
+    padding: Spacing.xl,
+    marginBottom: Spacing.lg,
+    ...Layout.shadowSmall,
   },
   cardTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#1A1A1A',
-    marginBottom: 16,
+    color: Colors.text,
+    marginBottom: Spacing.lg,
     textAlign: 'center',
   },
   inputRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    gap: 12,
-    marginBottom: 20,
+    gap: Spacing.md,
+    marginBottom: Spacing.xl,
   },
   inputGroup: {
     flex: 1,
@@ -369,18 +368,18 @@ const styles = StyleSheet.create({
   inputLabel: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#333333',
+    color: Colors.text,
     marginBottom: 6,
   },
   textInput: {
-    backgroundColor: '#F8F9FA',
+    backgroundColor: Colors.background,
     borderWidth: 1,
-    borderColor: '#E9ECEF',
-    borderRadius: 8,
-    paddingHorizontal: 12,
+    borderColor: Colors.borderLight,
+    borderRadius: Layout.radiusSmall,
+    paddingHorizontal: Spacing.md,
     paddingVertical: 10,
     fontSize: 15,
-    color: '#1A1A1A',
+    color: Colors.text,
     textAlign: 'center',
     fontWeight: '500',
   },
@@ -390,49 +389,49 @@ const styles = StyleSheet.create({
   genderLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#333333',
-    marginBottom: 12,
+    color: Colors.text,
+    marginBottom: Spacing.md,
     textAlign: 'center',
   },
   genderOptions: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    gap: 8,
+    gap: Spacing.sm,
   },
   genderOption: {
     flex: 1,
-    backgroundColor: '#F8F9FA',
+    backgroundColor: Colors.background,
     borderWidth: 1,
-    borderColor: '#E9ECEF',
-    borderRadius: 8,
+    borderColor: Colors.borderLight,
+    borderRadius: Layout.radiusSmall,
     paddingVertical: 14,
-    paddingHorizontal: 8,
+    paddingHorizontal: Spacing.sm,
     alignItems: 'center',
   },
   genderOptionSelected: {
-    backgroundColor: '#007AFF',
-    borderColor: '#007AFF',
+    backgroundColor: Colors.primary,
+    borderColor: Colors.primary,
   },
   genderText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#333333',
+    color: Colors.text,
   },
   genderTextSelected: {
-    color: '#FFFFFF',
+    color: Colors.textLight,
   },
   bmiCard: {
-    backgroundColor: '#F8F9FA',
-    borderRadius: 8,
-    padding: 16,
+    backgroundColor: Colors.background,
+    borderRadius: Layout.radiusSmall,
+    padding: Spacing.lg,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#E9ECEF',
+    borderColor: Colors.borderLight,
   },
   bmiLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#333333',
+    color: Colors.text,
     marginBottom: 6,
   },
   bmiContent: {
@@ -441,7 +440,7 @@ const styles = StyleSheet.create({
   bmiValue: {
     fontSize: 24,
     fontWeight: '700',
-    color: '#1A1A1A',
+    color: Colors.text,
     marginBottom: 2,
   },
   bmiCategory: {
@@ -449,18 +448,18 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   goalOptions: {
-    gap: 8,
+    gap: Spacing.sm,
   },
   goalOption: {
-    backgroundColor: '#F8F9FA',
+    backgroundColor: Colors.background,
     borderWidth: 1,
-    borderColor: '#E9ECEF',
-    borderRadius: 8,
-    padding: 16,
+    borderColor: Colors.borderLight,
+    borderRadius: Layout.radiusSmall,
+    padding: Spacing.lg,
   },
   goalOptionSelected: {
-    borderColor: '#007AFF',
-    backgroundColor: '#F0F8FF',
+    borderColor: Colors.primary,
+    backgroundColor: Colors.primaryLight,
   },
   goalContent: {
     flexDirection: 'row',
@@ -476,47 +475,47 @@ const styles = StyleSheet.create({
   goalTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#1A1A1A',
+    color: Colors.text,
     marginBottom: 2,
   },
   goalTitleSelected: {
-    color: '#007AFF',
+    color: Colors.primary,
   },
   goalDescription: {
     fontSize: 13,
-    color: '#666666',
+    color: Colors.textSecondary,
     lineHeight: 18,
   },
   goalDescriptionSelected: {
-    color: '#007AFF',
+    color: Colors.primary,
   },
   checkmark: {
     width: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: '#007AFF',
+    backgroundColor: Colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
-    marginLeft: 8,
+    marginLeft: Spacing.sm,
   },
   checkmarkText: {
-    color: '#FFFFFF',
+    color: Colors.textLight,
     fontSize: 14,
     fontWeight: 'bold',
   },
   activityOptions: {
-    gap: 8,
+    gap: Spacing.sm,
   },
   activityOption: {
-    backgroundColor: '#F8F9FA',
+    backgroundColor: Colors.background,
     borderWidth: 1,
-    borderColor: '#E9ECEF',
-    borderRadius: 8,
-    padding: 16,
+    borderColor: Colors.borderLight,
+    borderRadius: Layout.radiusSmall,
+    padding: Spacing.lg,
   },
   activityOptionSelected: {
-    borderColor: '#007AFF',
-    backgroundColor: '#F0F8FF',
+    borderColor: Colors.primary,
+    backgroundColor: Colors.primaryLight,
   },
   activityContent: {
     flex: 1,
@@ -530,59 +529,52 @@ const styles = StyleSheet.create({
   activityTitle: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#1A1A1A',
+    color: Colors.text,
     flex: 1,
   },
   activityTitleSelected: {
-    color: '#007AFF',
+    color: Colors.primary,
   },
   multiplierBadge: {
-    backgroundColor: '#E9ECEF',
-    paddingHorizontal: 8,
+    backgroundColor: Colors.borderLight,
+    paddingHorizontal: Spacing.sm,
     paddingVertical: 4,
     borderRadius: 6,
   },
   multiplierBadgeSelected: {
-    backgroundColor: '#007AFF',
+    backgroundColor: Colors.primary,
   },
   multiplierText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#666666',
+    color: Colors.textSecondary,
   },
   multiplierTextSelected: {
-    color: '#FFFFFF',
+    color: Colors.textLight,
   },
   activityDescription: {
     fontSize: 13,
-    color: '#666666',
+    color: Colors.textSecondary,
     lineHeight: 18,
   },
   activityDescriptionSelected: {
-    color: '#007AFF',
+    color: Colors.primary,
   },
   buttonContainer: {
-    paddingHorizontal: 24,
+    paddingHorizontal: Spacing.xxl,
     paddingBottom: 30,
-    paddingTop: 16,
+    paddingTop: Spacing.lg,
   },
   primaryButton: {
-    backgroundColor: '#007AFF',
-    paddingVertical: 16,
+    backgroundColor: Colors.primary,
+    paddingVertical: Spacing.lg,
     paddingHorizontal: 32,
-    borderRadius: 12,
+    borderRadius: Layout.radiusMedium,
     alignItems: 'center',
-    shadowColor: '#007AFF',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 3,
+    ...Layout.shadowMedium,
   },
   primaryButtonText: {
-    color: '#FFFFFF',
+    color: Colors.textLight,
     fontSize: 16,
     fontWeight: '600',
   },

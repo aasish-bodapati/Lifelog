@@ -187,13 +187,19 @@ class DatabaseService {
     
     // Add water_intake column if it doesn't exist (migration)
     try {
-      await this.db.execAsync(`
-        ALTER TABLE local_body_stats ADD COLUMN water_intake REAL;
-      `);
-      console.log('Added water_intake column to local_body_stats');
+      // Check if column exists first
+      const tableInfo = await this.db.getAllAsync<{ name: string }>('PRAGMA table_info(local_body_stats)');
+      const columnExists = tableInfo.some(col => col.name === 'water_intake');
+      
+      if (!columnExists) {
+        await this.db.execAsync(`
+          ALTER TABLE local_body_stats ADD COLUMN water_intake REAL;
+        `);
+        console.log('Added water_intake column to local_body_stats');
+      }
     } catch (error) {
-      // Column might already exist, ignore error
-      console.log('water_intake column already exists or migration failed:', error);
+      // Silently handle any migration errors
+      console.error('Migration error:', error);
     }
   }
 

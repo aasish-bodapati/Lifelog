@@ -129,8 +129,10 @@ const ExerciseSearchDropdown: React.FC<ExerciseSearchDropdownProps> = ({
         <View style={styles.dropdownContainer}>
           <ScrollView
             style={styles.exercisesList}
-            showsVerticalScrollIndicator={false}
+            showsVerticalScrollIndicator={true}
             nestedScrollEnabled={true}
+            keyboardShouldPersistTaps="handled"
+            scrollEnabled={true}
           >
             {searchResults.length > 0 ? (
               searchResults.map((item) => (
@@ -236,11 +238,10 @@ const styles = StyleSheet.create({
     borderColor: Colors.border,
     ...Layout.shadowMedium,
     zIndex: 1000,
-    maxHeight: 300,
     marginTop: Spacing.xs,
   },
   exercisesList: {
-    maxHeight: 200,
+    maxHeight: 280,
     paddingVertical: Spacing.sm,
   },
   exerciseItem: {

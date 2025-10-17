@@ -10,6 +10,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useOnboarding } from '../../context/OnboardingContext';
 import { OnboardingPreferences } from '../../types/onboarding';
+import { Colors, Layout, Spacing } from '../../styles/designSystem';
 
 const Onboarding2Screen: React.FC = () => {
   const { nextStep, updateData, data } = useOnboarding();
@@ -125,11 +126,11 @@ const Onboarding2Screen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8F9FA',
+    backgroundColor: Colors.background,
   },
   content: {
     flex: 1,
-    paddingHorizontal: 24,
+    paddingHorizontal: Spacing.xxl,
   },
   header: {
     paddingTop: 40,
@@ -138,98 +139,98 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#333333',
-    marginBottom: 8,
+    color: Colors.text,
+    marginBottom: Spacing.sm,
   },
   subtitle: {
     fontSize: 16,
-    color: '#666666',
+    color: Colors.textSecondary,
     marginBottom: 4,
   },
   optionalText: {
     fontSize: 14,
-    color: '#999999',
+    color: Colors.textTertiary,
     fontStyle: 'italic',
   },
   preferencesContainer: {
     marginBottom: 32,
   },
   preferenceItem: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 20,
-    marginBottom: 16,
+    backgroundColor: Colors.surface,
+    borderRadius: Layout.radiusMedium,
+    padding: Spacing.xl,
+    marginBottom: Spacing.lg,
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#E0E0E0',
+    borderColor: Colors.border,
   },
   preferenceContent: {
     flex: 1,
-    marginRight: 16,
+    marginRight: Spacing.lg,
   },
   preferenceTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#333333',
+    color: Colors.text,
     marginBottom: 4,
   },
   preferenceDescription: {
     fontSize: 14,
-    color: '#666666',
+    color: Colors.textSecondary,
     lineHeight: 20,
   },
   infoContainer: {
-    backgroundColor: '#E8F4FD',
-    padding: 16,
-    borderRadius: 8,
-    marginBottom: 20,
+    backgroundColor: Colors.primaryLight,
+    padding: Spacing.lg,
+    borderRadius: Layout.radiusSmall,
+    marginBottom: Spacing.xl,
   },
   infoTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#007AFF',
-    marginBottom: 8,
+    color: Colors.primary,
+    marginBottom: Spacing.sm,
   },
   infoText: {
     fontSize: 14,
-    color: '#333333',
+    color: Colors.text,
     marginBottom: 4,
     lineHeight: 20,
   },
   buttonContainer: {
-    paddingHorizontal: 24,
+    paddingHorizontal: Spacing.xxl,
     paddingBottom: 40,
-    paddingTop: 20,
+    paddingTop: Spacing.xl,
     flexDirection: 'row',
     justifyContent: 'space-between',
   },
   skipButton: {
     flex: 1,
-    paddingVertical: 16,
+    paddingVertical: Spacing.lg,
     paddingHorizontal: 32,
-    borderRadius: 12,
+    borderRadius: Layout.radiusMedium,
     alignItems: 'center',
-    marginRight: 8,
+    marginRight: Spacing.sm,
     borderWidth: 1,
-    borderColor: '#E0E0E0',
+    borderColor: Colors.border,
   },
   skipButtonText: {
-    color: '#666666',
+    color: Colors.textSecondary,
     fontSize: 18,
     fontWeight: '600',
   },
   primaryButton: {
     flex: 1,
-    backgroundColor: '#007AFF',
-    paddingVertical: 16,
+    backgroundColor: Colors.primary,
+    paddingVertical: Spacing.lg,
     paddingHorizontal: 32,
-    borderRadius: 12,
+    borderRadius: Layout.radiusMedium,
     alignItems: 'center',
-    marginLeft: 8,
+    marginLeft: Spacing.sm,
   },
   primaryButtonText: {
-    color: '#FFFFFF',
+    color: Colors.textLight,
     fontSize: 18,
     fontWeight: '600',
   },
