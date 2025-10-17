@@ -158,7 +158,18 @@ const QuickWorkoutLogScreen: React.FC<QuickWorkoutLogScreenProps> = ({
 
     try {
       // Calculate total duration
-      const totalDuration = selectedExercises.reduce((sum, exercise) => sum + (exercise.duration || 0), 0);
+      // For strength exercises, we'll use a simple default since duration isn't the focus
+      // For cardio/other exercises, use their actual duration
+      const totalDuration = selectedExercises.reduce((sum, exercise) => {
+        if (exercise.duration) {
+          return sum + exercise.duration;
+        } else {
+          // Default 10 minutes per strength exercise (just for backend requirement)
+          return sum + 10;
+        }
+      }, 0);
+      
+      const finalDuration = totalDuration || 30; // Default to 30 min if nothing calculated
       
       // Create workout name from exercises
       const workoutName = selectedExercises.length === 1 
@@ -169,7 +180,7 @@ const QuickWorkoutLogScreen: React.FC<QuickWorkoutLogScreenProps> = ({
         user_id: userState.user.id,
         name: workoutName,
         date: new Date().toISOString().split('T')[0],
-        duration_minutes: totalDuration,
+        duration_minutes: finalDuration,
         notes: `Exercises: ${selectedExercises.map(ex => {
           let details = [];
           if (ex.sets && ex.reps) details.push(`${ex.sets}x${ex.reps}`);

@@ -27,6 +27,7 @@ const FitnessScreen: React.FC = () => {
   const { state: userState } = useUser();
   const [showWorkoutLog, setShowWorkoutLog] = useState(false);
   const [exerciseProgress, setExerciseProgress] = useState<ExerciseProgress[]>([]);
+  const [activeTab, setActiveTab] = useState<'overview' | 'logs'>('overview');
 
   const quickWorkouts = [
     { name: 'Morning Run', duration: 30, icon: 'walk', color: '#FF6B6B' },
@@ -143,21 +144,50 @@ const FitnessScreen: React.FC = () => {
           </View>
         </View>
 
-        {/* Quick Actions */}
-        <View style={styles.quickActions}>
+        {/* Tabs */}
+        <View style={styles.tabContainer}>
           <TouchableOpacity
-            style={styles.primaryButton}
+            style={[styles.tab, activeTab === 'overview' && styles.activeTab]}
             onPress={() => {
               hapticService.light();
-              setShowWorkoutLog(true);
+              setActiveTab('overview');
             }}
           >
-            <Ionicons name="add-circle" size={24} color="#FFFFFF" />
-            <Text style={styles.primaryButtonText}>Log Workout</Text>
+            <Text style={[styles.tabText, activeTab === 'overview' && styles.activeTabText]}>
+              Overview
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.tab, activeTab === 'logs' && styles.activeTab]}
+            onPress={() => {
+              hapticService.light();
+              setActiveTab('logs');
+            }}
+          >
+            <Text style={[styles.tabText, activeTab === 'logs' && styles.activeTabText]}>
+              Logs
+            </Text>
           </TouchableOpacity>
         </View>
 
-        {/* Quick Workouts */}
+        {/* Overview Tab */}
+        {activeTab === 'overview' && (
+          <>
+            {/* Quick Actions */}
+            <View style={styles.quickActions}>
+              <TouchableOpacity
+                style={styles.primaryButton}
+                onPress={() => {
+                  hapticService.light();
+                  setShowWorkoutLog(true);
+                }}
+              >
+                <Ionicons name="add-circle" size={24} color="#FFFFFF" />
+                <Text style={styles.primaryButtonText}>Log Workout</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Quick Workouts */}
         <View style={styles.quickWorkoutsSection}>
           <Text style={styles.sectionTitle}>Quick Workouts</Text>
           <View style={styles.quickWorkoutsContainer}>
@@ -288,21 +318,97 @@ const FitnessScreen: React.FC = () => {
           </View>
         )}
 
-        {/* Tips Section */}
-        {workouts.length > 0 && (
-          <View style={styles.tipsSection}>
-            <View style={styles.tipCard}>
-              <Ionicons name="bulb" size={20} color="#FFA500" />
-              <View style={styles.tipContent}>
-                <Text style={styles.tipTitle}>Pro Tip</Text>
-                <Text style={styles.tipText}>
-                  {weeklyStats.totalWorkouts >= 3
-                    ? "You're crushing it! Consider adding rest days for recovery."
-                    : "Aim for 3-5 workouts per week for optimal results."}
-                </Text>
+            {/* Tips Section */}
+            {workouts && workouts.length > 0 && (
+              <View style={styles.tipsSection}>
+                <View style={styles.tipCard}>
+                  <Ionicons name="bulb" size={20} color="#FFA500" />
+                  <View style={styles.tipContent}>
+                    <Text style={styles.tipTitle}>Pro Tip</Text>
+                    <Text style={styles.tipText}>
+                      {weeklyStats.totalWorkouts >= 3
+                        ? "You're crushing it! Consider adding rest days for recovery."
+                        : "Aim for 3-5 workouts per week for optimal results."}
+                    </Text>
+                  </View>
+                </View>
               </View>
+            )}
+          </>
+        )}
+
+        {/* Logs Tab */}
+        {activeTab === 'logs' && (
+          <>
+            {/* Workout Logs List */}
+            <View style={styles.section}>
+              <View style={styles.sectionHeader}>
+                <Text style={styles.sectionTitle}>All Workout Logs</Text>
+                {workouts && workouts.length > 0 && (
+                  <Text style={styles.sectionSubtitle}>{workouts.length} total</Text>
+                )}
+              </View>
+              
+              {workouts && workouts.length > 0 ? (
+                <View style={styles.workoutsList}>
+                  {workouts.map((workout) => (
+                    <View
+                      key={workout.local_id}
+                      style={styles.workoutLogCard}
+                    >
+                      <View style={styles.workoutLogHeader}>
+                        <View style={[styles.workoutIconContainer, { backgroundColor: getWorkoutColor(workout.name) + '20' }]}>
+                          <Ionicons
+                            name={getWorkoutIcon(workout.name) as any}
+                            size={24}
+                            color={getWorkoutColor(workout.name)}
+                          />
+                        </View>
+                        <View style={styles.workoutLogInfo}>
+                          <Text style={styles.workoutLogName}>{workout.name}</Text>
+                          <Text style={styles.workoutLogDate}>{formatDate(workout.date)}</Text>
+                        </View>
+                        <View style={styles.workoutLogStats}>
+                          <Text style={styles.workoutLogDuration}>{getWorkoutDuration(workout)}</Text>
+                          {workout.notes && (
+                            <TouchableOpacity
+                              onPress={() => {
+                                toastService.info('Details', workout.notes || 'No details');
+                              }}
+                            >
+                              <Ionicons name="information-circle-outline" size={20} color={Colors.primary} />
+                            </TouchableOpacity>
+                          )}
+                        </View>
+                      </View>
+                      {workout.notes && (
+                        <Text style={styles.workoutLogNotes} numberOfLines={2}>
+                          {workout.notes}
+                        </Text>
+                      )}
+                    </View>
+                  ))}
+                </View>
+              ) : (
+                <View style={styles.emptyState}>
+                  <Ionicons name="barbell-outline" size={64} color="#CCC" />
+                  <Text style={styles.emptyStateTitle}>No workouts logged yet</Text>
+                  <Text style={styles.emptyStateText}>
+                    Start tracking your fitness journey by logging your first workout!
+                  </Text>
+                  <TouchableOpacity
+                    style={styles.emptyStateButton}
+                    onPress={() => {
+                      hapticService.light();
+                      setShowWorkoutLog(true);
+                    }}
+                  >
+                    <Text style={styles.emptyStateButtonText}>Log Your First Workout</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
             </View>
-          </View>
+          </>
         )}
       </ScrollView>
 
@@ -575,6 +681,74 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#666666',
     lineHeight: 18,
+  },
+  // Tab styles
+  tabContainer: {
+    flexDirection: 'row',
+    backgroundColor: Colors.background,
+    marginHorizontal: Layout.screenPadding,
+    marginTop: Layout.sectionSpacing,
+    marginBottom: Layout.sectionSpacing,
+    borderRadius: Layout.radiusMedium,
+    padding: 4,
+  },
+  tab: {
+    flex: 1,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: Layout.radiusSmall,
+    alignItems: 'center',
+  },
+  activeTab: {
+    backgroundColor: Colors.surface,
+    ...Layout.shadowSmall,
+  },
+  tabText: {
+    ...Typography.label,
+    color: Colors.textSecondary,
+  },
+  activeTabText: {
+    color: Colors.primary,
+  },
+  // Workout Log Card styles
+  workoutLogCard: {
+    backgroundColor: Colors.surface,
+    borderRadius: Layout.radiusMedium,
+    padding: Layout.cardPadding,
+    marginBottom: Layout.cardSpacing,
+    ...Layout.shadowSmall,
+  },
+  workoutLogHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  workoutLogInfo: {
+    flex: 1,
+    marginLeft: 12,
+  },
+  workoutLogName: {
+    ...Typography.h4,
+    marginBottom: 4,
+  },
+  workoutLogDate: {
+    ...Typography.caption,
+  },
+  workoutLogStats: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  workoutLogDuration: {
+    ...Typography.label,
+    color: Colors.primary,
+  },
+  workoutLogNotes: {
+    ...Typography.bodySmall,
+    color: Colors.textSecondary,
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: Colors.divider,
   },
 });
 
