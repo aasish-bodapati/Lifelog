@@ -157,47 +157,48 @@ const QuickWorkoutLogScreen: React.FC<QuickWorkoutLogScreenProps> = ({
     setIsLoading(true);
 
     try {
-      // Calculate total duration
-      // For strength exercises, we'll use a simple default since duration isn't the focus
-      // For cardio/other exercises, use their actual duration
-      const totalDuration = selectedExercises.reduce((sum, exercise) => {
+      const currentDate = new Date().toISOString().split('T')[0];
+      
+      // Save each exercise as a separate workout entry
+      for (const exercise of selectedExercises) {
+        // Calculate duration for this exercise
+        let duration: number;
         if (exercise.duration) {
-          return sum + exercise.duration;
+          duration = exercise.duration;
         } else {
-          // Default 10 minutes per strength exercise (just for backend requirement)
-          return sum + 10;
+          // Default 10 minutes for strength exercises (just for backend requirement)
+          duration = 10;
         }
-      }, 0);
-      
-      const finalDuration = totalDuration || 30; // Default to 30 min if nothing calculated
-      
-      // Create workout name from exercises
-      const workoutName = selectedExercises.length === 1 
-        ? selectedExercises[0].name 
-        : `${selectedExercises[0].name} + ${selectedExercises.length - 1} more`;
+        
+        // Build detailed notes for this exercise
+        let details = [];
+        if (exercise.sets && exercise.reps) details.push(`${exercise.sets} sets × ${exercise.reps} reps`);
+        if (exercise.weight && exercise.weight > 0) details.push(`${exercise.weight}kg`);
+        if (exercise.duration) details.push(`${exercise.duration} minutes`);
+        if (exercise.distance && exercise.distance > 0) details.push(`${exercise.distance}km`);
+        if (exercise.intensity) details.push(`Intensity: ${exercise.intensity}`);
+        
+        const notes = details.length > 0 ? details.join(' • ') : undefined;
 
       const workoutData = {
         user_id: userState.user.id,
-        name: workoutName,
-        date: new Date().toISOString().split('T')[0],
-        duration_minutes: finalDuration,
-        notes: `Exercises: ${selectedExercises.map(ex => {
-          let details = [];
-          if (ex.sets && ex.reps) details.push(`${ex.sets}x${ex.reps}`);
-          if (ex.weight && ex.weight > 0) details.push(`${ex.weight}kg`);
-          if (ex.duration) details.push(`${ex.duration}min`);
-          if (ex.distance && ex.distance > 0) details.push(`${ex.distance}km`);
-          if (ex.intensity) details.push(ex.intensity);
-          return `${ex.name}${details.length > 0 ? ` (${details.join(', ')})` : ''}`;
-        }).join(', ')}`,
+          name: exercise.name,
+          date: currentDate,
+          duration_minutes: duration,
+          notes: notes,
       };
 
       await databaseService.saveWorkout(workoutData);
+      }
       
-      // Trigger sync
+      // Trigger sync after all exercises are saved
       await forceSync();
       
-      toastService.success('Success', 'Workout logged successfully!');
+      const exerciseCount = selectedExercises.length;
+      toastService.success(
+        'Success', 
+        `${exerciseCount} ${exerciseCount === 1 ? 'exercise' : 'exercises'} logged successfully!`
+      );
       onSuccess?.();
       onClose();
     } catch (error) {
