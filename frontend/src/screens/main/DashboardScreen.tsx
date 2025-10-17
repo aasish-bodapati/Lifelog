@@ -114,10 +114,6 @@ const DashboardScreen: React.FC = () => {
       // Find today's water intake from body stats
       const todayBodyStat = bodyStats.find(stat => stat.date === today);
       const waterIntake = todayBodyStat?.water_intake || 0;
-      
-      console.log('Loading today data. Body stats:', bodyStats);
-      console.log('Today body stat:', todayBodyStat);
-      console.log('Water intake:', waterIntake);
 
       // Calculate totals
       const totals: DailyTotals = {
@@ -128,7 +124,6 @@ const DashboardScreen: React.FC = () => {
         water: waterIntake,
       };
 
-      console.log('Setting daily totals:', totals);
       setDailyTotals(totals);
 
       // Calculate streak (simplified - check last 7 days)
@@ -206,7 +201,8 @@ const DashboardScreen: React.FC = () => {
       loadTodayData();
       loadAdvancedAnalytics();
     }
-  }, [userState.user, calculateTargets, loadTodayData, loadAdvancedAnalytics]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userState.user?.id]); // Only depend on user ID to prevent duplicate calls
 
   // Update last sync time when sync completes
   useEffect(() => {
@@ -216,8 +212,14 @@ const DashboardScreen: React.FC = () => {
   }, [syncStatus.lastSyncTime]);
 
   // Refresh data when screen comes into focus (e.g., after logging a meal)
+  // Skip initial mount to avoid duplicate with the useEffect above
+  const isInitialMount = React.useRef(true);
   useFocusEffect(
     useCallback(() => {
+      if (isInitialMount.current) {
+        isInitialMount.current = false;
+        return;
+      }
       if (userState.user?.id) {
         loadTodayData();
       }
@@ -265,24 +267,17 @@ const DashboardScreen: React.FC = () => {
         limit: 10,
       });
       
-      console.log('Today stats found:', todayStats);
-      console.log('Current water in UI:', dailyTotals.water, 'Adding:', amount, 'New total:', newWaterTotal);
-      
       let savedStat;
       
       if (todayStats && todayStats.length > 0) {
         // Update existing entry with new total
         const currentStat = todayStats[0];
         
-        console.log('Updating existing stat ID:', currentStat.id, 'New water total:', newWaterTotal);
-        
         savedStat = await bodyStatsService.updateBodyStat(userState.user.id, currentStat.id, {
           water_intake: newWaterTotal,
         });
       } else {
         // Create new entry for today with the total
-        console.log('Creating new stat with water:', newWaterTotal);
-        
         savedStat = await bodyStatsService.createBodyStat(userState.user.id, {
           water_intake: newWaterTotal,
           date: today,
@@ -291,7 +286,6 @@ const DashboardScreen: React.FC = () => {
       
       // Save to local database immediately
       if (savedStat) {
-        console.log('Saving to local database:', savedStat);
         await databaseService.saveBodyStat({
           local_id: `bodystat_${savedStat.id}`,
           user_id: userState.user.id,
