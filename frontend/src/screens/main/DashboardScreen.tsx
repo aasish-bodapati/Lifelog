@@ -17,15 +17,15 @@ import { calculationService } from '../../services/calculationService';
 import { hapticService } from '../../services/hapticService';
 import { toastService } from '../../services/toastService';
 import { bodyStatsService } from '../../services/bodyStatsService';
-import { advancedAnalyticsService, DailyInsights, WeeklyTrends, ConsistencyStreak } from '../../services/advancedAnalyticsService';
+import { advancedAnalyticsService } from '../../services/advancedAnalyticsService';
 import { getProgressIcon, getMacroColor, getStreakIcon, getConsistencyColor } from '../../utils';
 import { CommonStyles, Layout, Colors, Typography } from '../../styles/designSystem';
 import SyncIndicator from '../../components/SyncIndicator';
-import PersonalizedHeader from '../../components/dashboard/PersonalizedHeader';
 import RecentAchievements from '../../components/dashboard/RecentAchievements';
 import AnimatedCard from '../../components/AnimatedCard';
 import MacrosCard from '../../components/dashboard/MacrosCard';
 import WorkoutLogCard from '../../components/dashboard/WorkoutLogCard';
+import WelcomeCard from '../../components/dashboard/WelcomeCard';
 import HydrationCard from '../../components/dashboard/HydrationCard';
 import BodyTrendCard from '../../components/dashboard/BodyTrendCard';
 import ConsistencyCard from '../../components/dashboard/ConsistencyCard';
@@ -66,12 +66,6 @@ const DashboardScreen: React.FC = () => {
   const [todayWorkoutCount, setTodayWorkoutCount] = useState(0);
   const [streak, setStreak] = useState(0);
   const [lastSyncTime, setLastSyncTime] = useState<string | null>(null);
-  
-  // Advanced analytics state
-  const [dailyInsights, setDailyInsights] = useState<DailyInsights | null>(null);
-  const [weeklyTrends, setWeeklyTrends] = useState<WeeklyTrends | null>(null);
-  const [consistencyStreak, setConsistencyStreak] = useState<ConsistencyStreak | null>(null);
-  const [caloriesTrend, setCaloriesTrend] = useState<Array<{ date: string; value: number }>>([]);
 
   // Calculate daily targets from onboarding data
   const calculateTargets = useCallback(() => {
@@ -175,44 +169,16 @@ const DashboardScreen: React.FC = () => {
     }
   }, [userState.user?.id]);
 
-  // Load advanced analytics data
-  const loadAdvancedAnalytics = useCallback(async () => {
+  // Load streak data
+  const loadStreak = useCallback(async () => {
     if (!userState.user?.id) return;
 
     try {
-      const today = new Date().toISOString().split('T')[0];
-      const weekStart = new Date();
-      weekStart.setDate(weekStart.getDate() - 6);
-      const weekStartStr = weekStart.toISOString().split('T')[0];
-
-      // Load daily insights
-      const dailyData = await advancedAnalyticsService.getDailyInsights(userState.user.id, today);
-      setDailyInsights(dailyData);
-
-      // Load weekly trends
-      const weeklyData = await advancedAnalyticsService.getWeeklyTrends(userState.user.id, weekStartStr);
-      setWeeklyTrends(weeklyData);
-
       // Load consistency streak
       const streakData = await advancedAnalyticsService.getConsistencyStreak(userState.user.id);
-      setConsistencyStreak(streakData);
       setStreak(streakData.current_streak);
-
-      // Load calories trend using progress metrics (more efficient than 7 daily calls)
-      try {
-        const progressData = await advancedAnalyticsService.getProgressMetrics(userState.user.id, 7);
-        const trendData = progressData.calories_trend.map((value, index) => ({
-          date: new Date(Date.now() - (6 - index) * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-          value: value
-        }));
-        setCaloriesTrend(trendData);
-      } catch (error) {
-        console.log('Progress metrics unavailable for trend, using empty data');
-        setCaloriesTrend([]);
-      }
-
     } catch (error) {
-      console.error('Error loading advanced analytics:', error);
+      console.error('Error loading streak:', error);
     }
   }, [userState.user?.id]);
 
@@ -221,7 +187,7 @@ const DashboardScreen: React.FC = () => {
     if (userState.user) {
       calculateTargets();
       loadTodayData();
-      loadAdvancedAnalytics();
+      loadStreak();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userState.user?.id]); // Only depend on user ID to prevent duplicate calls
@@ -254,7 +220,7 @@ const DashboardScreen: React.FC = () => {
     
     try {
       await loadTodayData();
-      await loadAdvancedAnalytics();
+      await loadStreak();
       await forceSync();
       setLastSyncTime(new Date().toISOString());
     } catch (error) {
@@ -346,12 +312,16 @@ const DashboardScreen: React.FC = () => {
         showsVerticalScrollIndicator={false}
       >
         <View style={CommonStyles.content}>
-          
-          {/* Personalized Header (Greeting & Tips) */}
-          <PersonalizedHeader onRefresh={handleRefresh} />
-
           {/* Dashboard Cards */}
           <View style={styles.cardsContainer}>
+            {/* Welcome Card */}
+            <AnimatedCard delay={50}>
+              <WelcomeCard
+                userName={userState.user?.full_name || userState.user?.username || 'there'}
+                streak={streak}
+              />
+            </AnimatedCard>
+
             {/* Nutrition Card (Calories + Macros) */}
             <AnimatedCard delay={100}>
               <MacrosCard
