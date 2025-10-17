@@ -152,7 +152,7 @@ class ApiService {
   }
 
   async getNutritionLogs(userId: number, date?: string, limit: number = 50) {
-    let url = `/nutrition?user_id=${userId}&limit=${limit}`;
+    let url = `/nutrition/?user_id=${userId}&limit=${limit}`; // Added trailing slash
     if (date) {
       url += `&date=${date}`;
     }

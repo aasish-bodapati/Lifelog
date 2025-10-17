@@ -1,6 +1,14 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { databaseService } from './databaseService';
 
+// Helper function to format date in local timezone as YYYY-MM-DD
+const formatLocalDate = (date: Date): string => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 export interface UserInsights {
   streak: number;
   weeklyWorkouts: number;
@@ -56,7 +64,7 @@ class PersonalizationService {
       const last7Days = Array.from({ length: 7 }, (_, i) => {
         const date = new Date();
         date.setDate(date.getDate() - (6 - i));
-        return date.toISOString().split('T')[0];
+        return formatLocalDate(date);
       });
 
       // Calculate streak

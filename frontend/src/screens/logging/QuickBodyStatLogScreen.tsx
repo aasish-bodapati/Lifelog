@@ -93,7 +93,14 @@ const QuickBodyStatLogScreen: React.FC<QuickBodyStatLogScreenProps> = ({
         chest_cm: chest ? parseFloat(chest) : undefined,
         arm_cm: arm ? parseFloat(arm) : undefined,
         thigh_cm: thigh ? parseFloat(thigh) : undefined,
-        date: new Date().toISOString().split('T')[0],
+        // Use local date (not UTC)
+        date: (() => {
+          const now = new Date();
+          const year = now.getFullYear();
+          const month = String(now.getMonth() + 1).padStart(2, '0');
+          const day = String(now.getDate()).padStart(2, '0');
+          return `${year}-${month}-${day}`;
+        })(),
       };
 
       await databaseService.saveBodyStat(bodyStatData);

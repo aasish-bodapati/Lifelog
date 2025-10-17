@@ -32,6 +32,14 @@ import AdvancedAnalyticsCard from '../../components/dashboard/AdvancedAnalyticsC
 
 const { width } = Dimensions.get('window');
 
+// Helper function to format date in local timezone as YYYY-MM-DD
+const formatLocalDate = (date: Date): string => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 interface WeeklyData {
   week_start: string;
   week_end: string;
@@ -107,9 +115,10 @@ const ProgressScreen: React.FC = () => {
           break;
       }
 
-      // Load advanced analytics
-      const today = new Date().toISOString().split('T')[0];
-      const weekStart = startDate.toISOString().split('T')[0];
+      // Load advanced analytics - use local timezone
+      const todayDate = new Date();
+      const today = `${todayDate.getFullYear()}-${String(todayDate.getMonth() + 1).padStart(2, '0')}-${String(todayDate.getDate()).padStart(2, '0')}`;
+      const weekStart = `${startDate.getFullYear()}-${String(startDate.getMonth() + 1).padStart(2, '0')}-${String(startDate.getDate()).padStart(2, '0')}`;
       
       try {
         // Load daily insights
@@ -132,12 +141,12 @@ const ProgressScreen: React.FC = () => {
 
         // Set trend data
         setCaloriesTrend(progressData.calories_trend.map((value, index) => ({
-          date: new Date(Date.now() - (days - 1 - index) * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+          date: formatLocalDate(new Date(Date.now() - (days - 1 - index) * 24 * 60 * 60 * 1000)),
           value: value
         })));
         
         setWeightTrend(progressData.weight_trend.map((value, index) => ({
-          date: new Date(Date.now() - (days - 1 - index) * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+          date: formatLocalDate(new Date(Date.now() - (days - 1 - index) * 24 * 60 * 60 * 1000)),
           value: value
         })));
 
@@ -156,7 +165,7 @@ const ProgressScreen: React.FC = () => {
         for (let i = 0; i < 7; i++) {
           const date = new Date();
           date.setDate(date.getDate() - (6 - i));
-          const dateStr = date.toISOString().split('T')[0];
+          const dateStr = formatLocalDate(date);
           
           try {
             const daily = await apiService.getDailyAnalytics(userState.user.id, dateStr);
@@ -207,7 +216,7 @@ const ProgressScreen: React.FC = () => {
       const last7Days = Array.from({ length: 7 }, (_, i) => {
         const date = new Date();
         date.setDate(date.getDate() - (6 - i));
-        return date.toISOString().split('T')[0];
+        return formatLocalDate(date);
       });
 
       const achievements: Achievement[] = [
@@ -386,12 +395,12 @@ const ProgressScreen: React.FC = () => {
 
         // Update trend data
         setCaloriesTrend(progressData.calories_trend.map((value, index) => ({
-          date: new Date(Date.now() - (days - 1 - index) * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+          date: formatLocalDate(new Date(Date.now() - (days - 1 - index) * 24 * 60 * 60 * 1000)),
           value: value
         })));
         
         setWeightTrend(progressData.weight_trend.map((value, index) => ({
-          date: new Date(Date.now() - (days - 1 - index) * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+          date: formatLocalDate(new Date(Date.now() - (days - 1 - index) * 24 * 60 * 60 * 1000)),
           value: value
         })));
 
@@ -402,7 +411,7 @@ const ProgressScreen: React.FC = () => {
           for (let i = 0; i < 7; i++) {
             const date = new Date();
             date.setDate(date.getDate() - (6 - i));
-            const dateStr = date.toISOString().split('T')[0];
+            const dateStr = formatLocalDate(date);
             
             try {
               const daily = await apiService.getDailyAnalytics(userState.user.id, dateStr);

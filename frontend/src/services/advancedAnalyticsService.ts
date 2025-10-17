@@ -1,6 +1,14 @@
 import { apiService } from './api';
 import { databaseService } from './databaseService';
 
+// Helper function to format date in local timezone as YYYY-MM-DD
+const formatLocalDate = (date: Date): string => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 export interface DailyInsights {
   date: string;
   total_calories: number;
@@ -350,7 +358,7 @@ class AdvancedAnalyticsService {
       for (let i = 0; i < 7; i++) {
         const date = new Date(start);
         date.setDate(start.getDate() + i);
-        const dateStr = date.toISOString().split('T')[0];
+        const dateStr = formatLocalDate(date);
         
         const dailyInsights = await this.getLocalDailyInsights(userId, dateStr);
         totalCalories += dailyInsights.total_calories;
@@ -363,7 +371,7 @@ class AdvancedAnalyticsService {
       
       return {
         week_start: startDate,
-        week_end: end.toISOString().split('T')[0],
+        week_end: formatLocalDate(end),
         avg_daily_calories: totalCalories / 7,
         avg_daily_protein: totalProtein / 7,
         total_workouts: totalWorkouts,
@@ -371,7 +379,7 @@ class AdvancedAnalyticsService {
         consistency_streak: consistencyStreak.current_streak,
         weekly_goals_achieved: this.calculateWeeklyGoalsAchieved({
           week_start: startDate,
-          week_end: end.toISOString().split('T')[0],
+          week_end: formatLocalDate(end),
           avg_daily_calories: totalCalories / 7,
           avg_daily_protein: totalProtein / 7,
           total_workouts: totalWorkouts,
@@ -387,7 +395,7 @@ class AdvancedAnalyticsService {
       end.setDate(end.getDate() + 6);
       return {
         week_start: startDate,
-        week_end: end.toISOString().split('T')[0],
+        week_end: formatLocalDate(end),
         avg_daily_calories: 0,
         avg_daily_protein: 0,
         total_workouts: 0,
@@ -412,7 +420,7 @@ class AdvancedAnalyticsService {
     for (let i = 0; i < days; i++) {
       const date = new Date(startDate);
       date.setDate(startDate.getDate() + i);
-      const dateStr = date.toISOString().split('T')[0];
+      const dateStr = formatLocalDate(date);
       
       const dailyInsights = await this.getLocalDailyInsights(userId, dateStr);
       dailySummaries.push(dailyInsights);
@@ -425,8 +433,8 @@ class AdvancedAnalyticsService {
     return {
       user_id: userId,
       period_days: days,
-      start_date: startDate.toISOString().split('T')[0],
-      end_date: endDate.toISOString().split('T')[0],
+      start_date: formatLocalDate(startDate),
+      end_date: formatLocalDate(endDate),
       daily_summaries: dailySummaries,
       calories_trend: caloriesTrend,
       weight_trend: weightTrend,
@@ -445,7 +453,7 @@ class AdvancedAnalyticsService {
       for (let i = 0; i < 30; i++) {
         const checkDate = new Date(today);
         checkDate.setDate(today.getDate() - i);
-        const dateStr = checkDate.toISOString().split('T')[0];
+        const dateStr = formatLocalDate(checkDate);
         
         const dailyInsights = await this.getLocalDailyInsights(userId, dateStr);
         

@@ -156,7 +156,12 @@ const QuickWorkoutLogScreen: React.FC<QuickWorkoutLogScreenProps> = ({
     setIsLoading(true);
 
     try {
-      const currentDate = new Date().toISOString().split('T')[0];
+      // Get current date in local timezone (not UTC)
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      const day = String(now.getDate()).padStart(2, '0');
+      const currentDate = `${year}-${month}-${day}`;
       
       // Save each exercise as a separate workout entry
       for (const exercise of selectedExercises) {

@@ -33,11 +33,28 @@ const QuickMealLogScreen: React.FC<QuickMealLogScreenProps> = ({
   const { forceSync } = useSync();
   const [isLoading, setIsLoading] = useState(false);
 
+  // Debug: Log current date calculation on mount
+  React.useEffect(() => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const calculatedDate = `${year}-${month}-${day}`;
+    
+    console.log('📅 QuickMealLogScreen mounted - Current date info:');
+    console.log('  Device local time:', now.toLocaleString());
+    console.log('  Calculated date:', calculatedDate);
+    console.log('  Day of week:', now.toLocaleDateString('en-US', { weekday: 'long' }));
+  }, []);
+
   // Form state
-  const [foodName, setFoodName] = useState('');
-  const [selectedFood, setSelectedFood] = useState<Food | null>(null);
-  const [weightInGrams, setWeightInGrams] = useState('100');
   const [mealType, setMealType] = useState<'breakfast' | 'lunch' | 'dinner' | 'snack'>('breakfast');
+  
+  // Selected foods with their servings
+  interface SelectedFoodItem extends Food {
+    servingSize: string; // Weight in grams
+  }
+  const [selectedFoods, setSelectedFoods] = useState<SelectedFoodItem[]>([]);
 
   // Recent foods for autofill
   const [recentFoods, setRecentFoods] = useState<LocalNutritionLog[]>([]);
@@ -58,13 +75,26 @@ const QuickMealLogScreen: React.FC<QuickMealLogScreenProps> = ({
   };
 
   const handleQuickFill = (food: LocalNutritionLog) => {
-    setFoodName(food.food_name);
     setMealType(food.meal_type);
   };
 
   const handleFoodSelect = (food: Food) => {
-    setSelectedFood(food);
-    setFoodName(food.name);
+    // Add food to the list with default serving size
+    const newFood: SelectedFoodItem = {
+      ...food,
+      servingSize: '100', // Default 100g
+    };
+    setSelectedFoods([...selectedFoods, newFood]);
+  };
+
+  const handleRemoveFood = (index: number) => {
+    setSelectedFoods(selectedFoods.filter((_, i) => i !== index));
+  };
+
+  const handleServingSizeChange = (index: number, value: string) => {
+    const updatedFoods = [...selectedFoods];
+    updatedFoods[index].servingSize = value;
+    setSelectedFoods(updatedFoods);
   };
 
   const handleSave = async () => {
@@ -73,46 +103,60 @@ const QuickMealLogScreen: React.FC<QuickMealLogScreenProps> = ({
       return;
     }
 
-    if (!foodName.trim()) {
-      toastService.error('Error', 'Food name is required');
+    if (selectedFoods.length === 0) {
+      toastService.error('Error', 'Please add at least one food item');
       return;
     }
 
     setIsLoading(true);
 
     try {
-      // Calculate macros based on weight
-      const weight = parseFloat(weightInGrams || '100');
-      const baseCalories = selectedFood?.estimatedCalories || 0;
-      const calories = Math.round(baseCalories * weight / 100);
-      const protein = Math.round(baseCalories * 0.2 * weight / 100 / 4);
-      const carbs = Math.round(baseCalories * 0.5 * weight / 100 / 4);
-      const fat = Math.round(baseCalories * 0.3 * weight / 100 / 9);
+      // Get today's date in local timezone (not UTC)
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      const day = String(now.getDate()).padStart(2, '0');
+      const today = `${year}-${month}-${day}`;
+      
+      console.log('=== MEAL LOGGING DEBUG ===');
+      console.log('Device time:', now.toString());
+      console.log('Calculated date (local):', today);
+      console.log('UTC time:', now.toISOString());
+      console.log('UTC date:', now.toISOString().split('T')[0]);
+      console.log('Timezone offset (minutes):', now.getTimezoneOffset());
+      console.log('========================');
+      
+      // Save each selected food
+      for (const food of selectedFoods) {
+        const weight = parseFloat(food.servingSize || '100');
+        const baseCalories = food.estimatedCalories || 0;
+        const calories = Math.round(baseCalories * weight / 100);
+        const protein = Math.round(baseCalories * 0.2 * weight / 100 / 4);
+        const carbs = Math.round(baseCalories * 0.5 * weight / 100 / 4);
+        const fat = Math.round(baseCalories * 0.3 * weight / 100 / 9);
 
-      const nutritionData = {
-        local_id: `nutrition_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-        user_id: userState.user.id,
-        meal_type: mealType,
-        food_name: foodName.trim(),
-        calories: calories,
-        protein_g: protein,
-        carbs_g: carbs,
-        fat_g: fat,
-        date: new Date().toISOString().split('T')[0],
-      };
+        const nutritionData = {
+          local_id: `nutrition_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          user_id: userState.user.id,
+          meal_type: mealType,
+          food_name: food.name.trim(),
+          calories: calories,
+          protein_g: protein,
+          carbs_g: carbs,
+          fat_g: fat,
+          date: today,
+        };
 
-      await databaseService.saveNutritionLog(nutritionData);
+        await databaseService.saveNutritionLog(nutritionData);
+        // Small delay to ensure unique timestamps
+        await new Promise(resolve => setTimeout(resolve, 10));
+      }
       
       // Trigger sync
       await forceSync();
       
-      // Schedule follow-up reminder if user hasn't logged other meals today
-      const today = new Date().toISOString().split('T')[0];
-      const todayMeals = await databaseService.getNutritionLogs(userState.user.id, today, 100);
-      const otherMeals = todayMeals.filter(meal => meal.meal_type !== mealType);
-      
-      
-      toastService.success('Success', 'Meal logged successfully!');
+      const itemCount = selectedFoods.length;
+      toastService.success('Success', `${itemCount} food item${itemCount > 1 ? 's' : ''} logged successfully!`);
       onSuccess?.();
       onClose();
     } catch (error) {
@@ -236,77 +280,78 @@ const QuickMealLogScreen: React.FC<QuickMealLogScreenProps> = ({
             />
           </View>
 
-          {/* Show selected food */}
-          {selectedFood && (
-            <View style={styles.selectedFoodCard}>
-              <View style={styles.foodCardHeader}>
-                <View style={[styles.foodIconContainer, { backgroundColor: getCategoryColor(selectedFood.category) + '20' }]}>
-                  <Ionicons
-                    name={getCategoryIcon(selectedFood.category) as any}
-                    size={20}
-                    color={getCategoryColor(selectedFood.category)}
-                  />
-                </View>
-                <View style={styles.foodInfo}>
-                  <Text style={styles.foodName}>{selectedFood.name}</Text>
-                  <View style={styles.foodMeta}>
-                    <View style={[styles.categoryBadge, { backgroundColor: getCategoryColor(selectedFood.category) + '20' }]}>
-                      <Text style={[styles.categoryText, { color: getCategoryColor(selectedFood.category) }]}>
-                        {selectedFood.category}
+          {/* Show selected foods */}
+          {selectedFoods.length > 0 && (
+            <View style={styles.selectedFoodsContainer}>
+              <Text style={styles.selectedFoodsTitle}>Selected Foods ({selectedFoods.length})</Text>
+              {selectedFoods.map((food, index) => (
+                <View key={index} style={styles.selectedFoodCard}>
+                  <View style={styles.foodCardHeader}>
+                    <View style={[styles.foodIconContainer, { backgroundColor: getCategoryColor(food.category) + '20' }]}>
+                      <Ionicons
+                        name={getCategoryIcon(food.category) as any}
+                        size={20}
+                        color={getCategoryColor(food.category)}
+                      />
+                    </View>
+                    <View style={styles.foodInfo}>
+                      <Text style={styles.foodName}>{food.name}</Text>
+                      <View style={styles.foodMeta}>
+                        <View style={[styles.categoryBadge, { backgroundColor: getCategoryColor(food.category) + '20' }]}>
+                          <Text style={[styles.categoryText, { color: getCategoryColor(food.category) }]}>
+                            {food.category}
+                          </Text>
+                        </View>
+                        <Text style={styles.servingText}>{food.commonServing}</Text>
+                      </View>
+                    </View>
+                    <TouchableOpacity
+                      onPress={() => handleRemoveFood(index)}
+                      style={styles.removeFoodButton}
+                    >
+                      <Ionicons name="close-circle" size={24} color={Colors.error} />
+                    </TouchableOpacity>
+                  </View>
+                  
+                  {/* Weight Input */}
+                  <View style={styles.servingInputRow}>
+                    <Text style={styles.servingLabel}>Weight:</Text>
+                    <TextInput
+                      style={styles.servingInput}
+                      value={food.servingSize}
+                      onChangeText={(value) => handleServingSizeChange(index, value)}
+                      keyboardType="decimal-pad"
+                      selectTextOnFocus
+                    />
+                    <Text style={styles.servingUnit}>grams</Text>
+                  </View>
+
+                  {/* Macros Display */}
+                  <View style={styles.macrosContainer}>
+                    <View style={styles.macroItem}>
+                      <Text style={styles.macroLabel}>Calories</Text>
+                      <Text style={styles.macroValue}>
+                        {Math.round((food.estimatedCalories || 0) * parseFloat(food.servingSize || '100') / 100)}
                       </Text>
                     </View>
-                    <Text style={styles.servingText}>{selectedFood.commonServing}</Text>
+                    <View style={styles.macroDivider} />
+                    <View style={styles.macroItem}>
+                      <Text style={styles.macroLabel}>Protein</Text>
+                      <Text style={styles.macroValue}>~{Math.round((food.estimatedCalories || 0) * 0.2 * parseFloat(food.servingSize || '100') / 100 / 4)}g</Text>
+                    </View>
+                    <View style={styles.macroDivider} />
+                    <View style={styles.macroItem}>
+                      <Text style={styles.macroLabel}>Carbs</Text>
+                      <Text style={styles.macroValue}>~{Math.round((food.estimatedCalories || 0) * 0.5 * parseFloat(food.servingSize || '100') / 100 / 4)}g</Text>
+                    </View>
+                    <View style={styles.macroDivider} />
+                    <View style={styles.macroItem}>
+                      <Text style={styles.macroLabel}>Fat</Text>
+                      <Text style={styles.macroValue}>~{Math.round((food.estimatedCalories || 0) * 0.3 * parseFloat(food.servingSize || '100') / 100 / 9)}g</Text>
+                    </View>
                   </View>
                 </View>
-                <TouchableOpacity
-                  onPress={() => {
-                    setSelectedFood(null);
-                    setFoodName('');
-                    setWeightInGrams('100');
-                  }}
-                  style={styles.removeFoodButton}
-                >
-                  <Ionicons name="close-circle" size={20} color="#DC3545" />
-                </TouchableOpacity>
-              </View>
-              
-              {/* Weight Input */}
-              <View style={styles.servingInputRow}>
-                <Text style={styles.servingLabel}>Weight:</Text>
-                <TextInput
-                  style={styles.servingInput}
-                  value={weightInGrams}
-                  onChangeText={setWeightInGrams}
-                  keyboardType="decimal-pad"
-                  selectTextOnFocus
-                />
-                <Text style={styles.servingUnit}>grams</Text>
-              </View>
-
-              {/* Macros Display */}
-              <View style={styles.macrosContainer}>
-                <View style={styles.macroItem}>
-                  <Text style={styles.macroLabel}>Calories</Text>
-                  <Text style={styles.macroValue}>
-                    {Math.round((selectedFood.estimatedCalories || 0) * parseFloat(weightInGrams || '100') / 100)}
-                  </Text>
-                </View>
-                <View style={styles.macroDivider} />
-                <View style={styles.macroItem}>
-                  <Text style={styles.macroLabel}>Protein</Text>
-                  <Text style={styles.macroValue}>~{Math.round((selectedFood.estimatedCalories || 0) * 0.2 * parseFloat(weightInGrams || '100') / 100 / 4)}g</Text>
-                </View>
-                <View style={styles.macroDivider} />
-                <View style={styles.macroItem}>
-                  <Text style={styles.macroLabel}>Carbs</Text>
-                  <Text style={styles.macroValue}>~{Math.round((selectedFood.estimatedCalories || 0) * 0.5 * parseFloat(weightInGrams || '100') / 100 / 4)}g</Text>
-                </View>
-                <View style={styles.macroDivider} />
-                <View style={styles.macroItem}>
-                  <Text style={styles.macroLabel}>Fat</Text>
-                  <Text style={styles.macroValue}>~{Math.round((selectedFood.estimatedCalories || 0) * 0.3 * parseFloat(weightInGrams || '100') / 100 / 9)}g</Text>
-                </View>
-              </View>
+              ))}
             </View>
           )}
         </View>
@@ -322,11 +367,14 @@ const QuickMealLogScreen: React.FC<QuickMealLogScreenProps> = ({
           </TouchableOpacity>
           <TouchableOpacity
             onPress={handleSave}
-            style={[styles.saveButton, isLoading && styles.saveButtonDisabled]}
-            disabled={isLoading}
+            style={[
+              styles.saveButton, 
+              (isLoading || selectedFoods.length === 0) && styles.saveButtonDisabled
+            ]}
+            disabled={isLoading || selectedFoods.length === 0}
           >
             <Text style={styles.saveButtonText}>
-              {isLoading ? 'Logging...' : 'Log Meal'}
+              {isLoading ? 'Logging...' : `Log ${selectedFoods.length} Item${selectedFoods.length !== 1 ? 's' : ''}`}
             </Text>
           </TouchableOpacity>
         </View>
@@ -509,11 +557,20 @@ const styles = StyleSheet.create({
   foodDropdown: {
     marginBottom: 0,
   },
+  selectedFoodsContainer: {
+    marginTop: Spacing.xl,
+  },
+  selectedFoodsTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: Colors.text,
+    marginBottom: Spacing.md,
+  },
   selectedFoodCard: {
     backgroundColor: Colors.surface,
     borderRadius: 10,
     padding: Spacing.md,
-    marginTop: Spacing.md,
+    marginBottom: Spacing.md,
     borderWidth: 1,
     borderColor: Colors.border,
     ...Layout.shadowSmall,

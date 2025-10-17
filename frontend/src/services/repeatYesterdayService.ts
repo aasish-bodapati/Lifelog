@@ -3,6 +3,14 @@ import { useUser } from '../context/UserContext';
 import { useSync } from '../context/SyncContext';
 import { toastService } from './toastService';
 
+// Helper function to format date in local timezone as YYYY-MM-DD
+const formatLocalDate = (date: Date): string => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 export interface YesterdayData {
   workouts: LocalWorkout[];
   nutrition: LocalNutritionLog[];
@@ -16,7 +24,7 @@ class RepeatYesterdayService {
   async getYesterdayData(userId: number): Promise<YesterdayData> {
     const yesterday = new Date();
     yesterday.setDate(yesterday.getDate() - 1);
-    const yesterdayStr = yesterday.toISOString().split('T')[0];
+    const yesterdayStr = formatLocalDate(yesterday);
 
     try {
       const [workouts, nutrition, bodyStats] = await Promise.all([
@@ -58,7 +66,7 @@ class RepeatYesterdayService {
         return;
       }
 
-      const today = new Date().toISOString().split('T')[0];
+      const today = formatLocalDate(new Date());
       let repeatedCount = 0;
 
       for (const workout of yesterdayData.workouts) {
@@ -94,7 +102,7 @@ class RepeatYesterdayService {
         return;
       }
 
-      const today = new Date().toISOString().split('T')[0];
+      const today = formatLocalDate(new Date());
       let repeatedCount = 0;
 
       for (const nutrition of yesterdayData.nutrition) {
@@ -136,7 +144,7 @@ class RepeatYesterdayService {
         return;
       }
 
-      const today = new Date().toISOString().split('T')[0];
+      const today = formatLocalDate(new Date());
       let repeatedCount = 0;
 
       for (const bodyStat of yesterdayData.bodyStats) {

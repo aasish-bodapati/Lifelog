@@ -43,14 +43,14 @@ const NutritionScreen: React.FC = () => {
   const { data: nutritionLogs, isLoading, isRefreshing, refresh, loadData } = useScreenData<LocalNutritionLog[]>({
     fetchData: async () => {
       const userId = userState.user?.id || 0;
-      const today = new Date().toISOString().split('T')[0];
       
-      // Load recent nutrition logs (last 30 days)
-      const recentLogs = await databaseService.getNutritionLogs(userId, today, 100);
+      // Load recent nutrition logs (last 60 days) to allow filtering by any recent date
+      // Don't filter by date here - let the UI filter handle it with proper timezone conversion
+      const recentLogs = await databaseService.getNutritionLogs(userId, undefined, 500);
       
       // Try to fetch from backend for sync (silent failure)
       try {
-        const backendLogs = await apiService.getNutritionLogs(userId, today, 100);
+        const backendLogs = await apiService.getNutritionLogs(userId, undefined, 500);
         if (backendLogs && backendLogs.length > 0) {
           console.log('Backend nutrition logs loaded:', backendLogs.length);
         }
@@ -185,11 +185,31 @@ const NutritionScreen: React.FC = () => {
 
   const getFilteredMealsByDate = () => {
     if (!nutritionLogs) return [];
-    const selectedDateString = selectedDate.toISOString().split('T')[0];
-    return nutritionLogs.filter((meal) => {
-      const mealDate = new Date(meal.created_at).toISOString().split('T')[0];
-      return mealDate === selectedDateString;
+    
+    // Format selected date in local timezone as YYYY-MM-DD
+    const year = selectedDate.getFullYear();
+    const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
+    const day = String(selectedDate.getDate()).padStart(2, '0');
+    const selectedDateString = `${year}-${month}-${day}`;
+    
+    console.log('🔍 Filtering nutrition logs:');
+    console.log('  Selected date object:', selectedDate);
+    console.log('  Selected date string:', selectedDateString);
+    console.log('  Total logs:', nutritionLogs.length);
+    
+    const filtered = nutritionLogs.filter((meal) => {
+      // Use the meal's 'date' field (what date it was logged FOR)
+      // This field is stored as YYYY-MM-DD or YYYY-MM-DD HH:MM:SS
+      const mealDate = meal.date ? meal.date.split(' ')[0].split('T')[0] : '';
+      const matches = mealDate === selectedDateString;
+      if (matches) {
+        console.log(`  ✓ ${meal.food_name} - date: ${mealDate}`);
+      }
+      return matches;
     });
+    
+    console.log('  Filtered results:', filtered.length, 'meals');
+    return filtered;
   };
 
 
@@ -516,7 +536,14 @@ const NutritionScreen: React.FC = () => {
                               <Text style={styles.mealLogTime}>{formatTime(log.created_at)}</Text>
                               <Text style={styles.mealLogDot}>•</Text>
                               <Text style={styles.mealLogDate}>
-                                {new Date(log.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                                {/* Use the date field (what date it was logged FOR) not created_at */}
+                                {(() => {
+                                  const dateStr = log.date ? log.date.split(' ')[0].split('T')[0] : '';
+                                  if (!dateStr) return '';
+                                  const [year, month, day] = dateStr.split('-');
+                                  const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+                                  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                                })()}
                               </Text>
                             </View>
                           </View>

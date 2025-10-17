@@ -90,7 +90,12 @@ const DashboardScreen: React.FC = () => {
     if (!userState.user?.id) return;
 
     try {
-      const today = new Date().toISOString().split('T')[0];
+      // Get today's date in local timezone (not UTC)
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      const day = String(now.getDate()).padStart(2, '0');
+      const today = `${year}-${month}-${day}`;
       
       // Get today's nutrition logs
       const nutritionLogs = await databaseService.getNutritionLogs(
@@ -146,7 +151,11 @@ const DashboardScreen: React.FC = () => {
       const last7Days = Array.from({ length: 7 }, (_, i) => {
         const date = new Date();
         date.setDate(date.getDate() - i);
-        return date.toISOString().split('T')[0];
+        // Format in local timezone
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
       });
 
       let currentStreak = 0;
@@ -245,8 +254,12 @@ const DashboardScreen: React.FC = () => {
         water: newWaterTotal,
       }));
       
-      // Get today's date
-      const today = new Date().toISOString().split('T')[0];
+      // Get today's date in local timezone (not UTC)
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      const day = String(now.getDate()).padStart(2, '0');
+      const today = `${year}-${month}-${day}`;
       
       // Check local database first to see if we already have an entry for today
       const localBodyStats = await databaseService.getBodyStats(userState.user.id, 10);
@@ -311,7 +324,7 @@ const DashboardScreen: React.FC = () => {
         }
         showsVerticalScrollIndicator={false}
       >
-        <View style={CommonStyles.content}>
+        <View style={[CommonStyles.content, styles.content]}>
           {/* Dashboard Cards */}
           <View style={styles.cardsContainer}>
             {/* Welcome Card */}
@@ -384,6 +397,9 @@ const DashboardScreen: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
+  content: {
+    paddingTop: 16, // Extra padding to prevent SyncIndicator overlap
+  },
   cardsContainer: {
     gap: Layout.cardSpacing,
   },
