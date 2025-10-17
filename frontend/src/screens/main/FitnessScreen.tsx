@@ -31,7 +31,6 @@ const FitnessScreen: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'overview' | 'logs'>('overview');
   const [selectedWorkout, setSelectedWorkout] = useState<LocalWorkout | null>(null);
   const [showEditModal, setShowEditModal] = useState(false);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const quickWorkouts = [
     { name: 'Morning Run', duration: 30, icon: 'walk', color: '#FF6B6B' },
@@ -125,21 +124,11 @@ const FitnessScreen: React.FC = () => {
     setShowEditModal(true);
   };
 
-  const handleDeleteWorkout = (workout: LocalWorkout) => {
-    hapticService.light();
-    setSelectedWorkout(workout);
-    setShowDeleteConfirm(true);
-  };
-
-  const confirmDelete = async () => {
-    if (!selectedWorkout) return;
-
+  const handleDeleteWorkout = async (workout: LocalWorkout) => {
     try {
       hapticService.medium();
-      await databaseService.deleteWorkout(selectedWorkout.local_id);
+      await databaseService.deleteWorkout(workout.local_id);
       toastService.success('Success', 'Workout deleted successfully');
-      setShowDeleteConfirm(false);
-      setSelectedWorkout(null);
       loadData();
     } catch (error) {
       console.error('Error deleting workout:', error);
@@ -544,46 +533,6 @@ const FitnessScreen: React.FC = () => {
         </SafeAreaView>
       </Modal>
 
-      {/* Delete Confirmation Modal */}
-      <Modal
-        visible={showDeleteConfirm}
-        animationType="fade"
-        transparent={true}
-        onRequestClose={() => setShowDeleteConfirm(false)}
-      >
-        <View style={styles.deleteModalOverlay}>
-          <View style={styles.deleteModalContainer}>
-            <View style={styles.deleteModalIcon}>
-              <Ionicons name="warning" size={48} color={Colors.error} />
-            </View>
-            
-            <Text style={styles.deleteModalTitle}>Delete Workout?</Text>
-            <Text style={styles.deleteModalText}>
-              Are you sure you want to delete "{selectedWorkout?.name}"? This action cannot be undone.
-            </Text>
-
-            <View style={styles.deleteModalButtons}>
-              <TouchableOpacity
-                style={styles.cancelButton}
-                onPress={() => {
-                  hapticService.light();
-                  setShowDeleteConfirm(false);
-                  setSelectedWorkout(null);
-                }}
-              >
-                <Text style={styles.cancelButtonText}>Cancel</Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity
-                style={styles.deleteButton}
-                onPress={confirmDelete}
-              >
-                <Text style={styles.deleteButtonText}>Delete</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
     </SafeAreaView>
   );
 };
@@ -972,65 +921,6 @@ const styles = StyleSheet.create({
     ...Typography.label,
     color: Colors.textLight,
     fontSize: 16,
-  },
-  // Delete Modal Styles
-  deleteModalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: Layout.screenPadding,
-  },
-  deleteModalContainer: {
-    backgroundColor: Colors.surface,
-    borderRadius: Layout.radiusLarge,
-    padding: Layout.cardPaddingLarge,
-    width: '100%',
-    maxWidth: 400,
-    alignItems: 'center',
-  },
-  deleteModalIcon: {
-    marginBottom: Layout.sectionSpacing,
-  },
-  deleteModalTitle: {
-    ...Typography.h3,
-    marginBottom: 12,
-    textAlign: 'center',
-  },
-  deleteModalText: {
-    ...Typography.body,
-    color: Colors.textSecondary,
-    textAlign: 'center',
-    marginBottom: Layout.sectionSpacing,
-  },
-  deleteModalButtons: {
-    flexDirection: 'row',
-    gap: 12,
-    width: '100%',
-  },
-  cancelButton: {
-    flex: 1,
-    backgroundColor: Colors.background,
-    paddingVertical: 14,
-    borderRadius: Layout.radiusMedium,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  cancelButtonText: {
-    ...Typography.label,
-    color: Colors.textPrimary,
-  },
-  deleteButton: {
-    flex: 1,
-    backgroundColor: Colors.error,
-    paddingVertical: 14,
-    borderRadius: Layout.radiusMedium,
-    alignItems: 'center',
-  },
-  deleteButtonText: {
-    ...Typography.label,
-    color: Colors.textLight,
   },
 });
 
