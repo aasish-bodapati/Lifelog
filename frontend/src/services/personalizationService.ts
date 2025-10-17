@@ -61,31 +61,46 @@ class PersonalizationService {
 
       // Calculate streak
       let streak = 0;
-      for (const date of last7Days) {
-        const hasData = await this.hasUserDataOnDate(userId, date);
-        if (hasData) {
-          streak++;
-        } else {
-          break;
+      try {
+        for (const date of last7Days) {
+          const hasData = await this.hasUserDataOnDate(userId, date);
+          if (hasData) {
+            streak++;
+          } else {
+            break;
+          }
         }
+      } catch (error) {
+        console.error('Error calculating streak:', error);
+        streak = 0;
       }
 
       // Calculate weekly workouts
-      const workouts = await databaseService.getWorkouts(userId, 50);
-      const weeklyWorkouts = workouts.filter(w => 
-        last7Days.includes(w.date)
-      ).length;
+      let workouts = [];
+      let weeklyWorkouts = 0;
+      try {
+        workouts = await databaseService.getWorkouts(userId, 50);
+        weeklyWorkouts = workouts.filter(w => 
+          last7Days.includes(w.date)
+        ).length;
+      } catch (error) {
+        console.error('Error loading workouts:', error);
+      }
 
       // Calculate average calories
       let totalCalories = 0;
       let daysWithCalories = 0;
-      for (const date of last7Days) {
-        const nutritionLogs = await databaseService.getNutritionLogs(userId, date, 100);
-        const dayCalories = nutritionLogs.reduce((sum, log) => sum + log.calories, 0);
-        if (dayCalories > 0) {
-          totalCalories += dayCalories;
-          daysWithCalories++;
+      try {
+        for (const date of last7Days) {
+          const nutritionLogs = await databaseService.getNutritionLogs(userId, date, 100);
+          const dayCalories = nutritionLogs.reduce((sum, log) => sum + log.calories, 0);
+          if (dayCalories > 0) {
+            totalCalories += dayCalories;
+            daysWithCalories++;
+          }
         }
+      } catch (error) {
+        console.error('Error loading nutrition data:', error);
       }
       const avgCalories = daysWithCalories > 0 ? totalCalories / daysWithCalories : 0;
 
