@@ -260,7 +260,7 @@ const QuickWorkoutLogScreen: React.FC<QuickWorkoutLogScreenProps> = ({
                     <View style={styles.exerciseIconContainer}>
                       <Ionicons
                         name={getWorkoutIcon(exercise.name) as any}
-                        size={24}
+                        size={20}
                         color={getWorkoutColor(exercise.name)}
                       />
                     </View>
@@ -283,7 +283,7 @@ const QuickWorkoutLogScreen: React.FC<QuickWorkoutLogScreenProps> = ({
                       onPress={() => handleRemoveExercise(index)}
                       style={styles.removeExerciseButton}
                     >
-                      <Ionicons name="close-circle" size={24} color="#DC3545" />
+                      <Ionicons name="close-circle" size={20} color="#DC3545" />
                     </TouchableOpacity>
                   </View>
                   
@@ -619,60 +619,60 @@ const styles = StyleSheet.create({
   },
   selectedExerciseCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 12,
     borderWidth: 1,
     borderColor: '#E0E0E0',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 2,
+    elevation: 2,
   },
   exerciseCardHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 10,
   },
   exerciseIconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     backgroundColor: '#F0F8FF',
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 12,
+    marginRight: 10,
   },
   exerciseInfo: {
     flex: 1,
   },
   exerciseName: {
-    fontSize: 18,
+    fontSize: 15,
     fontWeight: '600',
     color: '#333',
-    marginBottom: 6,
+    marginBottom: 4,
   },
   exerciseMeta: {
     flexDirection: 'row',
-    gap: 8,
+    gap: 6,
   },
   categoryBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 8,
   },
   categoryText: {
-    fontSize: 12,
+    fontSize: 10,
     fontWeight: '600',
   },
   difficultyBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 8,
   },
   difficultyText: {
-    fontSize: 12,
+    fontSize: 10,
     fontWeight: '600',
   },
   removeExerciseButton: {
@@ -762,42 +762,42 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   exerciseInputs: {
-    marginTop: 12,
-    paddingTop: 12,
+    marginTop: 10,
+    paddingTop: 10,
     borderTopWidth: 1,
     borderTopColor: '#F0F0F0',
   },
   inputRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 12,
+    gap: 8,
   },
   inputField: {
     flex: 1,
-    minWidth: 90,
-    maxWidth: 150,
+    minWidth: 75,
+    maxWidth: 120,
   },
   numberInput: {
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#E0E0E0',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 16,
+    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 8,
+    fontSize: 14,
     fontWeight: '600',
     textAlign: 'center',
     color: '#1A1A1A',
   },
   intensityButtons: {
     flexDirection: 'row',
-    gap: 6,
+    gap: 4,
   },
   intensityButton: {
     flex: 1,
-    paddingVertical: 10,
-    paddingHorizontal: 8,
-    borderRadius: 8,
+    paddingVertical: 6,
+    paddingHorizontal: 6,
+    borderRadius: 6,
     borderWidth: 1,
     borderColor: '#E0E0E0',
     backgroundColor: '#FFFFFF',
@@ -808,7 +808,7 @@ const styles = StyleSheet.create({
     borderColor: '#007AFF',
   },
   intensityButtonText: {
-    fontSize: 11,
+    fontSize: 10,
     color: '#666',
     fontWeight: '600',
     textTransform: 'uppercase',
