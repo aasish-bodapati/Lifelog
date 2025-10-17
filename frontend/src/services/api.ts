@@ -84,7 +84,14 @@ class ApiService {
 
   // Workout endpoints
   async createWorkout(workoutData: any) {
-    const response = await api.post('/fitness', workoutData);
+    const { user_id, date, ...bodyData } = workoutData;
+    // Convert date string to datetime format expected by backend
+    const datetime = date.includes('T') ? date : `${date}T00:00:00.000Z`;
+    const response = await api.post(`/fitness?user_id=${user_id}`, {
+      ...bodyData,
+      date: datetime,
+      exercises: [], // Backend expects exercises array, send empty for now
+    });
     return response.data;
   }
 
