@@ -8,7 +8,7 @@ import {
   Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { useUser } from '../../context/UserContext';
 import { useSync } from '../../context/SyncContext';
 import { useOnboarding } from '../../context/OnboardingContext';
@@ -25,12 +25,10 @@ import PersonalizedHeader from '../../components/dashboard/PersonalizedHeader';
 import RecentAchievements from '../../components/dashboard/RecentAchievements';
 import AnimatedCard from '../../components/AnimatedCard';
 import MacrosCard from '../../components/dashboard/MacrosCard';
+import WorkoutLogCard from '../../components/dashboard/WorkoutLogCard';
 import HydrationCard from '../../components/dashboard/HydrationCard';
 import BodyTrendCard from '../../components/dashboard/BodyTrendCard';
 import ConsistencyCard from '../../components/dashboard/ConsistencyCard';
-import AdvancedAnalyticsCard from '../../components/dashboard/AdvancedAnalyticsCard';
-import ProgressInsights from '../../components/analytics/ProgressInsights';
-import TrendChart from '../../components/analytics/TrendChart';
 
 const { width } = Dimensions.get('window');
 
@@ -54,6 +52,7 @@ const DashboardScreen: React.FC = () => {
   const { state: userState } = useUser();
   const { syncStatus, forceSync } = useSync();
   const { data: onboardingData } = useOnboarding();
+  const navigation = useNavigation<any>();
   
   const [isLoading, setIsLoading] = useState(false);
   const [dailyTotals, setDailyTotals] = useState<DailyTotals>({
@@ -64,6 +63,7 @@ const DashboardScreen: React.FC = () => {
     water: 0,
   });
   const [dailyTargets, setDailyTargets] = useState<DailyTargets | null>(null);
+  const [todayWorkoutCount, setTodayWorkoutCount] = useState(0);
   const [streak, setStreak] = useState(0);
   const [lastSyncTime, setLastSyncTime] = useState<string | null>(null);
   
@@ -104,6 +104,17 @@ const DashboardScreen: React.FC = () => {
         today,
         100
       );
+
+      // Get today's workouts
+      const todayWorkouts = await databaseService.getWorkouts(
+        userState.user.id,
+        50
+      );
+      const todayWorkoutsList = todayWorkouts.filter(workout => {
+        const workoutDate = workout.date.split('T')[0];
+        return workoutDate === today;
+      });
+      setTodayWorkoutCount(todayWorkoutsList.length);
 
       // Get today's body stats (for hydration)
       const bodyStats = await databaseService.getBodyStats(
@@ -318,6 +329,11 @@ const DashboardScreen: React.FC = () => {
     }
   };
 
+  const handleWorkoutPress = () => {
+    hapticService.light();
+    navigation.navigate('WorkoutLog');
+  };
+
   return (
     <SafeAreaView style={CommonStyles.screenContainer}>
       <SyncIndicator />
@@ -347,6 +363,15 @@ const DashboardScreen: React.FC = () => {
                 proteinTarget={dailyTargets?.protein || 0}
                 carbsTarget={dailyTargets?.carbs || 0}
                 fatTarget={dailyTargets?.fat || 0}
+                isLoading={isLoading}
+              />
+            </AnimatedCard>
+
+            {/* Workout Log Card */}
+            <AnimatedCard delay={150}>
+              <WorkoutLogCard
+                onPress={handleWorkoutPress}
+                todayWorkoutCount={todayWorkoutCount}
                 isLoading={isLoading}
               />
             </AnimatedCard>
@@ -381,42 +406,6 @@ const DashboardScreen: React.FC = () => {
           
           {/* Recent Achievements */}
           <RecentAchievements />
-
-            {/* Advanced Analytics Card */}
-            {dailyInsights && weeklyTrends && consistencyStreak && (
-              <AnimatedCard delay={500}>
-                <AdvancedAnalyticsCard
-                  dailyInsights={dailyInsights}
-                  weeklyTrends={weeklyTrends}
-                  consistencyStreak={consistencyStreak}
-                  onViewDetails={() => console.log('View analytics details')}
-                />
-              </AnimatedCard>
-            )}
-
-            {/* Calories Trend Chart */}
-            {caloriesTrend.length > 0 && (
-              <AnimatedCard delay={600}>
-                <TrendChart
-                  title="Calories Trend"
-                  data={caloriesTrend}
-                  color="#FF6B6B"
-                  unit="kcal"
-                />
-              </AnimatedCard>
-            )}
-
-            {/* Progress Insights */}
-            {dailyInsights && weeklyTrends && consistencyStreak && (
-              <AnimatedCard delay={700}>
-                <ProgressInsights
-                  dailyInsights={dailyInsights}
-                  weeklyTrends={weeklyTrends}
-                  consistencyStreak={consistencyStreak}
-                  onInsightPress={(insight) => console.log('Insight pressed:', insight)}
-                />
-              </AnimatedCard>
-            )}
           </View>
         </View>
       </ScrollView>

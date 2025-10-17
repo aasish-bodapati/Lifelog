@@ -99,6 +99,11 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.log('Starting registration with data:', userData);
       dispatch({ type: 'SET_LOADING', payload: true });
       
+      // Clear any existing onboarding data for new users
+      await AsyncStorage.removeItem('onboardingComplete');
+      await AsyncStorage.removeItem('onboardingData');
+      console.log('Cleared previous onboarding data for new user');
+      
       const user = await userService.register(userData);
       console.log('Registration successful:', user);
       

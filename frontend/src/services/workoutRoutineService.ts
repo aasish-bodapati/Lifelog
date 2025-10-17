@@ -5,7 +5,10 @@
  * - Maintain: Functional Performance Plan
  * - Gain: Lean Mass Builder Plan
  * - Lose: Metabolic Shred Plan
+ * - Custom: User-created routines
  */
+
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export interface RoutineExercise {
   name: string;
@@ -30,23 +33,29 @@ export interface RoutineDay {
 export interface WorkoutRoutine {
   id: string;
   name: string;
-  goalType: 'maintain' | 'gain' | 'lose';
+  goalType: 'maintain' | 'gain' | 'lose' | 'custom';
   description: string;
   equipment: string[];
   focusAreas: string[];
   daysPerWeek: number;
   days: RoutineDay[];
+  isCustom?: boolean;
+  createdAt?: string;
 }
+
+const CUSTOM_ROUTINES_KEY = 'customWorkoutRoutines';
 
 class WorkoutRoutineService {
   /**
-   * Get all available routines
+   * Get all available routines (pre-built + custom)
    */
-  getAllRoutines(): WorkoutRoutine[] {
+  async getAllRoutines(): Promise<WorkoutRoutine[]> {
+    const customRoutines = await this.getCustomRoutines();
     return [
       this.getMaintainRoutine(),
       this.getGainRoutine(),
       this.getLoseRoutine(),
+      ...customRoutines,
     ];
   }
 
@@ -63,6 +72,76 @@ class WorkoutRoutineService {
         return this.getLoseRoutine();
       default:
         return this.getMaintainRoutine();
+    }
+  }
+
+  /**
+   * Get routine by ID (pre-built or custom)
+   */
+  async getRoutineById(id: string): Promise<WorkoutRoutine | null> {
+    const allRoutines = await this.getAllRoutines();
+    return allRoutines.find(r => r.id === id) || null;
+  }
+
+  /**
+   * Get all custom routines from AsyncStorage
+   */
+  async getCustomRoutines(): Promise<WorkoutRoutine[]> {
+    try {
+      const stored = await AsyncStorage.getItem(CUSTOM_ROUTINES_KEY);
+      if (stored) {
+        return JSON.parse(stored);
+      }
+      return [];
+    } catch (error) {
+      console.error('Error loading custom routines:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Save a custom routine
+   */
+  async saveCustomRoutine(routine: WorkoutRoutine): Promise<void> {
+    try {
+      const customRoutines = await this.getCustomRoutines();
+      
+      // Check if updating existing routine
+      const existingIndex = customRoutines.findIndex(r => r.id === routine.id);
+      
+      if (existingIndex >= 0) {
+        // Update existing
+        customRoutines[existingIndex] = {
+          ...routine,
+          isCustom: true,
+        };
+      } else {
+        // Add new routine
+        customRoutines.push({
+          ...routine,
+          isCustom: true,
+          createdAt: new Date().toISOString(),
+        });
+      }
+      
+      await AsyncStorage.setItem(CUSTOM_ROUTINES_KEY, JSON.stringify(customRoutines));
+    } catch (error) {
+      console.error('Error saving custom routine:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Delete a custom routine
+   */
+  async deleteCustomRoutine(id: string): Promise<void> {
+    try {
+      const customRoutines = await this.getCustomRoutines();
+      const filtered = customRoutines.filter(r => r.id !== id);
+      await AsyncStorage.setItem(CUSTOM_ROUTINES_KEY, JSON.stringify(filtered));
+    } catch (error) {
+      console.error('Error deleting custom routine:', error);
+      throw error;
     }
   }
 

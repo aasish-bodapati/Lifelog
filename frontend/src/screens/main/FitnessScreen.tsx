@@ -10,6 +10,7 @@ import {
   TextInput,
   Platform,
   Dimensions,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -29,6 +30,7 @@ import QuickWorkoutLogScreen from '../logging/QuickWorkoutLogScreen';
 import LoadingSkeleton from '../../components/LoadingSkeleton';
 import ExerciseProgressCard from '../../components/dashboard/ExerciseProgressCard';
 import { useOnboarding } from '../../context/OnboardingContext';
+import CreateRoutineModal from '../../components/CreateRoutineModal';
 
 const FitnessScreen: React.FC = () => {
   const { state: userState } = useUser();
@@ -49,15 +51,26 @@ const FitnessScreen: React.FC = () => {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [showCalendar, setShowCalendar] = useState(false);
   const [showRoutineDetails, setShowRoutineDetails] = useState(false);
+  const [allRoutines, setAllRoutines] = useState<WorkoutRoutine[]>([]);
+  const [showCreateRoutine, setShowCreateRoutine] = useState(false);
 
 
-  // Load routine based on user's goal
+  // Load routine based on user's goal and all available routines
   React.useEffect(() => {
-    const loadRoutine = async () => {
-      console.log('Loading routine...');
+    const loadRoutines = async () => {
+      console.log('Loading routines...');
       console.log('Onboarding state isComplete:', onboardingComplete);
       console.log('Onboarding data:', onboardingData);
       console.log('Goal from state:', onboardingData?.goal);
+      
+      // Load all routines (pre-built + custom)
+      const routines = await workoutRoutineService.getAllRoutines();
+      setAllRoutines(routines);
+      
+      // If we already have a selected routine, don't change it
+      if (selectedRoutine) {
+        return;
+      }
       
       // First, try to load from onboarding context
       if (onboardingData?.goal?.type) {
@@ -100,7 +113,7 @@ const FitnessScreen: React.FC = () => {
       }
     };
     
-    loadRoutine();
+    loadRoutines();
   }, [onboardingData?.goal, onboardingComplete]);
 
   // Use the new useScreenData hook for workouts
@@ -159,6 +172,12 @@ const FitnessScreen: React.FC = () => {
     loadData();
     hapticService.success();
     toastService.success('Workout logged successfully!');
+  };
+
+  const handleRoutineSaved = async () => {
+    // Reload all routines after saving
+    const routines = await workoutRoutineService.getAllRoutines();
+    setAllRoutines(routines);
   };
 
 
@@ -600,52 +619,156 @@ const FitnessScreen: React.FC = () => {
         {/* Routines Tab */}
         {activeTab === 'routines' && (
           <>
-            {selectedRoutine ? (
-              <View style={styles.section}>
-                {/* Routine Summary Card */}
-                <TouchableOpacity 
-                  style={styles.routineSummaryCard}
-                  onPress={() => {
-                    hapticService.light();
-                    console.log('Opening routine modal, selectedRoutine:', selectedRoutine);
-                    setShowRoutineDetails(true);
-                  }}
-                >
-                  <View style={styles.routineSummaryHeader}>
-                    <Text style={styles.routineGoalBadge}>
-                      {selectedRoutine.goalType === 'maintain' ? '⚖️ Maintain' :
-                       selectedRoutine.goalType === 'gain' ? '💪 Gain' : '🔥 Lose'}
-                    </Text>
-                    <Ionicons name="chevron-forward" size={24} color={Colors.textSecondary} />
-                  </View>
-                  <Text style={styles.routineName}>{selectedRoutine.name}</Text>
-                  <Text style={styles.routineDescription}>{selectedRoutine.description}</Text>
-                  
-                  <View style={styles.routineMetaRow}>
-                    <View style={styles.routineMetaItem}>
-                      <Ionicons name="calendar-outline" size={16} color={Colors.primary} />
-                      <Text style={styles.routineMetaText}>{selectedRoutine.daysPerWeek} days/week</Text>
-                    </View>
-                    <View style={styles.routineMetaItem}>
-                      <Ionicons name="barbell-outline" size={16} color={Colors.primary} />
-                      <Text style={styles.routineMetaText}>{selectedRoutine.focusAreas[0]}</Text>
-                    </View>
-                  </View>
+            <View style={styles.section}>
+              {/* Create Routine Button */}
+              <TouchableOpacity
+                style={styles.createRoutineButton}
+                onPress={() => {
+                  hapticService.medium();
+                  setShowCreateRoutine(true);
+                }}
+              >
+                <Ionicons name="add-circle" size={24} color={Colors.textLight} />
+                <Text style={styles.createRoutineButtonText}>Create Custom Routine</Text>
+              </TouchableOpacity>
 
-                  <Text style={styles.tapToViewText}>Tap to view full workout plan</Text>
-                </TouchableOpacity>
-              </View>
-            ) : (
-              <View style={styles.section}>
+              {/* Current Routine (if selected) */}
+              {selectedRoutine && (
+                <>
+                  <Text style={styles.sectionTitle}>Current Routine</Text>
+                  <TouchableOpacity 
+                    style={[styles.routineCard, styles.currentRoutineCard]}
+                    onPress={() => {
+                      hapticService.light();
+                      setShowRoutineDetails(true);
+                    }}
+                  >
+                    <View style={styles.routineCardHeader}>
+                      <Text style={styles.routineGoalBadge}>
+                        {selectedRoutine.goalType === 'maintain' ? '⚖️ Maintain' :
+                         selectedRoutine.goalType === 'gain' ? '💪 Gain' :
+                         selectedRoutine.goalType === 'lose' ? '🔥 Lose' : '✨ Custom'}
+                      </Text>
+                      {selectedRoutine.isCustom && (
+                        <View style={styles.customBadge}>
+                          <Text style={styles.customBadgeText}>Custom</Text>
+                        </View>
+                      )}
+                    </View>
+                    <Text style={styles.routineCardName}>{selectedRoutine.name}</Text>
+                    <Text style={styles.routineCardDescription}>{selectedRoutine.description}</Text>
+                    
+                    <View style={styles.routineMetaRow}>
+                      <View style={styles.routineMetaItem}>
+                        <Ionicons name="calendar-outline" size={16} color={Colors.primary} />
+                        <Text style={styles.routineMetaText}>{selectedRoutine.daysPerWeek} days/week</Text>
+                      </View>
+                      <View style={styles.routineMetaItem}>
+                        <Ionicons name="fitness-outline" size={16} color={Colors.primary} />
+                        <Text style={styles.routineMetaText}>{selectedRoutine.days.length} workouts</Text>
+                      </View>
+                    </View>
+
+                    <Text style={styles.tapToViewText}>Tap to view full workout plan</Text>
+                  </TouchableOpacity>
+                </>
+              )}
+
+              {/* Custom Routines Only */}
+              <Text style={styles.sectionTitle}>
+                My Custom Routines
+              </Text>
+              
+              {allRoutines.filter(r => r.isCustom).length > 0 ? (
+                <View style={styles.routinesList}>
+                  {allRoutines.filter(r => r.isCustom).map((routine) => (
+                    <TouchableOpacity 
+                      key={routine.id}
+                      style={[
+                        styles.routineCard,
+                        selectedRoutine?.id === routine.id && styles.activeRoutineCard
+                      ]}
+                      onPress={() => {
+                        hapticService.medium();
+                        setSelectedRoutine(routine);
+                        toastService.success('Routine Selected', `Now using ${routine.name}`);
+                      }}
+                      onLongPress={() => {
+                        if (routine.isCustom) {
+                          Alert.alert(
+                            'Manage Routine',
+                            `What would you like to do with "${routine.name}"?`,
+                            [
+                              { text: 'Cancel', style: 'cancel' },
+                              {
+                                text: 'Delete',
+                                style: 'destructive',
+                                onPress: async () => {
+                                  try {
+                                    await workoutRoutineService.deleteCustomRoutine(routine.id);
+                                    const updatedRoutines = await workoutRoutineService.getAllRoutines();
+                                    setAllRoutines(updatedRoutines);
+                                    if (selectedRoutine?.id === routine.id) {
+                                      setSelectedRoutine(null);
+                                    }
+                                    toastService.success('Success', 'Routine deleted');
+                                  } catch (error) {
+                                    toastService.error('Error', 'Failed to delete routine');
+                                  }
+                                },
+                              },
+                            ]
+                          );
+                        }
+                      }}
+                    >
+                      <View style={styles.routineCardHeader}>
+                        <Text style={styles.routineGoalBadge}>
+                          {routine.goalType === 'maintain' ? '⚖️ Maintain' :
+                           routine.goalType === 'gain' ? '💪 Gain' :
+                           routine.goalType === 'lose' ? '🔥 Lose' : '✨ Custom'}
+                        </Text>
+                        {routine.isCustom && (
+                          <View style={styles.customBadge}>
+                            <Text style={styles.customBadgeText}>Custom</Text>
+                          </View>
+                        )}
+                        {selectedRoutine?.id === routine.id && (
+                          <Ionicons name="checkmark-circle" size={24} color={Colors.success} />
+                        )}
+                      </View>
+                      <Text style={styles.routineCardName}>{routine.name}</Text>
+                      <Text style={styles.routineCardDescription} numberOfLines={2}>
+                        {routine.description}
+                      </Text>
+                      
+                      <View style={styles.routineMetaRow}>
+                        <View style={styles.routineMetaItem}>
+                          <Ionicons name="calendar-outline" size={14} color={Colors.textSecondary} />
+                          <Text style={styles.routineMetaTextSmall}>{routine.daysPerWeek} days/week</Text>
+                        </View>
+                        <View style={styles.routineMetaItem}>
+                          <Ionicons name="fitness-outline" size={14} color={Colors.textSecondary} />
+                          <Text style={styles.routineMetaTextSmall}>{routine.days.length} workouts</Text>
+                        </View>
+                      </View>
+
+                      {routine.isCustom && (
+                        <Text style={styles.longPressHint}>Long press to delete</Text>
+                      )}
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              ) : (
                 <View style={styles.emptyState}>
                   <Ionicons name="clipboard-outline" size={64} color="#CCC" />
-                  <Text style={styles.emptyStateTitle}>Complete Onboarding</Text>
-                  <Text style={styles.emptyState}>
-                    Complete your profile setup to get a personalized workout routine
+                  <Text style={styles.emptyStateTitle}>No Custom Routines Yet</Text>
+                  <Text style={styles.emptyStateSubtitle}>
+                    Create your first custom workout routine to get started
                   </Text>
                 </View>
-              </View>
-            )}
+              )}
+            </View>
           </>
         )}
 
@@ -1085,6 +1208,13 @@ const FitnessScreen: React.FC = () => {
           maximumDate={new Date()}
         />
       )}
+
+      {/* Create Routine Modal */}
+      <CreateRoutineModal
+        visible={showCreateRoutine}
+        onClose={() => setShowCreateRoutine(false)}
+        onSave={handleRoutineSaved}
+      />
 
     </SafeAreaView>
   );
@@ -1759,6 +1889,85 @@ const styles = StyleSheet.create({
     color: Colors.textLight,
     fontSize: 16,
     fontWeight: '700',
+  },
+  // Custom Routine Styles
+  createRoutineButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: Colors.primary,
+    paddingVertical: 16,
+    borderRadius: Layout.radiusMedium,
+    marginBottom: 24,
+    ...Layout.shadowMedium,
+  },
+  createRoutineButtonText: {
+    ...Typography.label,
+    color: Colors.textLight,
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  routinesList: {
+    gap: 12,
+  },
+  routineCard: {
+    backgroundColor: Colors.surface,
+    borderRadius: Layout.radiusMedium,
+    padding: Layout.cardPadding,
+    marginBottom: Layout.cardSpacing,
+    borderWidth: 2,
+    borderColor: Colors.border,
+    ...Layout.shadowSmall,
+  },
+  currentRoutineCard: {
+    borderColor: Colors.primary,
+    borderWidth: 2,
+  },
+  activeRoutineCard: {
+    borderColor: Colors.success,
+  },
+  routineCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 12,
+    flexWrap: 'wrap',
+  },
+  routineCardName: {
+    ...Typography.h3,
+    color: Colors.textPrimary,
+    marginBottom: 6,
+  },
+  routineCardDescription: {
+    ...Typography.body,
+    color: Colors.textSecondary,
+    marginBottom: 12,
+  },
+  customBadge: {
+    backgroundColor: Colors.info + '20',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: Layout.radiusSmall,
+  },
+  customBadgeText: {
+    ...Typography.caption,
+    color: Colors.info,
+    fontWeight: '600',
+    fontSize: 10,
+  },
+  routineMetaTextSmall: {
+    ...Typography.caption,
+    color: Colors.textSecondary,
+    fontSize: 11,
+  },
+  longPressHint: {
+    ...Typography.caption,
+    color: Colors.textSecondary,
+    fontStyle: 'italic',
+    textAlign: 'center',
+    marginTop: 8,
+    fontSize: 11,
   },
 });
 
