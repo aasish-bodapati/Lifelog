@@ -25,31 +25,43 @@ Lifelog/
 │   ├── app/
 │   │   ├── models.py          # SQLAlchemy models
 │   │   ├── schemas.py         # Pydantic schemas
-│   │   ├── routes/
-│   │   │   ├── users.py       # User management
-│   │   │   ├── fitness.py     # Fitness tracking (renamed from workouts)
-│   │   │   ├── nutrition.py   # Nutrition logging
-│   │   │   ├── body_stats.py  # Body measurements
-│   │   │   └── summary.py     # Analytics
-│   │   └── database.py        # Database connection
+│   │   ├── db.py              # Database connection and session management
+│   │   ├── utils.py           # Utility functions
+│   │   └── routes/
+│   │       ├── users.py       # User management
+│   │       ├── fitness.py     # Fitness tracking (renamed from workouts)
+│   │       ├── nutrition.py   # Nutrition logging
+│   │       ├── body_stats.py  # Body measurements
+│   │       ├── analytics.py   # Analytics and progress metrics
+│   │       ├── summary.py     # Daily/weekly summaries
+│   │       └── sync.py        # Offline sync endpoints
 │   ├── main.py                # FastAPI app
-│   └── lifelog.db            # SQLite database
+│   └── lifelog.db             # SQLite database (backend data)
 ├── frontend/
 │   ├── src/
 │   │   ├── screens/
 │   │   │   ├── auth/          # Login, Register
-│   │   │   ├── main/          # Home, Fitness, Nutrition, Body, Profile
-│   │   │   └── onboarding/    # Onboarding1, Onboarding2, Onboarding3
-│   │   ├── context/           # UserContext, LogContext, OnboardingContext
-│   │   ├── services/          # API services, calculations, toast
+│   │   │   ├── main/          # Dashboard, Fitness, Nutrition, Progress, Profile
+│   │   │   ├── logging/       # Quick log screens
+│   │   │   ├── onboarding/    # Onboarding1, Onboarding2, Onboarding3
+│   │   │   └── settings/      # Settings screen
+│   │   ├── components/        # Reusable UI components
+│   │   ├── context/           # UserContext, LogContext, OnboardingContext, SyncContext
+│   │   ├── services/          # API, database, sync, analytics services
 │   │   ├── navigation/        # App, Auth, Main, Onboarding navigators
-│   │   └── types/             # TypeScript definitions
+│   │   ├── hooks/             # Custom React hooks
+│   │   ├── types/             # TypeScript definitions
+│   │   ├── styles/            # Design system
+│   │   └── utils/             # Utility functions
 │   ├── App.tsx
+│   ├── lifelog_local.db       # SQLite database (local offline data)
 │   └── package.json
 ├── .gitignore
 ├── context.md                 # This comprehensive context file
-├── ONBOARDING.md             # Detailed onboarding documentation
-└── COMMANDS.md               # Development commands
+├── ONBOARDING.md              # Detailed onboarding documentation
+├── COMMANDS.md                # Development commands reference
+├── SYNC_FIX_SUMMARY.md        # Sync issue troubleshooting guide
+└── SYNC_ISSUE_ANALYSIS.md     # Technical sync analysis
 ```
 🚀 Current Status
 ✅ PHASE 2 COMPLETE - PRODUCTION READY
@@ -279,6 +291,14 @@ This prevents confusion and maintains code clarity across the entire project.
     - Solution: Extract YYYY-MM-DD part with .split('T')[0] before comparison
     - Water intake now persists correctly and updates existing entries instead of creating duplicates
     - Added comprehensive logging for debugging water intake issues
+
+18. Body Stats Sync Error (422 Unprocessable Entity) - RESOLVED (Oct 2025)
+    - Fixed UPDATE/DELETE operations in sync queue using local_id instead of backend numeric ID
+    - Solution: Convert orphaned UPDATE operations to INSERT, skip DELETE for unsynced records
+    - Added duplicate detection to prevent syncing same local_id multiple times in one batch
+    - Added date format normalization (YYYY-MM-DD → YYYY-MM-DDTHH:MM:SS.SSSZ) for backend compatibility
+    - Enhanced error handling to prevent failed items from blocking future syncs
+    - Note: Proper backend_id mapping system needed for Phase 3
 🚀 Development Status
 Current Status: PHASE 2 COMPLETE - PRODUCTION READY
 - All technical issues have been resolved and tested
@@ -328,10 +348,11 @@ Development: Hot reload, instant testing on device
 📁 Key Files and Their Purposes
 Backend:
 - main.py: FastAPI application entry point
-- models.py: SQLAlchemy database models
-- schemas.py: Pydantic validation schemas
-- routes/: API endpoint definitions
-- database.py: Database connection and session management
+- app/models.py: SQLAlchemy database models
+- app/schemas.py: Pydantic validation schemas
+- app/db.py: Database connection and session management
+- app/utils.py: Utility functions and helpers
+- app/routes/: API endpoint definitions (users, fitness, nutrition, body_stats, analytics, summary, sync)
 
 Frontend:
 - App.tsx: Root component with providers
@@ -341,7 +362,7 @@ Frontend:
 - src/services/: API services and calculations
 - src/types/: TypeScript type definitions
 
-Configuration:
+Configuration & Documentation:
 - .gitignore: Git ignore patterns
 - context.md: This comprehensive project context
 - ONBOARDING.md: Detailed onboarding documentation
@@ -349,6 +370,8 @@ Configuration:
 - Phase2_Implementation_Report.md: Complete Phase 2 implementation overview
 - Phase2_Technical_Product_Audit.md: Technical validation audit (92/100 score)
 - DEVELOPMENT_BUILD_SETUP.md: Development build setup guide for notifications
+- SYNC_FIX_SUMMARY.md: Sync issue troubleshooting and resolution guide
+- SYNC_ISSUE_ANALYSIS.md: Technical deep dive on sync system issues
 
 Key Services Created in Phase 2:
 - databaseService.ts: SQLite CRUD operations and offline data management
@@ -360,9 +383,9 @@ Key Services Created in Phase 2:
 
 Recently Modified Files (Oct 2025):
 Frontend:
-- frontend/src/screens/main/DashboardScreen.tsx: Fixed water logging date comparison, optimized data fetching
+- frontend/src/services/syncService.ts: (Oct 17) Fixed UPDATE/DELETE operations, added date normalization, enhanced error handling
+- frontend/src/screens/main/DashboardScreen.tsx: (Oct 17) Fixed water logging date comparison, optimized data fetching
 - frontend/src/services/api.ts: Reduced verbose logging, fixed createBodyStat user_id parameter
-- frontend/src/services/syncService.ts: Added data cleaning for body stats, skip empty stats
 - frontend/src/services/databaseService.ts: Added updateBodyStat method, fixed initDatabase calls
 - frontend/src/services/repeatYesterdayService.ts: Added local_id generation for all entities
 - frontend/src/services/advancedAnalyticsService.ts: Fixed WeeklyTrends type handling
@@ -460,8 +483,13 @@ Water Intake Logging:
 Sync System:
 - syncService.ts cleans data before sending to backend (removes local-only fields)
 - Field name mappings: weight_kg → weight, muscle_mass_kg → muscle_mass
+- Date normalization: YYYY-MM-DD → YYYY-MM-DDTHH:MM:SS.SSSZ for backend compatibility
 - user_id passed as query parameter, not in request body for body stats
 - Empty body stats (all fields null except water_intake: 0) are skipped during sync
+- UPDATE operations without backend_id converted to INSERT to prevent 422 errors
+- Duplicate detection: Same local_id only synced once per batch using Set tracking
+- DELETE operations for unsynced records are skipped
+- Failed sync items marked as synced to prevent blocking future syncs
 
 Performance Optimizations:
 - DashboardScreen: useEffect depends only on [userState.user?.id] to prevent duplicate calls

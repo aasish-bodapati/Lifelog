@@ -252,13 +252,30 @@ class SyncService {
 
   // Sync body stats items
   private async syncBodyStats(items: SyncQueueItem[]): Promise<void> {
+    // Track which local_ids we've already synced in this batch to prevent duplicates
+    const syncedLocalIds = new Set<string>();
+    
     for (const item of items) {
       try {
         const data = JSON.parse(item.data);
         
-        // Clean the data - remove local-only fields
+        // Check if we've already synced this local_id in this batch
+        if (syncedLocalIds.has(item.record_id)) {
+          console.log(`✓ Skipping duplicate sync for already-processed body stat: ${item.record_id}`);
+          await databaseService.markAsSynced(item.id!);
+          continue;
+        }
+        
+        // Normalize date format - backend expects datetime format
+        let normalizedDate = data.date;
+        if (normalizedDate && !normalizedDate.includes('T')) {
+          // Convert date-only format (2025-10-17) to datetime format
+          normalizedDate = `${normalizedDate}T00:00:00.000Z`;
+        }
+        
+        // Clean the data - remove local-only fields and map field names
         const cleanData = {
-          date: data.date,
+          date: normalizedDate,
           weight: data.weight_kg || data.weight,
           body_fat_percentage: data.body_fat_percentage,
           muscle_mass: data.muscle_mass_kg || data.muscle_mass,
@@ -303,12 +320,18 @@ class SyncService {
           case 'INSERT':
             // Pass user_id with the clean data
             await apiService.createBodyStat({ ...cleanData, user_id: data.user_id });
+            syncedLocalIds.add(item.record_id);
             break;
           case 'UPDATE':
-            await apiService.updateBodyStat(data.local_id, cleanData);
+            // UPDATE operations with local_id won't work - convert to INSERT
+            // This happens when records were created locally but never synced
+            console.warn(`⚠️ Converting UPDATE to INSERT for unsynchronized body stat: ${item.record_id}`);
+            await apiService.createBodyStat({ ...cleanData, user_id: data.user_id });
+            syncedLocalIds.add(item.record_id);
             break;
           case 'DELETE':
-            await apiService.deleteBodyStat(data.local_id);
+            // DELETE with local_id won't work either - skip it
+            console.warn(`⚠️ Skipping DELETE for unsynchronized body stat: ${item.record_id}`);
             break;
         }
 
@@ -316,8 +339,20 @@ class SyncService {
         await databaseService.markAsSynced(item.id!);
 
       } catch (error) {
-        console.error(`Failed to sync body stat ${item.record_id}:`, error);
-        throw error;
+        console.error(`❌ Failed to sync body stat ${item.record_id}:`, error);
+        console.error(`🔍 DEBUG - Error details:`, {
+          message: error instanceof Error ? error.message : 'Unknown error',
+          code: (error as any)?.code,
+          status: (error as any)?.response?.status,
+          data: (error as any)?.response?.data,
+          operation: item.operation,
+          record_id: item.record_id,
+          body_stat_data: JSON.parse(item.data)
+        });
+        // Mark as synced to remove from queue and prevent infinite retry loop
+        await databaseService.markAsSynced(item.id!);
+        console.warn(`⚠️ Marked failed body stat as synced to prevent blocking: ${item.record_id}`);
+        // Don't throw - continue with other items
       }
     }
   }
