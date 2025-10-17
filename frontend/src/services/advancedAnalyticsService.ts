@@ -283,29 +283,18 @@ class AdvancedAnalyticsService {
 
   // Local data fallback methods
   private async getLocalDailyInsights(userId: number, date: string): Promise<DailyInsights> {
-    const nutritionLogs = await databaseService.getNutritionLogs(userId, date, 100);
-    const workouts = await databaseService.getWorkouts(userId, 50);
-    const dayWorkouts = workouts.filter(w => w.date === date);
-    
-    const totalCalories = nutritionLogs.reduce((sum, log) => sum + (log.calories || 0), 0);
-    const totalProtein = nutritionLogs.reduce((sum, log) => sum + (log.protein_g || 0), 0);
-    const totalCarbs = nutritionLogs.reduce((sum, log) => sum + (log.carbs_g || 0), 0);
-    const totalFat = nutritionLogs.reduce((sum, log) => sum + (log.fat_g || 0), 0);
-    const totalDuration = dayWorkouts.reduce((sum, w) => sum + (w.duration_minutes || 0), 0);
-    
-    return {
-      date,
-      total_calories: totalCalories,
-      total_protein: totalProtein,
-      total_carbs: totalCarbs,
-      total_fat: totalFat,
-      workout_count: dayWorkouts.length,
-      total_workout_duration: totalDuration,
-      calories_burned: this.calculateCaloriesBurned(totalDuration, 70),
-      net_calories: totalCalories - this.calculateCaloriesBurned(totalDuration, 70),
-      protein_goal_achieved: totalProtein >= 100,
-      hydration_level: 0,
-      consistency_score: this.calculateConsistencyScore({
+    try {
+      const nutritionLogs = await databaseService.getNutritionLogs(userId, date, 100);
+      const workouts = await databaseService.getWorkouts(userId, 50);
+      const dayWorkouts = workouts.filter(w => w.date === date);
+      
+      const totalCalories = nutritionLogs.reduce((sum, log) => sum + (log.calories || 0), 0);
+      const totalProtein = nutritionLogs.reduce((sum, log) => sum + (log.protein_g || 0), 0);
+      const totalCarbs = nutritionLogs.reduce((sum, log) => sum + (log.carbs_g || 0), 0);
+      const totalFat = nutritionLogs.reduce((sum, log) => sum + (log.fat_g || 0), 0);
+      const totalDuration = dayWorkouts.reduce((sum, w) => sum + (w.duration_minutes || 0), 0);
+      
+      return {
         date,
         total_calories: totalCalories,
         total_protein: totalProtein,
@@ -313,51 +302,102 @@ class AdvancedAnalyticsService {
         total_fat: totalFat,
         workout_count: dayWorkouts.length,
         total_workout_duration: totalDuration,
-      }),
-    };
+        calories_burned: this.calculateCaloriesBurned(totalDuration, 70),
+        net_calories: totalCalories - this.calculateCaloriesBurned(totalDuration, 70),
+        protein_goal_achieved: totalProtein >= 100,
+        hydration_level: 0,
+        consistency_score: this.calculateConsistencyScore({
+          date,
+          total_calories: totalCalories,
+          total_protein: totalProtein,
+          total_carbs: totalCarbs,
+          total_fat: totalFat,
+          workout_count: dayWorkouts.length,
+          total_workout_duration: totalDuration,
+        }),
+      };
+    } catch (error) {
+      console.error('Error getting local daily insights:', error);
+      // Return empty/default data if database fails
+      return {
+        date,
+        total_calories: 0,
+        total_protein: 0,
+        total_carbs: 0,
+        total_fat: 0,
+        workout_count: 0,
+        total_workout_duration: 0,
+        calories_burned: 0,
+        net_calories: 0,
+        protein_goal_achieved: false,
+        hydration_level: 0,
+        consistency_score: 0,
+      };
+    }
   }
 
   private async getLocalWeeklyTrends(userId: number, startDate: string): Promise<WeeklyTrends> {
-    const start = new Date(startDate);
-    const end = new Date(start);
-    end.setDate(start.getDate() + 6);
-    
-    let totalCalories = 0;
-    let totalProtein = 0;
-    let totalWorkouts = 0;
-    let totalDuration = 0;
-    
-    for (let i = 0; i < 7; i++) {
-      const date = new Date(start);
-      date.setDate(start.getDate() + i);
-      const dateStr = date.toISOString().split('T')[0];
+    try {
+      const start = new Date(startDate);
+      const end = new Date(start);
+      end.setDate(start.getDate() + 6);
       
-      const dailyInsights = await this.getLocalDailyInsights(userId, dateStr);
-      totalCalories += dailyInsights.total_calories;
-      totalProtein += dailyInsights.total_protein;
-      totalWorkouts += dailyInsights.workout_count;
-      totalDuration += dailyInsights.total_workout_duration;
-    }
-    
-    return {
-      week_start: startDate,
-      week_end: end.toISOString().split('T')[0],
-      avg_daily_calories: totalCalories / 7,
-      avg_daily_protein: totalProtein / 7,
-      total_workouts: totalWorkouts,
-      total_workout_duration: totalDuration,
-      consistency_streak: await this.getLocalConsistencyStreak(userId),
-      weekly_goals_achieved: this.calculateWeeklyGoalsAchieved({
+      let totalCalories = 0;
+      let totalProtein = 0;
+      let totalWorkouts = 0;
+      let totalDuration = 0;
+      
+      for (let i = 0; i < 7; i++) {
+        const date = new Date(start);
+        date.setDate(start.getDate() + i);
+        const dateStr = date.toISOString().split('T')[0];
+        
+        const dailyInsights = await this.getLocalDailyInsights(userId, dateStr);
+        totalCalories += dailyInsights.total_calories;
+        totalProtein += dailyInsights.total_protein;
+        totalWorkouts += dailyInsights.workout_count;
+        totalDuration += dailyInsights.total_workout_duration;
+      }
+      
+      const consistencyStreak = await this.getLocalConsistencyStreak(userId);
+      
+      return {
         week_start: startDate,
         week_end: end.toISOString().split('T')[0],
         avg_daily_calories: totalCalories / 7,
         avg_daily_protein: totalProtein / 7,
         total_workouts: totalWorkouts,
         total_workout_duration: totalDuration,
-      }),
-      weekly_goals_total: 7,
-      trend_direction: 'stable',
-    };
+        consistency_streak: consistencyStreak.current_streak,
+        weekly_goals_achieved: this.calculateWeeklyGoalsAchieved({
+          week_start: startDate,
+          week_end: end.toISOString().split('T')[0],
+          avg_daily_calories: totalCalories / 7,
+          avg_daily_protein: totalProtein / 7,
+          total_workouts: totalWorkouts,
+          total_workout_duration: totalDuration,
+          consistency_streak: consistencyStreak.current_streak,
+        }),
+        weekly_goals_total: 7,
+        trend_direction: 'stable',
+      };
+    } catch (error) {
+      console.error('Error getting local weekly trends:', error);
+      const end = new Date(startDate);
+      end.setDate(end.getDate() + 6);
+      return {
+        week_start: startDate,
+        week_end: end.toISOString().split('T')[0],
+        avg_daily_calories: 0,
+        avg_daily_protein: 0,
+        total_workouts: 0,
+        total_workout_duration: 0,
+        consistency_streak: 0,
+        weekly_goals_achieved: 0,
+        weekly_goals_total: 7,
+        trend_direction: 'stable',
+      };
+    }
   }
 
   private async getLocalProgressMetrics(userId: number, days: number): Promise<ProgressMetrics> {
@@ -398,29 +438,39 @@ class AdvancedAnalyticsService {
   }
 
   private async getLocalConsistencyStreak(userId: number): Promise<ConsistencyStreak> {
-    const today = new Date();
-    let streak = 0;
-    
-    for (let i = 0; i < 30; i++) {
-      const checkDate = new Date(today);
-      checkDate.setDate(today.getDate() - i);
-      const dateStr = checkDate.toISOString().split('T')[0];
+    try {
+      const today = new Date();
+      let streak = 0;
       
-      const dailyInsights = await this.getLocalDailyInsights(userId, dateStr);
-      
-      if (dailyInsights.total_calories > 0 || dailyInsights.workout_count > 0) {
-        streak++;
-      } else {
-        break;
+      for (let i = 0; i < 30; i++) {
+        const checkDate = new Date(today);
+        checkDate.setDate(today.getDate() - i);
+        const dateStr = checkDate.toISOString().split('T')[0];
+        
+        const dailyInsights = await this.getLocalDailyInsights(userId, dateStr);
+        
+        if (dailyInsights.total_calories > 0 || dailyInsights.workout_count > 0) {
+          streak++;
+        } else {
+          break;
+        }
       }
+      
+      return {
+        user_id: userId,
+        current_streak: streak,
+        last_updated: today.toISOString(),
+        streak_type: 'daily',
+      };
+    } catch (error) {
+      console.error('Error getting local consistency streak:', error);
+      return {
+        user_id: userId,
+        current_streak: 0,
+        last_updated: new Date().toISOString(),
+        streak_type: 'daily',
+      };
     }
-    
-    return {
-      user_id: userId,
-      current_streak: streak,
-      last_updated: today.toISOString(),
-      streak_type: 'daily',
-    };
   }
 
   private async getLongestStreak(userId: number): Promise<number> {
