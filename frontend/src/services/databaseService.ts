@@ -280,6 +280,68 @@ class DatabaseService {
     return result as LocalWorkout[];
   }
 
+  async updateWorkout(localId: string, updates: Partial<Pick<LocalWorkout, 'name' | 'duration_minutes' | 'notes'>>): Promise<void> {
+    if (!this.db) throw new Error('Database not initialized');
+
+    const now = new Date().toISOString();
+    const setClauses: string[] = [];
+    const values: any[] = [];
+
+    if (updates.name !== undefined) {
+      setClauses.push('name = ?');
+      values.push(updates.name);
+    }
+    if (updates.duration_minutes !== undefined) {
+      setClauses.push('duration_minutes = ?');
+      values.push(updates.duration_minutes);
+    }
+    if (updates.notes !== undefined) {
+      setClauses.push('notes = ?');
+      values.push(updates.notes);
+    }
+
+    setClauses.push('updated_at = ?');
+    values.push(now);
+    setClauses.push('synced = ?');
+    values.push(false);
+
+    values.push(localId);
+
+    const query = `
+      UPDATE local_workouts 
+      SET ${setClauses.join(', ')}
+      WHERE local_id = ?
+    `;
+
+    await this.db.runAsync(query, values);
+
+    // Add to sync queue
+    await this.addToSyncQueue('workouts', localId, 'UPDATE', {
+      local_id: localId,
+      ...updates,
+      updated_at: now
+    });
+  }
+
+  async deleteWorkout(localId: string): Promise<void> {
+    if (!this.db) throw new Error('Database not initialized');
+
+    // First, get the workout data before deleting
+    const workout = await this.db.getFirstAsync(
+      'SELECT * FROM local_workouts WHERE local_id = ?',
+      [localId]
+    );
+
+    // Delete the workout
+    const query = 'DELETE FROM local_workouts WHERE local_id = ?';
+    await this.db.runAsync(query, [localId]);
+
+    // Add to sync queue for backend deletion
+    if (workout) {
+      await this.addToSyncQueue('workouts', localId, 'DELETE', workout);
+    }
+  }
+
   // Nutrition Operations
   async saveNutritionLog(nutrition: Omit<LocalNutritionLog, 'id' | 'synced' | 'created_at' | 'updated_at'>): Promise<string> {
     if (!this.db) throw new Error('Database not initialized');
