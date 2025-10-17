@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   RefreshControl,
   Modal,
+  TextInput,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -28,6 +29,9 @@ const FitnessScreen: React.FC = () => {
   const [showWorkoutLog, setShowWorkoutLog] = useState(false);
   const [exerciseProgress, setExerciseProgress] = useState<ExerciseProgress[]>([]);
   const [activeTab, setActiveTab] = useState<'overview' | 'logs'>('overview');
+  const [selectedWorkout, setSelectedWorkout] = useState<LocalWorkout | null>(null);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const quickWorkouts = [
     { name: 'Morning Run', duration: 30, icon: 'walk', color: '#FF6B6B' },
@@ -113,6 +117,50 @@ const FitnessScreen: React.FC = () => {
       return `${workout.duration_minutes} min`;
     }
     return 'No duration';
+  };
+
+  const handleEditWorkout = (workout: LocalWorkout) => {
+    hapticService.light();
+    setSelectedWorkout(workout);
+    setShowEditModal(true);
+  };
+
+  const handleDeleteWorkout = (workout: LocalWorkout) => {
+    hapticService.light();
+    setSelectedWorkout(workout);
+    setShowDeleteConfirm(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!selectedWorkout) return;
+
+    try {
+      hapticService.medium();
+      await databaseService.deleteWorkout(selectedWorkout.local_id);
+      toastService.success('Success', 'Workout deleted successfully');
+      setShowDeleteConfirm(false);
+      setSelectedWorkout(null);
+      loadData();
+    } catch (error) {
+      console.error('Error deleting workout:', error);
+      toastService.error('Error', 'Failed to delete workout');
+    }
+  };
+
+  const handleSaveEdit = async (updatedData: { name: string; duration_minutes: number; notes?: string }) => {
+    if (!selectedWorkout) return;
+
+    try {
+      hapticService.medium();
+      await databaseService.updateWorkout(selectedWorkout.local_id, updatedData);
+      toastService.success('Success', 'Workout updated successfully');
+      setShowEditModal(false);
+      setSelectedWorkout(null);
+      loadData();
+    } catch (error) {
+      console.error('Error updating workout:', error);
+      toastService.error('Error', 'Failed to update workout');
+    }
   };
 
 
@@ -368,17 +416,22 @@ const FitnessScreen: React.FC = () => {
                           <Text style={styles.workoutLogName}>{workout.name}</Text>
                           <Text style={styles.workoutLogDate}>{formatDate(workout.date)}</Text>
                         </View>
-                        <View style={styles.workoutLogStats}>
+                        <View style={styles.workoutLogActions}>
                           <Text style={styles.workoutLogDuration}>{getWorkoutDuration(workout)}</Text>
-                          {workout.notes && (
+                          <View style={styles.workoutLogButtons}>
                             <TouchableOpacity
-                              onPress={() => {
-                                toastService.info('Details', workout.notes || 'No details');
-                              }}
+                              onPress={() => handleEditWorkout(workout)}
+                              style={styles.actionButton}
                             >
-                              <Ionicons name="information-circle-outline" size={20} color={Colors.primary} />
+                              <Ionicons name="create-outline" size={20} color={Colors.primary} />
                             </TouchableOpacity>
-                          )}
+                            <TouchableOpacity
+                              onPress={() => handleDeleteWorkout(workout)}
+                              style={styles.actionButton}
+                            >
+                              <Ionicons name="trash-outline" size={20} color={Colors.error} />
+                            </TouchableOpacity>
+                          </View>
                         </View>
                       </View>
                       {workout.notes && (
@@ -424,6 +477,112 @@ const FitnessScreen: React.FC = () => {
           onClose={() => setShowWorkoutLog(false)}
           onSuccess={handleWorkoutLogSuccess}
         />
+      </Modal>
+
+      {/* Edit Workout Modal */}
+      <Modal
+        visible={showEditModal}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setShowEditModal(false)}
+      >
+        <SafeAreaView style={styles.modalContainer}>
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>Edit Workout</Text>
+            <TouchableOpacity onPress={() => setShowEditModal(false)}>
+              <Ionicons name="close" size={28} color={Colors.textPrimary} />
+            </TouchableOpacity>
+          </View>
+          
+          {selectedWorkout && (
+            <ScrollView style={styles.modalContent}>
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Workout Name</Text>
+                <TextInput
+                  style={styles.textInput}
+                  value={selectedWorkout.name}
+                  onChangeText={(text) => setSelectedWorkout({ ...selectedWorkout, name: text })}
+                  placeholder="Enter workout name"
+                />
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Duration (minutes)</Text>
+                <TextInput
+                  style={styles.textInput}
+                  value={selectedWorkout.duration_minutes?.toString() || ''}
+                  onChangeText={(text) => setSelectedWorkout({ ...selectedWorkout, duration_minutes: parseInt(text) || 0 })}
+                  keyboardType="numeric"
+                  placeholder="Enter duration"
+                />
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Notes</Text>
+                <TextInput
+                  style={[styles.textInput, styles.textArea]}
+                  value={selectedWorkout.notes || ''}
+                  onChangeText={(text) => setSelectedWorkout({ ...selectedWorkout, notes: text })}
+                  placeholder="Add notes (optional)"
+                  multiline
+                  numberOfLines={4}
+                />
+              </View>
+
+              <TouchableOpacity
+                style={styles.saveButton}
+                onPress={() => handleSaveEdit({
+                  name: selectedWorkout.name,
+                  duration_minutes: selectedWorkout.duration_minutes || 0,
+                  notes: selectedWorkout.notes
+                })}
+              >
+                <Text style={styles.saveButtonText}>Save Changes</Text>
+              </TouchableOpacity>
+            </ScrollView>
+          )}
+        </SafeAreaView>
+      </Modal>
+
+      {/* Delete Confirmation Modal */}
+      <Modal
+        visible={showDeleteConfirm}
+        animationType="fade"
+        transparent={true}
+        onRequestClose={() => setShowDeleteConfirm(false)}
+      >
+        <View style={styles.deleteModalOverlay}>
+          <View style={styles.deleteModalContainer}>
+            <View style={styles.deleteModalIcon}>
+              <Ionicons name="warning" size={48} color={Colors.error} />
+            </View>
+            
+            <Text style={styles.deleteModalTitle}>Delete Workout?</Text>
+            <Text style={styles.deleteModalText}>
+              Are you sure you want to delete "{selectedWorkout?.name}"? This action cannot be undone.
+            </Text>
+
+            <View style={styles.deleteModalButtons}>
+              <TouchableOpacity
+                style={styles.cancelButton}
+                onPress={() => {
+                  hapticService.light();
+                  setShowDeleteConfirm(false);
+                  setSelectedWorkout(null);
+                }}
+              >
+                <Text style={styles.cancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity
+                style={styles.deleteButton}
+                onPress={confirmDelete}
+              >
+                <Text style={styles.deleteButtonText}>Delete</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
       </Modal>
     </SafeAreaView>
   );
@@ -733,9 +892,13 @@ const styles = StyleSheet.create({
   workoutLogDate: {
     ...Typography.caption,
   },
-  workoutLogStats: {
+  workoutLogActions: {
+    flexDirection: 'column',
+    alignItems: 'flex-end',
+    gap: 8,
+  },
+  workoutLogButtons: {
     flexDirection: 'row',
-    alignItems: 'center',
     gap: 8,
   },
   workoutLogDuration: {
@@ -749,6 +912,125 @@ const styles = StyleSheet.create({
     paddingTop: 12,
     borderTopWidth: 1,
     borderTopColor: Colors.divider,
+  },
+  actionButton: {
+    padding: 8,
+    borderRadius: Layout.radiusSmall,
+    backgroundColor: Colors.background,
+  },
+  // Edit Modal Styles
+  modalContainer: {
+    flex: 1,
+    backgroundColor: Colors.background,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: Layout.screenPadding,
+    paddingVertical: Layout.headerPadding,
+    backgroundColor: Colors.surface,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+  },
+  modalTitle: {
+    ...Typography.h2,
+  },
+  modalContent: {
+    flex: 1,
+    padding: Layout.screenPadding,
+  },
+  inputGroup: {
+    marginBottom: Layout.sectionSpacing,
+  },
+  inputLabel: {
+    ...Typography.label,
+    marginBottom: 8,
+  },
+  textInput: {
+    backgroundColor: Colors.surface,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: Layout.radiusMedium,
+    paddingHorizontal: Layout.cardPadding,
+    paddingVertical: 12,
+    ...Typography.body,
+  },
+  textArea: {
+    minHeight: 100,
+    textAlignVertical: 'top',
+  },
+  saveButton: {
+    backgroundColor: Colors.primary,
+    paddingVertical: 16,
+    borderRadius: Layout.radiusMedium,
+    alignItems: 'center',
+    marginTop: Layout.sectionSpacing,
+    ...Layout.shadowMedium,
+  },
+  saveButtonText: {
+    ...Typography.label,
+    color: Colors.textLight,
+    fontSize: 16,
+  },
+  // Delete Modal Styles
+  deleteModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: Layout.screenPadding,
+  },
+  deleteModalContainer: {
+    backgroundColor: Colors.surface,
+    borderRadius: Layout.radiusLarge,
+    padding: Layout.cardPaddingLarge,
+    width: '100%',
+    maxWidth: 400,
+    alignItems: 'center',
+  },
+  deleteModalIcon: {
+    marginBottom: Layout.sectionSpacing,
+  },
+  deleteModalTitle: {
+    ...Typography.h3,
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  deleteModalText: {
+    ...Typography.body,
+    color: Colors.textSecondary,
+    textAlign: 'center',
+    marginBottom: Layout.sectionSpacing,
+  },
+  deleteModalButtons: {
+    flexDirection: 'row',
+    gap: 12,
+    width: '100%',
+  },
+  cancelButton: {
+    flex: 1,
+    backgroundColor: Colors.background,
+    paddingVertical: 14,
+    borderRadius: Layout.radiusMedium,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  cancelButtonText: {
+    ...Typography.label,
+    color: Colors.textPrimary,
+  },
+  deleteButton: {
+    flex: 1,
+    backgroundColor: Colors.error,
+    paddingVertical: 14,
+    borderRadius: Layout.radiusMedium,
+    alignItems: 'center',
+  },
+  deleteButtonText: {
+    ...Typography.label,
+    color: Colors.textLight,
   },
 });
 
