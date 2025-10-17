@@ -8,9 +8,11 @@ import {
   RefreshControl,
   Modal,
   TextInput,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { useUser } from '../../context/UserContext';
 import { databaseService, LocalWorkout } from '../../services/databaseService';
 import { apiService } from '../../services/api';
@@ -28,7 +30,7 @@ const FitnessScreen: React.FC = () => {
   const { state: userState } = useUser();
   const [showWorkoutLog, setShowWorkoutLog] = useState(false);
   const [exerciseProgress, setExerciseProgress] = useState<ExerciseProgress[]>([]);
-  const [activeTab, setActiveTab] = useState<'overview' | 'logs'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'routines' | 'logs'>('overview');
   const [editingWorkoutId, setEditingWorkoutId] = useState<string | null>(null);
   const [editValues, setEditValues] = useState<{
     sets?: string;
@@ -37,6 +39,8 @@ const FitnessScreen: React.FC = () => {
     duration?: string;
     distance?: string;
   }>({});
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [showCalendar, setShowCalendar] = useState(false);
 
   const quickWorkouts = [
     { name: 'Morning Run', duration: 30, icon: 'walk', color: '#FF6B6B' },
@@ -286,6 +290,52 @@ const FitnessScreen: React.FC = () => {
     }
   };
 
+  // Date navigation functions
+  const formatSelectedDate = (date: Date) => {
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    
+    if (date.toDateString() === today.toDateString()) {
+      return 'Today';
+    } else if (date.toDateString() === yesterday.toDateString()) {
+      return 'Yesterday';
+    } else {
+      return date.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
+    }
+  };
+
+  const handlePreviousDay = () => {
+    hapticService.light();
+    const newDate = new Date(selectedDate);
+    newDate.setDate(newDate.getDate() - 1);
+    setSelectedDate(newDate);
+  };
+
+  const handleNextDay = () => {
+    hapticService.light();
+    const newDate = new Date(selectedDate);
+    newDate.setDate(newDate.getDate() + 1);
+    setSelectedDate(newDate);
+  };
+
+  const handleDateChange = (event: any, date?: Date) => {
+    setShowCalendar(Platform.OS === 'ios');
+    if (date) {
+      setSelectedDate(date);
+      hapticService.light();
+    }
+  };
+
+  const getFilteredWorkoutsByDate = () => {
+    if (!workouts) return [];
+    
+    return workouts.filter(workout => {
+      const workoutDate = new Date(workout.date);
+      return workoutDate.toDateString() === selectedDate.toDateString();
+    });
+  };
+
 
   if (isLoading) {
     return (
@@ -326,6 +376,17 @@ const FitnessScreen: React.FC = () => {
           >
             <Text style={[styles.tabText, activeTab === 'overview' && styles.activeTabText]}>
               Overview
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.tab, activeTab === 'routines' && styles.activeTab]}
+            onPress={() => {
+              hapticService.light();
+              setActiveTab('routines');
+            }}
+          >
+            <Text style={[styles.tabText, activeTab === 'routines' && styles.activeTabText]}>
+              Routines
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
@@ -508,21 +569,94 @@ const FitnessScreen: React.FC = () => {
           </>
         )}
 
+        {/* Routines Tab */}
+        {activeTab === 'routines' && (
+          <>
+            <View style={styles.section}>
+              <View style={styles.sectionHeader}>
+                <Text style={styles.sectionTitle}>Workout Routines</Text>
+                <TouchableOpacity
+                  onPress={() => {
+                    hapticService.light();
+                    toastService.info('Coming Soon', 'Routine creation will be available soon!');
+                  }}
+                  style={styles.addButton}
+                >
+                  <Ionicons name="add-circle-outline" size={24} color={Colors.primary} />
+                </TouchableOpacity>
+              </View>
+
+              {/* Placeholder for routines */}
+              <View style={styles.emptyState}>
+                <Ionicons name="clipboard-outline" size={64} color="#CCC" />
+                <Text style={styles.emptyStateTitle}>No Routines Yet</Text>
+                <Text style={styles.emptyStateText}>
+                  Create custom workout routines to quickly log your regular workouts
+                </Text>
+                <TouchableOpacity
+                  style={styles.emptyStateButton}
+                  onPress={() => {
+                    hapticService.light();
+                    toastService.info('Coming Soon', 'Routine creation will be available soon!');
+                  }}
+                >
+                  <Text style={styles.emptyStateButtonText}>Create First Routine</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </>
+        )}
+
         {/* Logs Tab */}
         {activeTab === 'logs' && (
           <>
+            {/* Date Navigation */}
+            <View style={styles.dateNavigationContainer}>
+              <TouchableOpacity 
+                onPress={handlePreviousDay}
+                style={styles.dateNavButton}
+              >
+                <Ionicons name="chevron-back" size={24} color={Colors.primary} />
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                onPress={() => {
+                  hapticService.light();
+                  setShowCalendar(true);
+                }}
+                style={styles.dateDisplay}
+              >
+                <Ionicons name="calendar-outline" size={20} color={Colors.primary} style={{ marginRight: 8 }} />
+                <Text style={styles.dateText}>{formatSelectedDate(selectedDate)}</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                onPress={handleNextDay}
+                style={styles.dateNavButton}
+                disabled={selectedDate.toDateString() === new Date().toDateString()}
+              >
+                <Ionicons 
+                  name="chevron-forward" 
+                  size={24} 
+                  color={selectedDate.toDateString() === new Date().toDateString() ? Colors.border : Colors.primary} 
+                />
+              </TouchableOpacity>
+            </View>
+
             {/* Workout Logs List */}
             <View style={styles.section}>
               <View style={styles.sectionHeader}>
-                <Text style={styles.sectionTitle}>All Workout Logs</Text>
-                {workouts && workouts.length > 0 && (
-                  <Text style={styles.sectionSubtitle}>{workouts.length} total</Text>
+                <Text style={styles.sectionTitle}>
+                  {selectedDate.toDateString() === new Date().toDateString() ? "Today's Workouts" : 'Workouts'}
+                </Text>
+                {getFilteredWorkoutsByDate().length > 0 && (
+                  <Text style={styles.sectionSubtitle}>{getFilteredWorkoutsByDate().length} total</Text>
                 )}
               </View>
               
-              {workouts && workouts.length > 0 ? (
+              {getFilteredWorkoutsByDate().length > 0 ? (
                 <View style={styles.workoutsList}>
-                  {workouts.map((workout) => (
+                  {getFilteredWorkoutsByDate().map((workout) => (
                     <View
                       key={workout.local_id}
                       style={styles.workoutLogCard}
@@ -721,6 +855,17 @@ const FitnessScreen: React.FC = () => {
           onSuccess={handleWorkoutLogSuccess}
         />
       </Modal>
+
+      {/* Calendar Picker */}
+      {showCalendar && (
+        <DateTimePicker
+          value={selectedDate}
+          mode="date"
+          display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+          onChange={handleDateChange}
+          maximumDate={new Date()}
+        />
+      )}
 
     </SafeAreaView>
   );
@@ -1128,6 +1273,38 @@ const styles = StyleSheet.create({
     ...Typography.label,
     fontSize: 12,
     color: Colors.textSecondary,
+  },
+  // Date Navigation Styles
+  dateNavigationContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: Layout.screenPadding,
+    paddingVertical: 16,
+    backgroundColor: Colors.surface,
+    marginBottom: Layout.cardSpacing,
+    ...Layout.shadowSmall,
+  },
+  dateNavButton: {
+    padding: 8,
+    borderRadius: Layout.radiusMedium,
+    backgroundColor: Colors.background,
+  },
+  dateDisplay: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: Layout.radiusMedium,
+    backgroundColor: Colors.primaryLight,
+  },
+  dateText: {
+    ...Typography.h4,
+    color: Colors.primary,
+    fontWeight: '600',
+  },
+  addButton: {
+    padding: 4,
   },
 });
 
