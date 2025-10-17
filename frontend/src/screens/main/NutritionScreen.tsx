@@ -237,8 +237,9 @@ const NutritionScreen: React.FC = () => {
       {/* Meal Log Modal */}
       <Modal
         visible={showMealLog}
-        animationType="slide"
-        presentationStyle="pageSheet"
+        animationType="fade"
+        presentationStyle="overFullScreen"
+        transparent={true}
         onRequestClose={() => setShowMealLog(false)}
       >
         <QuickMealLogScreen

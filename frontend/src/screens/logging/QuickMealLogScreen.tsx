@@ -7,8 +7,8 @@ import {
   TouchableOpacity,
   ScrollView,
   Alert,
+  Dimensions,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { databaseService, LocalNutritionLog } from '../../services/databaseService';
 import { useUser } from '../../context/UserContext';
@@ -118,24 +118,16 @@ const QuickMealLogScreen: React.FC<QuickMealLogScreenProps> = ({
   ] as const;
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-          <Ionicons name="close" size={24} color="#666" />
-        </TouchableOpacity>
-        <Text style={styles.title}>Quick Log Meal</Text>
-        <TouchableOpacity
-          onPress={handleSave}
-          style={[styles.saveButton, isLoading && styles.saveButtonDisabled]}
-          disabled={isLoading}
-        >
-          <Text style={styles.saveButtonText}>
-            {isLoading ? 'Saving...' : 'Save'}
-          </Text>
-        </TouchableOpacity>
-      </View>
+    <View style={styles.overlay}>
+      <View style={styles.popupContainer}>
+        <View style={styles.header}>
+          <Text style={styles.title}>Quick Log Meal</Text>
+          <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+            <Ionicons name="close" size={24} color="#666" />
+          </TouchableOpacity>
+        </View>
 
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {/* Recent Foods */}
         {recentFoods.length > 0 && (
           <View style={styles.section}>
@@ -248,50 +240,114 @@ const QuickMealLogScreen: React.FC<QuickMealLogScreenProps> = ({
           </View>
         </View>
       </ScrollView>
-    </SafeAreaView>
+
+        {/* Footer with buttons */}
+        <View style={styles.footer}>
+          <TouchableOpacity
+            style={styles.cancelButton}
+            onPress={onClose}
+          >
+            <Text style={styles.cancelButtonText}>Cancel</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={handleSave}
+            style={[styles.saveButton, isLoading && styles.saveButtonDisabled]}
+            disabled={isLoading}
+          >
+            <Text style={styles.saveButtonText}>
+              {isLoading ? 'Logging...' : 'Log Meal'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </View>
   );
 };
 
+const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
+
 const styles = StyleSheet.create({
-  container: {
+  overlay: {
     flex: 1,
-    backgroundColor: '#F8F9FA',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  popupContainer: {
+    width: '100%',
+    maxWidth: 400,
+    maxHeight: screenHeight * 0.9,
+    minHeight: screenHeight * 0.6,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.25,
+    shadowRadius: 20,
+    elevation: 10,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 20,
+    paddingVertical: 20,
     borderBottomWidth: 1,
     borderBottomColor: '#E0E0E0',
   },
   closeButton: {
-    padding: 8,
+    padding: 4,
   },
   title: {
     fontSize: 18,
     fontWeight: '600',
     color: '#333',
+    flex: 1,
+    textAlign: 'center',
+  },
+  content: {
+    flex: 1,
+    paddingHorizontal: 20,
+    paddingVertical: 20,
+  },
+  footer: {
+    flexDirection: 'row',
+    paddingHorizontal: 20,
+    paddingVertical: 20,
+    borderTopWidth: 1,
+    borderTopColor: '#E0E0E0',
+    gap: 12,
+  },
+  cancelButton: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cancelButtonText: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#666',
   },
   saveButton: {
+    flex: 2,
     backgroundColor: '#007AFF',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingVertical: 14,
     borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   saveButtonDisabled: {
     backgroundColor: '#CCCCCC',
   },
   saveButtonText: {
     color: '#FFFFFF',
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600',
-  },
-  content: {
-    flex: 1,
-    padding: 16,
   },
   section: {
     marginBottom: 24,
@@ -303,17 +359,14 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   recentFoodCard: {
-    backgroundColor: '#FFFFFF',
-    padding: 12,
+    backgroundColor: '#F8F9FA',
+    padding: 10,
     borderRadius: 8,
     marginRight: 8,
     minWidth: 100,
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
   },
   recentFoodName: {
     fontSize: 12,
@@ -354,22 +407,24 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
   inputGroup: {
-    marginBottom: 16,
+    marginBottom: 20,
   },
   inputLabel: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#333',
-    marginBottom: 6,
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#666',
+    marginBottom: 4,
+    textTransform: 'uppercase',
   },
   textInput: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#F8F9FA',
     borderWidth: 1,
     borderColor: '#E0E0E0',
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: 16,
+    color: '#333',
   },
   macroRow: {
     flexDirection: 'row',
