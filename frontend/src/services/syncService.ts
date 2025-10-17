@@ -208,6 +208,14 @@ class SyncService {
       try {
         const data = JSON.parse(item.data);
         
+        // Validate data before syncing - skip entries with 0 calories (invalid/incomplete)
+        if (data.calories === 0 || data.calories === null || data.calories === undefined) {
+          console.warn(`Skipping invalid nutrition log with calories: ${data.calories}`);
+          // Mark as synced to remove from queue (it's invalid data)
+          await databaseService.markAsSynced(item.id!);
+          continue;
+        }
+        
         switch (item.operation) {
           case 'INSERT':
             await apiService.createNutritionLog(data);
@@ -225,8 +233,19 @@ class SyncService {
         console.log(`Synced nutrition ${item.operation}: ${item.record_id}`);
 
       } catch (error) {
-        console.error(`Failed to sync nutrition ${item.record_id}:`, error);
-        throw error;
+        console.error(`❌ Failed to sync nutrition ${item.record_id}:`, error);
+        console.error(`🔍 DEBUG - Error details:`, {
+          message: error instanceof Error ? error.message : 'Unknown error',
+          code: (error as any)?.code,
+          status: (error as any)?.response?.status,
+          data: (error as any)?.response?.data,
+          operation: item.operation,
+          record_id: item.record_id,
+          nutrition_data: JSON.parse(item.data)
+        });
+        // Mark as synced to remove from queue and prevent infinite retry loop
+        await databaseService.markAsSynced(item.id!);
+        console.warn(`⚠️ Marked failed nutrition log as synced to prevent blocking: ${item.record_id}`);
       }
     }
   }

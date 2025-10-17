@@ -29,26 +29,20 @@ const FoodSearchDropdown: React.FC<FoodSearchDropdownProps> = ({
   const [searchResults, setSearchResults] = useState<Food[]>([]);
 
   useEffect(() => {
-    // Debounce search
+    // Debounce search - wait 500ms after user stops typing
     const timer = setTimeout(() => {
       if (searchQuery.trim()) {
         const results = foodLibraryService.searchFoods(searchQuery);
         setSearchResults(results);
+        setIsOpen(true); // Always open when there's a search query
       } else {
-        // Show popular foods when no query
-        const popular = foodLibraryService.getPopularFoods(10);
-        setSearchResults(popular);
+        setSearchResults([]);
+        setIsOpen(false);
       }
-    }, 300);
+    }, 500);
 
     return () => clearTimeout(timer);
   }, [searchQuery]);
-
-  useEffect(() => {
-    // Load popular foods initially
-    const popular = foodLibraryService.getPopularFoods(10);
-    setSearchResults(popular);
-  }, []);
 
   const handleSelect = (food: Food) => {
     onSelect(food);
@@ -79,7 +73,7 @@ const FoodSearchDropdown: React.FC<FoodSearchDropdownProps> = ({
       case 'protein': return 'barbell';
       case 'carbs': return 'leaf';
       case 'vegetables': return 'nutrition';
-      case 'fruits': return 'apple';
+      case 'fruits': return 'leaf-outline';
       case 'dairy': return 'water';
       case 'snacks': return 'fast-food';
       case 'beverages': return 'beer';
@@ -96,7 +90,6 @@ const FoodSearchDropdown: React.FC<FoodSearchDropdownProps> = ({
           style={styles.textInput}
           value={searchQuery}
           onChangeText={setSearchQuery}
-          onFocus={() => setIsOpen(true)}
           placeholder={placeholder}
           autoCorrect={false}
           autoCapitalize="none"
@@ -109,14 +102,15 @@ const FoodSearchDropdown: React.FC<FoodSearchDropdownProps> = ({
       </View>
 
       {/* Dropdown Results */}
-      {isOpen && searchResults.length > 0 && (
+      {isOpen && (
         <View style={styles.dropdownContainer}>
-          <ScrollView
-            style={styles.foodsList}
-            nestedScrollEnabled={true}
-            keyboardShouldPersistTaps="handled"
-          >
-            {searchResults.map((food) => (
+          {searchResults.length > 0 ? (
+            <ScrollView
+              style={styles.foodsList}
+              nestedScrollEnabled={true}
+              keyboardShouldPersistTaps="handled"
+            >
+              {searchResults.map((food) => (
               <TouchableOpacity
                 key={food.id}
                 style={styles.foodItem}
@@ -146,6 +140,12 @@ const FoodSearchDropdown: React.FC<FoodSearchDropdownProps> = ({
               </TouchableOpacity>
             ))}
           </ScrollView>
+          ) : (
+            <View style={styles.noResultsContainer}>
+              <Ionicons name="search-outline" size={20} color="#CCCCCC" />
+              <Text style={styles.noResultsText}>No foods found</Text>
+            </View>
+          )}
         </View>
       )}
     </View>
@@ -248,6 +248,18 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: '#999',
     fontStyle: 'italic',
+  },
+  noResultsContainer: {
+    paddingVertical: Spacing.lg,
+    paddingHorizontal: Spacing.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    gap: Spacing.sm,
+  },
+  noResultsText: {
+    fontSize: 13,
+    color: '#999',
   },
 });
 

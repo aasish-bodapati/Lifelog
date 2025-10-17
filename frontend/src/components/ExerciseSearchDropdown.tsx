@@ -34,23 +34,22 @@ const ExerciseSearchDropdown: React.FC<ExerciseSearchDropdownProps> = ({
   const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(null);
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Load initial popular exercises when dropdown opens with no search
-  useEffect(() => {
-    if (isOpen && searchQuery.length === 0 && searchResults.length === 0) {
-      setSearchResults(exerciseLibraryService.getPopularExercises());
-    }
-  }, [isOpen, searchQuery]);
-
-  // Search exercises with debounce
+  // Search exercises with debounce - wait 500ms after user stops typing
   useEffect(() => {
     if (searchTimeoutRef.current) {
       clearTimeout(searchTimeoutRef.current);
     }
 
     searchTimeoutRef.current = setTimeout(() => {
-      const results = exerciseLibraryService.searchExercises(searchQuery, 20);
-      setSearchResults(results);
-    }, 300);
+      if (searchQuery.trim()) {
+        const results = exerciseLibraryService.searchExercises(searchQuery, 20);
+        setSearchResults(results);
+        setIsOpen(true); // Always open when there's a search query
+      } else {
+        setSearchResults([]);
+        setIsOpen(false);
+      }
+    }, 500);
 
     return () => {
       if (searchTimeoutRef.current) {
@@ -111,15 +110,7 @@ const ExerciseSearchDropdown: React.FC<ExerciseSearchDropdownProps> = ({
           <TextInput
             style={styles.textInput}
             value={searchQuery}
-            onChangeText={(text) => {
-              setSearchQuery(text);
-              setIsOpen(text.length > 0);
-            }}
-            onFocus={() => {
-              if (searchResults.length > 0) {
-                setIsOpen(true);
-              }
-            }}
+            onChangeText={setSearchQuery}
             placeholder={placeholder}
             placeholderTextColor={Colors.textSecondary}
             autoCorrect={false}

@@ -63,13 +63,6 @@ const MacrosCard: React.FC<MacrosCardProps> = ({
     return '#45B7D1';
   };
 
-  const getMacroStatus = (current: number, target: number, progress: number) => {
-    if (progress < 0.5) return 'Low';
-    if (progress < 0.8) return 'Good';
-    if (progress < 1) return 'Great';
-    return 'Complete';
-  };
-
   const MacroBar = ({ 
     label, 
     current, 
@@ -91,10 +84,10 @@ const MacrosCard: React.FC<MacrosCardProps> = ({
       <View style={styles.macroHeader}>
         <View style={styles.macroTitleContainer}>
           <Ionicons name={icon as any} size={16} color={color} />
-          <Text style={styles.macroLabel}>{label}</Text>
+          <Text style={[styles.macroLabel, { color }]}>{label}</Text>
         </View>
-        <Text style={styles.macroStatus}>
-          {getMacroStatus(current, target, progress)}
+        <Text style={[styles.macroNumbers, { color }]}>
+          {Math.round(current)}g / {Math.round(target)}g
         </Text>
       </View>
       
@@ -114,9 +107,6 @@ const MacrosCard: React.FC<MacrosCardProps> = ({
             ]}
           />
         </View>
-        <Text style={styles.macroNumbers}>
-          {Math.round(current)}g / {Math.round(target)}g
-        </Text>
       </View>
     </View>
   );
@@ -268,21 +258,12 @@ const styles = StyleSheet.create({
   macroLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#1A1A1A',
     marginLeft: 6,
   },
-  macroStatus: {
-    fontSize: 12,
-    fontWeight: '500',
-    color: '#666666',
-  },
   macroBarContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
+    marginTop: 8,
   },
   macroBar: {
-    flex: 1,
     height: 8,
     backgroundColor: '#F0F0F0',
     borderRadius: 4,
@@ -294,10 +275,8 @@ const styles = StyleSheet.create({
     transformOrigin: 'left center',
   },
   macroNumbers: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '600',
-    color: '#666666',
-    minWidth: 80,
     textAlign: 'right',
   },
   caloriesSection: {

@@ -7,9 +7,11 @@ import {
   TouchableOpacity,
   RefreshControl,
   Modal,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { useUser } from '../../context/UserContext';
 import { databaseService, LocalNutritionLog } from '../../services/databaseService';
 import { apiService } from '../../services/api';
@@ -24,7 +26,17 @@ import LoadingSkeleton from '../../components/LoadingSkeleton';
 const NutritionScreen: React.FC = () => {
   const { state: userState } = useUser();
   const [showMealLog, setShowMealLog] = useState(false);
-  const [activeTab, setActiveTab] = useState<'overview' | 'logs'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'meals' | 'logs'>('overview');
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [showCalendar, setShowCalendar] = useState(false);
+  const [editingMealId, setEditingMealId] = useState<string | null>(null);
+  const [editValues, setEditValues] = useState<{
+    food_name?: string;
+    calories?: string;
+    protein_g?: string;
+    carbs_g?: string;
+    fat_g?: string;
+  }>({});
 
   // Use the new useScreenData hook for data loading
   const { data: nutritionLogs, isLoading, isRefreshing, refresh, loadData } = useScreenData<LocalNutritionLog[]>({
@@ -74,6 +86,111 @@ const NutritionScreen: React.FC = () => {
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
+  const handleEditMeal = (meal: LocalNutritionLog) => {
+    setEditingMealId(meal.local_id);
+    setEditValues({
+      food_name: meal.food_name,
+      calories: meal.calories?.toString() || '0',
+      protein_g: meal.protein_g?.toString() || '0',
+      carbs_g: meal.carbs_g?.toString() || '0',
+      fat_g: meal.fat_g?.toString() || '0',
+    });
+  };
+
+  const handleCancelEdit = () => {
+    setEditingMealId(null);
+    setEditValues({});
+  };
+
+  const handleSaveEdit = async (mealId: string) => {
+    try {
+      const updates = {
+        food_name: editValues.food_name || '',
+        calories: parseInt(editValues.calories || '0'),
+        protein_g: parseInt(editValues.protein_g || '0'),
+        carbs_g: parseInt(editValues.carbs_g || '0'),
+        fat_g: parseInt(editValues.fat_g || '0'),
+      };
+
+      await databaseService.updateNutritionLog(mealId, updates);
+      await loadData();
+      setEditingMealId(null);
+      setEditValues({});
+      hapticService.success();
+      toastService.success('Meal updated successfully');
+    } catch (error) {
+      console.error('Error updating meal:', error);
+      toastService.error('Failed to update meal');
+    }
+  };
+
+  const handleDeleteMeal = async (mealId: string) => {
+    Alert.alert(
+      'Delete Meal',
+      'Are you sure you want to delete this meal?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await databaseService.deleteNutritionLog(mealId);
+              await loadData();
+              hapticService.success();
+              toastService.success('Meal deleted successfully');
+            } catch (error) {
+              console.error('Error deleting meal:', error);
+              toastService.error('Failed to delete meal');
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const formatSelectedDate = () => {
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    if (selectedDate.toDateString() === today.toDateString()) {
+      return 'Today';
+    } else if (selectedDate.toDateString() === yesterday.toDateString()) {
+      return 'Yesterday';
+    } else {
+      return selectedDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    }
+  };
+
+  const handlePreviousDay = () => {
+    const newDate = new Date(selectedDate);
+    newDate.setDate(newDate.getDate() - 1);
+    setSelectedDate(newDate);
+  };
+
+  const handleNextDay = () => {
+    const newDate = new Date(selectedDate);
+    newDate.setDate(newDate.getDate() + 1);
+    setSelectedDate(newDate);
+  };
+
+  const handleDateChange = (_event: any, date?: Date) => {
+    setShowCalendar(false);
+    if (date) {
+      setSelectedDate(date);
+    }
+  };
+
+  const getFilteredMealsByDate = () => {
+    if (!nutritionLogs) return [];
+    const selectedDateString = selectedDate.toISOString().split('T')[0];
+    return nutritionLogs.filter((meal) => {
+      const mealDate = new Date(meal.created_at).toISOString().split('T')[0];
+      return mealDate === selectedDateString;
+    });
+  };
+
 
   if (isLoading) {
     return (
@@ -110,6 +227,17 @@ const NutritionScreen: React.FC = () => {
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
+          style={[styles.tab, activeTab === 'meals' && styles.activeTab]}
+          onPress={() => {
+            hapticService.light();
+            setActiveTab('meals');
+          }}
+        >
+          <Text style={[styles.tabText, activeTab === 'meals' && styles.activeTabText]}>
+            Meals
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
           style={[styles.tab, activeTab === 'logs' && styles.activeTab]}
           onPress={() => {
             hapticService.light();
@@ -129,10 +257,10 @@ const NutritionScreen: React.FC = () => {
         }
         showsVerticalScrollIndicator={false}
       >
+        {/* Overview Tab */}
         {activeTab === 'overview' && (
-        <View>
-
-        {/* Quick Actions */}
+          <>
+            {/* Quick Actions */}
         <View style={styles.quickActions}>
           <TouchableOpacity
             style={styles.primaryButton}
@@ -145,6 +273,7 @@ const NutritionScreen: React.FC = () => {
             <Text style={styles.primaryButtonText}>Log Meal</Text>
           </TouchableOpacity>
         </View>
+
 
         {/* Weekly Stats */}
         <View style={styles.statsSection}>
@@ -177,9 +306,9 @@ const NutritionScreen: React.FC = () => {
         {/* Recent Meals */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Today's Meals</Text>
+            <Text style={styles.sectionTitle}>Recent Meals</Text>
             {nutritionLogs && nutritionLogs.length > 0 && (
-              <Text style={styles.sectionSubtitle}>{nutritionLogs.length} logged</Text>
+              <Text style={styles.sectionSubtitle}>{nutritionLogs.length} total</Text>
             )}
           </View>
           
@@ -207,8 +336,8 @@ const NutritionScreen: React.FC = () => {
                       />
                     </View>
                     <View style={styles.mealInfo}>
-                      <Text style={styles.mealTypeName}>{log.meal_type}</Text>
-                      <Text style={styles.mealTime}>{formatTime(log.created_at)}</Text>
+                      <Text style={styles.mealName}>{log.food_name}</Text>
+                      <Text style={styles.mealDate}>{formatTime(log.created_at)}</Text>
                     </View>
                     <View style={styles.mealMeta}>
                       <Text style={styles.mealCalories}>{log.calories || 0} kcal</Text>
@@ -246,92 +375,273 @@ const NutritionScreen: React.FC = () => {
           )}
         </View>
 
-        {/* Tips Section */}
-        {nutritionLogs && nutritionLogs.length > 0 && (
-          <View style={styles.tipsSection}>
-            <View style={styles.tipCard}>
-              <Ionicons name="bulb" size={20} color="#FFA500" />
-              <View style={styles.tipContent}>
-                <Text style={styles.tipTitle}>Pro Tip</Text>
-                <Text style={styles.tipText}>
-                  {weeklyStatsFormatted.avgCalories >= 2000
-                    ? "You're maintaining a good calorie balance this week!"
-                    : "Try to include more nutrient-dense foods in your meals."}
+            {/* Tips Section */}
+            {nutritionLogs && nutritionLogs.length > 0 && (
+              <View style={styles.tipsSection}>
+                <View style={styles.tipCard}>
+                  <Ionicons name="bulb" size={20} color="#FFA500" />
+                  <View style={styles.tipContent}>
+                    <Text style={styles.tipTitle}>Pro Tip</Text>
+                    <Text style={styles.tipText}>
+                      {weeklyStatsFormatted.avgCalories >= 2000
+                        ? "You're maintaining a good calorie balance this week!"
+                        : "Try to include more nutrient-dense foods in your meals."}
+                    </Text>
+                  </View>
+                </View>
+              </View>
+            )}
+          </>
+        )}
+
+        {/* Meals Tab */}
+        {activeTab === 'meals' && (
+          <View>
+            {/* Coming Soon Placeholder */}
+            <View style={styles.section}>
+              <View style={styles.comingSoonContainer}>
+                <View style={styles.comingSoonIconContainer}>
+                  <Ionicons name="calendar-outline" size={64} color={Colors.primary} />
+                </View>
+                <Text style={styles.comingSoonTitle}>Meal Planning</Text>
+                <Text style={styles.comingSoonSubtitle}>
+                  This feature is coming soon! You'll be able to:
                 </Text>
+                <View style={styles.featureList}>
+                  <View style={styles.featureItem}>
+                    <Ionicons name="checkmark-circle" size={20} color={Colors.success} />
+                    <Text style={styles.featureText}>Create meal templates and favorites</Text>
+                  </View>
+                  <View style={styles.featureItem}>
+                    <Ionicons name="checkmark-circle" size={20} color={Colors.success} />
+                    <Text style={styles.featureText}>Plan meals for the week ahead</Text>
+                  </View>
+                  <View style={styles.featureItem}>
+                    <Ionicons name="checkmark-circle" size={20} color={Colors.success} />
+                    <Text style={styles.featureText}>Copy meals from previous days</Text>
+                  </View>
+                  <View style={styles.featureItem}>
+                    <Ionicons name="checkmark-circle" size={20} color={Colors.success} />
+                    <Text style={styles.featureText}>Get meal suggestions based on your goals</Text>
+                  </View>
+                </View>
               </View>
             </View>
           </View>
-        )}
-        </View>
         )}
 
         {/* Logs Tab */}
         {activeTab === 'logs' && (
           <View>
+            {/* Quick Actions */}
+            <View style={styles.quickActions}>
+              <TouchableOpacity
+                style={styles.primaryButton}
+                onPress={() => {
+                  hapticService.light();
+                  setShowMealLog(true);
+                }}
+              >
+                <Ionicons name="add-circle" size={24} color="#FFFFFF" />
+                <Text style={styles.primaryButtonText}>Log Meal</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Date Navigation */}
+            <View style={styles.dateNavigationContainer}>
+              <TouchableOpacity onPress={handlePreviousDay} style={styles.dateNavButton}>
+                <Ionicons name="chevron-back" size={24} color={Colors.primary} />
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => setShowCalendar(true)} style={styles.dateDisplay}>
+                <Ionicons name="calendar-outline" size={20} color={Colors.primary} />
+                <Text style={styles.dateText}>{formatSelectedDate()}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={handleNextDay} style={styles.dateNavButton}>
+                <Ionicons name="chevron-forward" size={24} color={Colors.primary} />
+              </TouchableOpacity>
+            </View>
+
+            {/* Calendar Picker */}
+            {showCalendar && (
+              <DateTimePicker
+                value={selectedDate}
+                mode="date"
+                display="default"
+                onChange={handleDateChange}
+              />
+            )}
+
             {/* Meal Logs List */}
             <View style={styles.section}>
               <View style={styles.sectionHeader}>
-                <Text style={styles.sectionTitle}>All Meals</Text>
-                {nutritionLogs && nutritionLogs.length > 0 && (
-                  <Text style={styles.sectionSubtitle}>{nutritionLogs.length} total</Text>
+                <Text style={styles.sectionTitle}>Meals</Text>
+                {getFilteredMealsByDate().length > 0 && (
+                  <Text style={styles.sectionSubtitle}>{getFilteredMealsByDate().length} total</Text>
                 )}
               </View>
 
-              {nutritionLogs && nutritionLogs.length > 0 ? (
+              {getFilteredMealsByDate().length > 0 ? (
                 <View style={styles.mealsList}>
-                  {nutritionLogs.map((log) => (
-                    <View key={log.local_id} style={styles.mealLogCard}>
-                      <View style={styles.mealLogHeader}>
-                        <View style={[
-                          styles.mealIconContainer,
-                          { backgroundColor: getMealTypeColor(log.meal_type) + '20' }
-                        ]}>
-                          <Ionicons
-                            name={getMealTypeIcon(log.meal_type) as any}
-                            size={20}
-                            color={getMealTypeColor(log.meal_type)}
-                          />
-                        </View>
-                        <View style={styles.mealLogInfo}>
-                          <Text style={styles.mealLogName}>{log.food_name}</Text>
-                          <View style={styles.mealLogMeta}>
-                            <Text style={styles.mealLogType}>{log.meal_type}</Text>
-                            <Text style={styles.mealLogDot}>•</Text>
-                            <Text style={styles.mealLogTime}>{formatTime(log.created_at)}</Text>
-                            <Text style={styles.mealLogDot}>•</Text>
-                            <Text style={styles.mealLogDate}>
-                              {new Date(log.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                            </Text>
+                  {getFilteredMealsByDate().map((log) => {
+                    const isEditing = editingMealId === log.local_id;
+                    
+                    return (
+                      <View key={log.local_id} style={styles.mealLogCard}>
+                        <View style={styles.mealLogHeader}>
+                          <View style={[
+                            styles.mealIconContainer,
+                            { backgroundColor: getMealTypeColor(log.meal_type) + '20' }
+                          ]}>
+                            <Ionicons
+                              name={getMealTypeIcon(log.meal_type) as any}
+                              size={20}
+                              color={getMealTypeColor(log.meal_type)}
+                            />
+                          </View>
+                          <View style={styles.mealLogInfo}>
+                            {isEditing ? (
+                              <TextInput
+                                style={styles.editFoodNameInput}
+                                value={editValues.food_name}
+                                onChangeText={(text) => setEditValues({ ...editValues, food_name: text })}
+                                placeholder="Food name"
+                              />
+                            ) : (
+                              <Text style={styles.mealLogName}>{log.food_name}</Text>
+                            )}
+                            <View style={styles.mealLogMeta}>
+                              <Text style={styles.mealLogType}>{log.meal_type}</Text>
+                              <Text style={styles.mealLogDot}>•</Text>
+                              <Text style={styles.mealLogTime}>{formatTime(log.created_at)}</Text>
+                              <Text style={styles.mealLogDot}>•</Text>
+                              <Text style={styles.mealLogDate}>
+                                {new Date(log.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                              </Text>
+                            </View>
+                          </View>
+                          <View style={styles.mealLogActions}>
+                            {isEditing ? (
+                              <>
+                                <TouchableOpacity
+                                  onPress={() => {
+                                    hapticService.light();
+                                    handleCancelEdit();
+                                  }}
+                                  style={styles.actionButton}
+                                >
+                                  <Ionicons name="close" size={20} color="#666666" />
+                                </TouchableOpacity>
+                                <TouchableOpacity
+                                  onPress={() => {
+                                    hapticService.light();
+                                    handleSaveEdit(log.local_id);
+                                  }}
+                                  style={styles.actionButton}
+                                >
+                                  <Ionicons name="checkmark" size={20} color={Colors.success} />
+                                </TouchableOpacity>
+                              </>
+                            ) : (
+                              <>
+                                <TouchableOpacity
+                                  onPress={() => {
+                                    hapticService.light();
+                                    handleEditMeal(log);
+                                  }}
+                                  style={styles.actionButton}
+                                >
+                                  <Ionicons name="create-outline" size={20} color={Colors.primary} />
+                                </TouchableOpacity>
+                                <TouchableOpacity
+                                  onPress={() => {
+                                    hapticService.light();
+                                    handleDeleteMeal(log.local_id);
+                                  }}
+                                  style={styles.actionButton}
+                                >
+                                  <Ionicons name="trash-outline" size={20} color="#DC3545" />
+                                </TouchableOpacity>
+                              </>
+                            )}
                           </View>
                         </View>
-                        <View style={styles.mealLogActions}>
-                          <TouchableOpacity
-                            onPress={() => {
-                              hapticService.light();
-                              // TODO: Edit meal
-                            }}
-                            style={styles.actionButton}
-                          >
-                            <Ionicons name="create-outline" size={20} color={Colors.primary} />
-                          </TouchableOpacity>
-                          <TouchableOpacity
-                            onPress={() => {
-                              hapticService.light();
-                              // TODO: Delete meal
-                            }}
-                            style={styles.actionButton}
-                          >
-                            <Ionicons name="trash-outline" size={20} color="#DC3545" />
-                          </TouchableOpacity>
-                        </View>
+                        
+                        {/* Macro Details - Editable */}
+                        {isEditing ? (
+                          <View style={styles.editMacrosContainer}>
+                            <View style={styles.editMacroItem}>
+                              <Text style={styles.editMacroLabel}>Calories</Text>
+                              <TextInput
+                                style={styles.editMacroInput}
+                                value={editValues.calories}
+                                onChangeText={(text) => setEditValues({ ...editValues, calories: text })}
+                                keyboardType="numeric"
+                                placeholder="0"
+                              />
+                            </View>
+                            <View style={styles.editMacroItem}>
+                              <Text style={styles.editMacroLabel}>Protein</Text>
+                              <TextInput
+                                style={styles.editMacroInput}
+                                value={editValues.protein_g}
+                                onChangeText={(text) => setEditValues({ ...editValues, protein_g: text })}
+                                keyboardType="numeric"
+                                placeholder="0"
+                              />
+                              <Text style={styles.editMacroUnit}>g</Text>
+                            </View>
+                            <View style={styles.editMacroItem}>
+                              <Text style={styles.editMacroLabel}>Carbs</Text>
+                              <TextInput
+                                style={styles.editMacroInput}
+                                value={editValues.carbs_g}
+                                onChangeText={(text) => setEditValues({ ...editValues, carbs_g: text })}
+                                keyboardType="numeric"
+                                placeholder="0"
+                              />
+                              <Text style={styles.editMacroUnit}>g</Text>
+                            </View>
+                            <View style={styles.editMacroItem}>
+                              <Text style={styles.editMacroLabel}>Fat</Text>
+                              <TextInput
+                                style={styles.editMacroInput}
+                                value={editValues.fat_g}
+                                onChangeText={(text) => setEditValues({ ...editValues, fat_g: text })}
+                                keyboardType="numeric"
+                                placeholder="0"
+                              />
+                              <Text style={styles.editMacroUnit}>g</Text>
+                            </View>
+                          </View>
+                        ) : (
+                          <View style={styles.mealMacros}>
+                            <View style={styles.macroItem}>
+                              <Text style={styles.macroValue}>{log.calories}</Text>
+                              <Text style={styles.macroLabel}>cal</Text>
+                            </View>
+                            <View style={styles.macroItem}>
+                              <Text style={styles.macroValue}>{log.protein_g}g</Text>
+                              <Text style={styles.macroLabel}>protein</Text>
+                            </View>
+                            <View style={styles.macroItem}>
+                              <Text style={styles.macroValue}>{log.carbs_g}g</Text>
+                              <Text style={styles.macroLabel}>carbs</Text>
+                            </View>
+                            <View style={styles.macroItem}>
+                              <Text style={styles.macroValue}>{log.fat_g}g</Text>
+                              <Text style={styles.macroLabel}>fat</Text>
+                            </View>
+                          </View>
+                        )}
+                        
+                        {log.notes && !isEditing && (
+                          <Text style={styles.mealNotes} numberOfLines={2}>
+                            {log.notes}
+                          </Text>
+                        )}
                       </View>
-                      {log.notes && (
-                        <Text style={styles.mealNotes} numberOfLines={2}>
-                          {log.notes}
-                        </Text>
-                      )}
-                    </View>
-                  ))}
+                    );
+                  })}
                 </View>
               ) : (
                 <View style={styles.emptyState}>
@@ -388,20 +698,23 @@ const styles = StyleSheet.create({
   },
   tabContainer: {
     flexDirection: 'row',
-    backgroundColor: Colors.surface,
-    paddingHorizontal: Layout.screenPadding,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
+    backgroundColor: Colors.background,
+    marginHorizontal: Layout.screenPadding,
+    marginTop: Layout.sectionSpacing,
+    marginBottom: Layout.sectionSpacing,
+    borderRadius: Layout.radiusMedium,
+    padding: 4,
   },
   tab: {
     flex: 1,
-    paddingVertical: Spacing.md,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: Layout.radiusSmall,
     alignItems: 'center',
-    borderBottomWidth: 2,
-    borderBottomColor: 'transparent',
   },
   activeTab: {
-    borderBottomColor: Colors.primary,
+    backgroundColor: Colors.surface,
+    ...Layout.shadowSmall,
   },
   tabText: {
     ...Typography.label,
@@ -423,7 +736,7 @@ const styles = StyleSheet.create({
   },
   quickActions: {
     paddingHorizontal: Layout.screenPadding,
-    marginBottom: Layout.sectionSpacing,
+    paddingVertical: Layout.sectionSpacing,
   },
   primaryButton: {
     ...CommonStyles.buttonPrimary,
@@ -521,12 +834,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginRight: 12,
   },
-  mealTypeName: {
+  mealName: {
     ...Typography.label,
     fontSize: 16,
     marginBottom: 2,
   },
-  mealTime: {
+  mealDate: {
     ...Typography.caption,
     color: Colors.textSecondary,
   },
@@ -686,6 +999,144 @@ const styles = StyleSheet.create({
   },
   actionButton: {
     padding: 8,
+  },
+  dateNavigationContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: Layout.screenPadding,
+    paddingVertical: Spacing.md,
+    backgroundColor: Colors.surface,
+    borderRadius: Layout.radiusMedium,
+    marginHorizontal: Layout.screenPadding,
+    marginBottom: Spacing.md,
+  },
+  dateNavButton: {
+    padding: Spacing.sm,
+  },
+  dateDisplay: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+  },
+  dateText: {
+    ...Typography.label,
+    fontSize: 16,
+  },
+  comingSoonContainer: {
+    alignItems: 'center',
+    paddingVertical: Spacing.xl * 2,
+    paddingHorizontal: Spacing.xl,
+  },
+  comingSoonIconContainer: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: Colors.primaryLight,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: Spacing.lg,
+  },
+  comingSoonTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: Colors.textPrimary,
+    marginBottom: Spacing.sm,
+    textAlign: 'center',
+  },
+  comingSoonSubtitle: {
+    fontSize: 16,
+    color: Colors.textSecondary,
+    marginBottom: Spacing.xl,
+    textAlign: 'center',
+  },
+  featureList: {
+    width: '100%',
+    gap: Spacing.md,
+  },
+  featureItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+    paddingVertical: Spacing.xs,
+  },
+  featureText: {
+    fontSize: 15,
+    color: Colors.textPrimary,
+    flex: 1,
+  },
+  mealMacros: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    paddingTop: 12,
+    marginTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#F0F0F0',
+  },
+  macroItem: {
+    alignItems: 'center',
+  },
+  macroValue: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: Colors.text,
+    marginBottom: 4,
+  },
+  macroLabel: {
+    fontSize: 12,
+    color: '#666666',
+    textTransform: 'capitalize',
+  },
+  editFoodNameInput: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: Colors.text,
+    padding: 0,
+    paddingVertical: 4,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.primary,
+  },
+  editMacrosContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+    paddingTop: 12,
+    marginTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#F0F0F0',
+  },
+  editMacroItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F8F9FA',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    flex: 1,
+    minWidth: '45%',
+  },
+  editMacroLabel: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: '#666666',
+    marginRight: 8,
+    textTransform: 'capitalize',
+  },
+  editMacroInput: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: Colors.text,
+    padding: 0,
+    paddingVertical: 2,
+    minWidth: 40,
+    textAlign: 'center',
+  },
+  editMacroUnit: {
+    fontSize: 12,
+    color: '#666666',
+    marginLeft: 2,
   },
 });
 

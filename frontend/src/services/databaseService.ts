@@ -196,22 +196,35 @@ class DatabaseService {
   }
 
   async getUnsyncedItems(): Promise<SyncQueueItem[]> {
-    if (!this.db) {
-      console.error('Database not initialized in getUnsyncedItems');
-      return []; // Return empty array instead of throwing
-    }
-
     try {
+      // Wait for database initialization if needed
+      if (!this.db) {
+        console.warn('Database not initialized in getUnsyncedItems, waiting...');
+        await this.initDatabase();
+      }
+
+      // Double-check after potential initialization
+      if (!this.db) {
+        console.error('Database still not initialized after wait in getUnsyncedItems');
+        return [];
+      }
+
       const query = `
         SELECT * FROM sync_queue 
         WHERE synced = FALSE 
         ORDER BY created_at ASC
       `;
 
-      const result = await this.db.getAllAsync(query);
+      // Store reference to avoid race condition
+      const dbRef = this.db;
+      const result = await dbRef.getAllAsync(query);
       return result as SyncQueueItem[];
     } catch (error) {
       console.error('Error fetching unsynced items from database:', error);
+      // Gracefully handle NullPointerException and other database errors
+      if (error instanceof Error && error.message.includes('NullPointerException')) {
+        console.warn('Database NullPointerException in getUnsyncedItems - returning empty array');
+      }
       return []; // Return empty array instead of throwing
     }
   }
@@ -285,12 +298,19 @@ class DatabaseService {
   }
 
   async getWorkouts(userId: number, limit: number = 50): Promise<LocalWorkout[]> {
-    if (!this.db) {
-      console.error('Database not initialized in getWorkouts');
-      return []; // Return empty array instead of throwing
-    }
-
     try {
+      // Wait for database initialization if needed
+      if (!this.db) {
+        console.warn('Database not initialized in getWorkouts, waiting...');
+        await this.initDatabase();
+      }
+
+      // Double-check after potential initialization
+      if (!this.db) {
+        console.error('Database still not initialized after wait in getWorkouts');
+        return [];
+      }
+
       const query = `
         SELECT * FROM local_workouts 
         WHERE user_id = ? 
@@ -298,10 +318,18 @@ class DatabaseService {
         LIMIT ?
       `;
 
-      const result = await this.db.getAllAsync(query, [userId, limit]);
+      // Store reference to avoid race condition
+      const dbRef = this.db;
+      const result = await dbRef.getAllAsync(query, [userId, limit]);
       return result as LocalWorkout[];
     } catch (error) {
       console.error('Error fetching workouts from database:', error);
+      // Gracefully handle NullPointerException and other database errors
+      if (error instanceof Error && error.message.includes('NullPointerException')) {
+        console.warn('Database NullPointerException in getWorkouts - returning empty array');
+      } else if (!this.db) {
+        console.warn('Database became null during getWorkouts operation');
+      }
       return []; // Return empty array instead of throwing
     }
   }
@@ -410,12 +438,19 @@ class DatabaseService {
   }
 
   async getNutritionLogs(userId: number, date?: string, limit: number = 50): Promise<LocalNutritionLog[]> {
-    if (!this.db) {
-      console.error('Database not initialized in getNutritionLogs');
-      return []; // Return empty array instead of throwing
-    }
-
     try {
+      // Wait for database initialization if needed
+      if (!this.db) {
+        console.warn('Database not initialized in getNutritionLogs, waiting...');
+        await this.initDatabase();
+      }
+
+      // Double-check after potential initialization
+      if (!this.db) {
+        console.error('Database still not initialized after wait in getNutritionLogs');
+        return [];
+      }
+
       let query = `
         SELECT * FROM local_nutrition_logs 
         WHERE user_id = ?
@@ -430,11 +465,93 @@ class DatabaseService {
       query += ` ORDER BY date DESC, created_at DESC LIMIT ?`;
       params.push(limit);
 
-      const result = await this.db.getAllAsync(query, params);
+      // Store reference to avoid race condition
+      const dbRef = this.db;
+      const result = await dbRef.getAllAsync(query, params);
       return result as LocalNutritionLog[];
     } catch (error) {
       console.error('Error fetching nutrition logs from database:', error);
+      // Gracefully handle NullPointerException and other database errors
+      if (error instanceof Error && error.message.includes('NullPointerException')) {
+        console.warn('Database NullPointerException in getNutritionLogs - returning empty array');
+      }
       return []; // Return empty array instead of throwing
+    }
+  }
+
+  async updateNutritionLog(localId: string, updates: Partial<Pick<LocalNutritionLog, 'food_name' | 'calories' | 'protein_g' | 'carbs_g' | 'fat_g'>>): Promise<void> {
+    if (!this.db) throw new Error('Database not initialized');
+
+    const now = new Date().toISOString();
+    const setClauses: string[] = [];
+    const values: any[] = [];
+
+    if (updates.food_name !== undefined) {
+      setClauses.push('food_name = ?');
+      values.push(updates.food_name);
+    }
+    if (updates.calories !== undefined) {
+      setClauses.push('calories = ?');
+      values.push(updates.calories);
+    }
+    if (updates.protein_g !== undefined) {
+      setClauses.push('protein_g = ?');
+      values.push(updates.protein_g);
+    }
+    if (updates.carbs_g !== undefined) {
+      setClauses.push('carbs_g = ?');
+      values.push(updates.carbs_g);
+    }
+    if (updates.fat_g !== undefined) {
+      setClauses.push('fat_g = ?');
+      values.push(updates.fat_g);
+    }
+
+    setClauses.push('updated_at = ?');
+    values.push(now);
+
+    setClauses.push('synced = ?');
+    values.push(false);
+
+    values.push(localId);
+
+    const query = `UPDATE local_nutrition_logs SET ${setClauses.join(', ')} WHERE local_id = ?`;
+
+    await this.db.runAsync(query, values);
+
+    // Fetch the updated item for the sync queue
+    const updatedItem = await this.db.getFirstAsync<LocalNutritionLog>(
+      'SELECT * FROM local_nutrition_logs WHERE local_id = ?',
+      [localId]
+    );
+
+    if (updatedItem) {
+      await this.addToSyncQueue('nutrition', localId, 'UPDATE', updatedItem);
+    }
+
+    console.log(`Updated nutrition log locally: ${localId}`);
+  }
+
+  async deleteNutritionLog(localId: string): Promise<void> {
+    if (!this.db) throw new Error('Database not initialized');
+
+    // Fetch the item before deletion for the sync queue
+    const itemToDelete = await this.db.getFirstAsync<LocalNutritionLog>(
+      'SELECT * FROM local_nutrition_logs WHERE local_id = ?',
+      [localId]
+    );
+
+    if (itemToDelete) {
+      await this.db.runAsync('DELETE FROM local_nutrition_logs WHERE local_id = ?', [localId]);
+      await this.addToSyncQueue(
+        'nutrition',
+        localId,
+        'DELETE',
+        itemToDelete
+      );
+      console.log(`Deleted nutrition log locally: ${localId}`);
+    } else {
+      console.warn(`Nutrition log with local_id ${localId} not found for deletion.`);
     }
   }
 
@@ -478,12 +595,19 @@ class DatabaseService {
   }
 
   async getBodyStats(userId: number, limit: number = 50): Promise<LocalBodyStat[]> {
-    if (!this.db) {
-      console.error('Database not initialized in getBodyStats');
-      return []; // Return empty array instead of throwing
-    }
-
     try {
+      // Wait for database initialization if needed
+      if (!this.db) {
+        console.warn('Database not initialized in getBodyStats, waiting...');
+        await this.initDatabase();
+      }
+
+      // Double-check after potential initialization
+      if (!this.db) {
+        console.error('Database still not initialized after wait in getBodyStats');
+        return [];
+      }
+
       const query = `
         SELECT * FROM local_body_stats 
         WHERE user_id = ? 
@@ -491,31 +615,50 @@ class DatabaseService {
         LIMIT ?
       `;
 
-      const result = await this.db.getAllAsync(query, [userId, limit]);
+      // Store reference to avoid race condition
+      const dbRef = this.db;
+      const result = await dbRef.getAllAsync(query, [userId, limit]);
       return result as LocalBodyStat[];
     } catch (error) {
       console.error('Error fetching body stats from database:', error);
+      // Gracefully handle NullPointerException and other database errors
+      if (error instanceof Error && error.message.includes('NullPointerException')) {
+        console.warn('Database NullPointerException in getBodyStats - returning empty array');
+      }
       return []; // Return empty array instead of throwing
     }
   }
 
   // Utility Methods
   async getUnsyncedCount(): Promise<number> {
-    if (!this.db) {
-      console.error('Database not initialized in getUnsyncedCount');
-      return 0; // Return 0 instead of throwing
-    }
-
     try {
+      // Wait for database initialization if needed
+      if (!this.db) {
+        console.warn('Database not initialized in getUnsyncedCount, waiting...');
+        await this.initDatabase();
+      }
+
+      // Double-check after potential initialization
+      if (!this.db) {
+        console.error('Database still not initialized after wait in getUnsyncedCount');
+        return 0;
+      }
+
       const query = `
         SELECT COUNT(*) as count FROM sync_queue 
         WHERE synced = FALSE
       `;
 
-      const result = await this.db.getFirstAsync(query);
+      // Store reference to avoid race condition
+      const dbRef = this.db;
+      const result = await dbRef.getFirstAsync(query);
       return (result as any)?.count || 0;
     } catch (error) {
       console.error('Error getting unsynced count from database:', error);
+      // Gracefully handle NullPointerException and other database errors
+      if (error instanceof Error && error.message.includes('NullPointerException')) {
+        console.warn('Database NullPointerException in getUnsyncedCount - returning 0');
+      }
       return 0; // Return 0 instead of throwing
     }
   }

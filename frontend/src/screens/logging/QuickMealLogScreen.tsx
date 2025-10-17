@@ -8,6 +8,8 @@ import {
   ScrollView,
   Alert,
   Dimensions,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { databaseService, LocalNutritionLog } from '../../services/databaseService';
@@ -33,6 +35,7 @@ const QuickMealLogScreen: React.FC<QuickMealLogScreenProps> = ({
   // Form state
   const [foodName, setFoodName] = useState('');
   const [selectedFood, setSelectedFood] = useState<Food | null>(null);
+  const [weightInGrams, setWeightInGrams] = useState('100');
   const [mealType, setMealType] = useState<'breakfast' | 'lunch' | 'dinner' | 'snack'>('breakfast');
 
   // Recent foods for autofill
@@ -77,14 +80,22 @@ const QuickMealLogScreen: React.FC<QuickMealLogScreenProps> = ({
     setIsLoading(true);
 
     try {
+      // Calculate macros based on weight
+      const weight = parseFloat(weightInGrams || '100');
+      const baseCalories = selectedFood?.estimatedCalories || 0;
+      const calories = Math.round(baseCalories * weight / 100);
+      const protein = Math.round(baseCalories * 0.2 * weight / 100 / 4);
+      const carbs = Math.round(baseCalories * 0.5 * weight / 100 / 4);
+      const fat = Math.round(baseCalories * 0.3 * weight / 100 / 9);
+
       const nutritionData = {
         user_id: userState.user.id,
         meal_type: mealType,
         food_name: foodName.trim(),
-        calories: 0,
-        protein_g: 0,
-        carbs_g: 0,
-        fat_g: 0,
+        calories: calories,
+        protein_g: protein,
+        carbs_g: carbs,
+        fat_g: fat,
         date: new Date().toISOString().split('T')[0],
       };
 
@@ -96,7 +107,7 @@ const QuickMealLogScreen: React.FC<QuickMealLogScreenProps> = ({
       // Schedule follow-up reminder if user hasn't logged other meals today
       const today = new Date().toISOString().split('T')[0];
       const todayMeals = await databaseService.getNutritionLogs(userState.user.id, today, 100);
-      const otherMeals = todayMeals.filter(meal => meal.meal_type !== selectedMealType);
+      const otherMeals = todayMeals.filter(meal => meal.meal_type !== mealType);
       
       
       toastService.success('Success', 'Meal logged successfully!');
@@ -117,17 +128,51 @@ const QuickMealLogScreen: React.FC<QuickMealLogScreenProps> = ({
     { key: 'snack', label: 'Snack', icon: 'cafe' },
   ] as const;
 
-  return (
-    <View style={styles.overlay}>
-      <View style={styles.popupContainer}>
-        <View style={styles.header}>
-          <Text style={styles.title}>Quick Log Meal</Text>
-          <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-            <Ionicons name="close" size={24} color="#666" />
-          </TouchableOpacity>
-        </View>
+  const getCategoryColor = (category: string) => {
+    switch (category) {
+      case 'protein': return '#E74C3C';
+      case 'carbs': return '#F39C12';
+      case 'vegetables': return '#27AE60';
+      case 'fruits': return '#E91E63';
+      case 'dairy': return '#3498DB';
+      case 'snacks': return '#9B59B6';
+      case 'beverages': return '#16A085';
+      default: return '#95A5A6';
+    }
+  };
 
-        <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+  const getCategoryIcon = (category: string) => {
+    switch (category) {
+      case 'protein': return 'barbell';
+      case 'carbs': return 'leaf';
+      case 'vegetables': return 'nutrition';
+      case 'fruits': return 'leaf-outline';
+      case 'dairy': return 'water';
+      case 'snacks': return 'fast-food';
+      case 'beverages': return 'beer';
+      default: return 'restaurant';
+    }
+  };
+
+  return (
+    <KeyboardAvoidingView 
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      style={styles.keyboardAvoidingView}
+    >
+      <View style={styles.overlay}>
+        <View style={styles.popupContainer}>
+          <View style={styles.header}>
+            <Text style={styles.title}>Quick Log Meal</Text>
+            <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+              <Ionicons name="close" size={24} color="#666" />
+            </TouchableOpacity>
+          </View>
+
+          <ScrollView 
+            style={styles.content} 
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+          >
         {/* Recent Foods */}
         {recentFoods.length > 0 && (
           <View style={styles.section}>
@@ -160,11 +205,6 @@ const QuickMealLogScreen: React.FC<QuickMealLogScreenProps> = ({
                 ]}
                 onPress={() => setMealType(type.key)}
               >
-                <Ionicons
-                  name={type.icon as any}
-                  size={16}
-                  color={mealType === type.key ? '#FFFFFF' : '#666'}
-                />
                 <Text
                   style={[
                     styles.mealTypeText,
@@ -195,20 +235,73 @@ const QuickMealLogScreen: React.FC<QuickMealLogScreenProps> = ({
           {/* Show selected food */}
           {selectedFood && (
             <View style={styles.selectedFoodCard}>
-              <View style={styles.selectedFoodHeader}>
-                <View>
-                  <Text style={styles.selectedFoodName}>{selectedFood.name}</Text>
-                  <Text style={styles.selectedFoodServing}>{selectedFood.commonServing}</Text>
+              <View style={styles.foodCardHeader}>
+                <View style={[styles.foodIconContainer, { backgroundColor: getCategoryColor(selectedFood.category) + '20' }]}>
+                  <Ionicons
+                    name={getCategoryIcon(selectedFood.category) as any}
+                    size={20}
+                    color={getCategoryColor(selectedFood.category)}
+                  />
+                </View>
+                <View style={styles.foodInfo}>
+                  <Text style={styles.foodName}>{selectedFood.name}</Text>
+                  <View style={styles.foodMeta}>
+                    <View style={[styles.categoryBadge, { backgroundColor: getCategoryColor(selectedFood.category) + '20' }]}>
+                      <Text style={[styles.categoryText, { color: getCategoryColor(selectedFood.category) }]}>
+                        {selectedFood.category}
+                      </Text>
+                    </View>
+                    <Text style={styles.servingText}>{selectedFood.commonServing}</Text>
+                  </View>
                 </View>
                 <TouchableOpacity
                   onPress={() => {
                     setSelectedFood(null);
                     setFoodName('');
+                    setWeightInGrams('100');
                   }}
                   style={styles.removeFoodButton}
                 >
                   <Ionicons name="close-circle" size={20} color="#DC3545" />
                 </TouchableOpacity>
+              </View>
+              
+              {/* Weight Input */}
+              <View style={styles.servingInputRow}>
+                <Text style={styles.servingLabel}>Weight:</Text>
+                <TextInput
+                  style={styles.servingInput}
+                  value={weightInGrams}
+                  onChangeText={setWeightInGrams}
+                  keyboardType="decimal-pad"
+                  selectTextOnFocus
+                />
+                <Text style={styles.servingUnit}>grams</Text>
+              </View>
+
+              {/* Macros Display */}
+              <View style={styles.macrosContainer}>
+                <View style={styles.macroItem}>
+                  <Text style={styles.macroLabel}>Calories</Text>
+                  <Text style={styles.macroValue}>
+                    {Math.round((selectedFood.estimatedCalories || 0) * parseFloat(weightInGrams || '100') / 100)}
+                  </Text>
+                </View>
+                <View style={styles.macroDivider} />
+                <View style={styles.macroItem}>
+                  <Text style={styles.macroLabel}>Protein</Text>
+                  <Text style={styles.macroValue}>~{Math.round((selectedFood.estimatedCalories || 0) * 0.2 * parseFloat(weightInGrams || '100') / 100 / 4)}g</Text>
+                </View>
+                <View style={styles.macroDivider} />
+                <View style={styles.macroItem}>
+                  <Text style={styles.macroLabel}>Carbs</Text>
+                  <Text style={styles.macroValue}>~{Math.round((selectedFood.estimatedCalories || 0) * 0.5 * parseFloat(weightInGrams || '100') / 100 / 4)}g</Text>
+                </View>
+                <View style={styles.macroDivider} />
+                <View style={styles.macroItem}>
+                  <Text style={styles.macroLabel}>Fat</Text>
+                  <Text style={styles.macroValue}>~{Math.round((selectedFood.estimatedCalories || 0) * 0.3 * parseFloat(weightInGrams || '100') / 100 / 9)}g</Text>
+                </View>
               </View>
             </View>
           )}
@@ -235,12 +328,16 @@ const QuickMealLogScreen: React.FC<QuickMealLogScreenProps> = ({
         </View>
       </View>
     </View>
+    </KeyboardAvoidingView>
   );
 };
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
 const styles = StyleSheet.create({
+  keyboardAvoidingView: {
+    flex: 1,
+  },
   overlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
@@ -355,28 +452,32 @@ const styles = StyleSheet.create({
   },
   mealTypeContainer: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
+    gap: 4,
   },
   mealTypeButton: {
-    flexDirection: 'row',
+    flex: 1,
     alignItems: 'center',
-    paddingHorizontal: 12,
+    justifyContent: 'center',
     paddingVertical: 8,
-    borderRadius: 20,
+    paddingHorizontal: 0,
+    borderRadius: 8,
     borderWidth: 1,
     borderColor: '#E0E0E0',
     backgroundColor: '#FFFFFF',
+    minWidth: 0,
   },
   mealTypeButtonSelected: {
     backgroundColor: '#007AFF',
     borderColor: '#007AFF',
   },
   mealTypeText: {
-    marginLeft: 6,
-    fontSize: 13,
+    fontSize: 11,
     fontWeight: '500',
     color: '#666',
+    flexShrink: 1,
+    lineHeight: 13,
+    includeFontPadding: false,
+    textAlign: 'center',
   },
   mealTypeTextSelected: {
     color: '#FFFFFF',
@@ -405,31 +506,123 @@ const styles = StyleSheet.create({
     marginBottom: 0,
   },
   selectedFoodCard: {
-    backgroundColor: '#F8F9FA',
-    borderRadius: 8,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 10,
     padding: 12,
+    marginTop: 12,
     borderWidth: 1,
     borderColor: '#E0E0E0',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 2,
+    elevation: 2,
   },
-  selectedFoodHeader: {
+  foodCardHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
   },
-  selectedFoodName: {
+  foodIconContainer: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  foodInfo: {
+    flex: 1,
+  },
+  foodName: {
     fontSize: 15,
     fontWeight: '600',
     color: '#333',
     marginBottom: 4,
   },
-  selectedFoodServing: {
-    fontSize: 13,
+  foodMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  categoryBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 8,
+  },
+  categoryText: {
+    fontSize: 10,
+    fontWeight: '600',
+  },
+  servingText: {
+    fontSize: 11,
+    color: '#666',
+  },
+  caloriesText: {
+    fontSize: 11,
     color: '#666',
   },
   removeFoodButton: {
     padding: 4,
   },
+  servingInputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#F0F0F0',
+  },
+  servingLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#333',
+    marginRight: 8,
+  },
+  servingInput: {
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    borderRadius: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    fontSize: 14,
+    fontWeight: '600',
+    minWidth: 50,
+    textAlign: 'center',
+    backgroundColor: '#F8F9FA',
+  },
+  servingUnit: {
+    fontSize: 12,
+    color: '#666',
+    marginLeft: 8,
+  },
+  macrosContainer: {
+    flexDirection: 'row',
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#F0F0F0',
+  },
+  macroItem: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  macroLabel: {
+    fontSize: 11,
+    color: '#999',
+    marginBottom: 4,
+  },
+  macroValue: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#333',
+  },
+  macroDivider: {
+    width: 1,
+    backgroundColor: '#E0E0E0',
+    marginHorizontal: 8,
+  },
 });
 
 export default QuickMealLogScreen;
+
 

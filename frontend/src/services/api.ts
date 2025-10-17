@@ -124,7 +124,24 @@ class ApiService {
 
   // Nutrition endpoints
   async createNutritionLog(nutritionData: any) {
-    const response = await api.post('/nutrition', nutritionData);
+    // Extract and map fields to match backend schema
+    const { user_id, meal_type, food_name, calories, protein_g, carbs_g, fat_g, date, notes } = nutritionData;
+    const cleanData = {
+      user_id,
+      meal_type,
+      food_name,
+      quantity: 1, // Default quantity
+      calories: Number(calories) || 0,
+      protein: Number(protein_g) || 0,  // Map protein_g to protein
+      carbs: Number(carbs_g) || 0,      // Map carbs_g to carbs
+      fat: Number(fat_g) || 0,          // Map fat_g to fat
+      fiber: 0,
+      sugar: 0,
+      sodium: 0,
+      date,
+      ...(notes && { notes }), // Only include notes if it exists
+    };
+    const response = await api.post('/nutrition/', cleanData);
     return response.data;
   }
 
@@ -138,7 +155,12 @@ class ApiService {
   }
 
   async updateNutritionLog(nutritionId: string, nutritionData: any) {
-    const response = await api.put(`/nutrition/${nutritionId}`, nutritionData);
+    // Map field names to match backend schema if they exist
+    const cleanData: any = {};
+    if (nutritionData.quantity !== undefined) cleanData.quantity = Number(nutritionData.quantity);
+    if (nutritionData.notes !== undefined) cleanData.notes = nutritionData.notes;
+    
+    const response = await api.put(`/nutrition/${nutritionId}`, cleanData);
     return response.data;
   }
 
