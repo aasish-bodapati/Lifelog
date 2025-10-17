@@ -24,6 +24,7 @@ import LoadingSkeleton from '../../components/LoadingSkeleton';
 const NutritionScreen: React.FC = () => {
   const { state: userState } = useUser();
   const [showMealLog, setShowMealLog] = useState(false);
+  const [activeTab, setActiveTab] = useState<'overview' | 'meals'>('overview');
 
   // Use the new useScreenData hook for data loading
   const { data: nutritionLogs, isLoading, isRefreshing, refresh, loadData } = useScreenData<LocalNutritionLog[]>({
@@ -87,6 +88,40 @@ const NutritionScreen: React.FC = () => {
 
   return (
     <SafeAreaView style={CommonStyles.screenContainer}>
+      {/* Header */}
+      <View style={styles.header}>
+        <View>
+          <Text style={styles.title}>Nutrition</Text>
+          <Text style={styles.subtitle}>Track your meals and macros</Text>
+        </View>
+      </View>
+
+      {/* Tab Navigation */}
+      <View style={styles.tabContainer}>
+        <TouchableOpacity
+          style={[styles.tab, activeTab === 'overview' && styles.activeTab]}
+          onPress={() => {
+            hapticService.light();
+            setActiveTab('overview');
+          }}
+        >
+          <Text style={[styles.tabText, activeTab === 'overview' && styles.activeTabText]}>
+            Overview
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.tab, activeTab === 'meals' && styles.activeTab]}
+          onPress={() => {
+            hapticService.light();
+            setActiveTab('meals');
+          }}
+        >
+          <Text style={[styles.tabText, activeTab === 'meals' && styles.activeTabText]}>
+            Meals
+          </Text>
+        </TouchableOpacity>
+      </View>
+
       <ScrollView
         style={CommonStyles.scrollView}
         refreshControl={
@@ -94,13 +129,8 @@ const NutritionScreen: React.FC = () => {
         }
         showsVerticalScrollIndicator={false}
       >
-        {/* Header */}
-        <View style={styles.header}>
-          <View>
-            <Text style={styles.title}>Nutrition</Text>
-            <Text style={styles.subtitle}>Track your meals and macros</Text>
-          </View>
-        </View>
+        {activeTab === 'overview' && (
+        <View>
 
         {/* Quick Actions */}
         <View style={styles.quickActions}>
@@ -232,6 +262,100 @@ const NutritionScreen: React.FC = () => {
             </View>
           </View>
         )}
+        </View>
+        )}
+
+        {/* Meals Tab */}
+        {activeTab === 'meals' && (
+          <View>
+            {/* Meal Logs List */}
+            <View style={styles.section}>
+              <View style={styles.sectionHeader}>
+                <Text style={styles.sectionTitle}>All Meals</Text>
+                {nutritionLogs && nutritionLogs.length > 0 && (
+                  <Text style={styles.sectionSubtitle}>{nutritionLogs.length} total</Text>
+                )}
+              </View>
+
+              {nutritionLogs && nutritionLogs.length > 0 ? (
+                <View style={styles.mealsList}>
+                  {nutritionLogs.map((log) => (
+                    <View key={log.local_id} style={styles.mealLogCard}>
+                      <View style={styles.mealLogHeader}>
+                        <View style={[
+                          styles.mealIconContainer,
+                          { backgroundColor: getMealTypeColor(log.meal_type) + '20' }
+                        ]}>
+                          <Ionicons
+                            name={getMealTypeIcon(log.meal_type) as any}
+                            size={20}
+                            color={getMealTypeColor(log.meal_type)}
+                          />
+                        </View>
+                        <View style={styles.mealLogInfo}>
+                          <Text style={styles.mealLogName}>{log.food_name}</Text>
+                          <View style={styles.mealLogMeta}>
+                            <Text style={styles.mealLogType}>{log.meal_type}</Text>
+                            <Text style={styles.mealLogDot}>•</Text>
+                            <Text style={styles.mealLogTime}>{formatTime(log.created_at)}</Text>
+                            <Text style={styles.mealLogDot}>•</Text>
+                            <Text style={styles.mealLogDate}>
+                              {new Date(log.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                            </Text>
+                          </View>
+                        </View>
+                        <View style={styles.mealLogActions}>
+                          <TouchableOpacity
+                            onPress={() => {
+                              hapticService.light();
+                              // TODO: Edit meal
+                            }}
+                            style={styles.actionButton}
+                          >
+                            <Ionicons name="create-outline" size={20} color={Colors.primary} />
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            onPress={() => {
+                              hapticService.light();
+                              // TODO: Delete meal
+                            }}
+                            style={styles.actionButton}
+                          >
+                            <Ionicons name="trash-outline" size={20} color="#DC3545" />
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+                      {log.notes && (
+                        <Text style={styles.mealNotes} numberOfLines={2}>
+                          {log.notes}
+                        </Text>
+                      )}
+                    </View>
+                  ))}
+                </View>
+              ) : (
+                <View style={styles.emptyState}>
+                  <View style={styles.emptyIconContainer}>
+                    <Ionicons name="restaurant-outline" size={64} color="#CCCCCC" />
+                  </View>
+                  <Text style={styles.emptyStateTitle}>No meals logged yet</Text>
+                  <Text style={styles.emptyStateSubtitle}>
+                    Start tracking your nutrition by logging your first meal
+                  </Text>
+                  <TouchableOpacity
+                    style={styles.emptyStateButton}
+                    onPress={() => {
+                      hapticService.light();
+                      setShowMealLog(true);
+                    }}
+                  >
+                    <Text style={styles.emptyStateButtonText}>Log First Meal</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+            </View>
+          </View>
+        )}
       </ScrollView>
 
       {/* Meal Log Modal */}
@@ -261,6 +385,32 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.surface,
     borderBottomWidth: 1,
     borderBottomColor: Colors.border,
+  },
+  tabContainer: {
+    flexDirection: 'row',
+    backgroundColor: Colors.surface,
+    paddingHorizontal: Layout.screenPadding,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+  },
+  tab: {
+    flex: 1,
+    paddingVertical: Spacing.md,
+    alignItems: 'center',
+    borderBottomWidth: 2,
+    borderBottomColor: 'transparent',
+  },
+  activeTab: {
+    borderBottomColor: Colors.primary,
+  },
+  tabText: {
+    ...Typography.label,
+    color: Colors.textSecondary,
+    fontSize: 15,
+  },
+  activeTabText: {
+    color: Colors.primary,
+    fontWeight: '600',
   },
   title: {
     ...Typography.h1,
@@ -483,6 +633,59 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#666666',
     lineHeight: 18,
+  },
+  mealLogCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  mealLogHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  mealLogInfo: {
+    flex: 1,
+  },
+  mealLogName: {
+    ...Typography.label,
+    fontSize: 16,
+    marginBottom: 4,
+  },
+  mealLogMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+  },
+  mealLogType: {
+    ...Typography.caption,
+    color: Colors.textSecondary,
+    textTransform: 'capitalize',
+  },
+  mealLogDot: {
+    ...Typography.caption,
+    color: Colors.textSecondary,
+    marginHorizontal: 4,
+  },
+  mealLogTime: {
+    ...Typography.caption,
+    color: Colors.textSecondary,
+  },
+  mealLogDate: {
+    ...Typography.caption,
+    color: Colors.textSecondary,
+  },
+  mealLogActions: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  actionButton: {
+    padding: 8,
   },
 });
 
