@@ -185,10 +185,19 @@ class SyncService {
         console.log(`Synced workout ${item.operation}: ${item.record_id}`);
 
       } catch (error) {
-        console.error(`Failed to sync workout ${item.record_id}:`, error);
+        console.error(`❌ Failed to sync workout ${item.record_id}:`, error);
+        console.error(`🔍 DEBUG - Error details:`, {
+          message: error instanceof Error ? error.message : 'Unknown error',
+          code: (error as any)?.code,
+          status: (error as any)?.response?.status,
+          data: (error as any)?.response?.data,
+          operation: item.operation,
+          record_id: item.record_id,
+          workout_data: JSON.parse(item.data)
+        });
         // Mark as synced to remove from queue and prevent infinite retry loop
         await databaseService.markAsSynced(item.id!);
-        console.warn(`Marked failed workout as synced to prevent blocking: ${item.record_id}`);
+        console.warn(`⚠️ Marked failed workout as synced to prevent blocking: ${item.record_id}`);
       }
     }
   }

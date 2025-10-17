@@ -88,11 +88,19 @@ class ApiService {
     const { user_id, date, ...bodyData } = workoutData;
     // Convert date string to datetime format expected by backend
     const datetime = date.includes('T') ? date : `${date}T00:00:00.000Z`;
-    const response = await api.post(`/fitness?user_id=${user_id}`, {
+    
+    console.log('🔍 DEBUG createWorkout - user_id:', user_id);
+    console.log('🔍 DEBUG createWorkout - date:', date, '→', datetime);
+    console.log('🔍 DEBUG createWorkout - bodyData:', JSON.stringify(bodyData, null, 2));
+    
+    // Add trailing slash to match backend route definition and prevent 307 redirect
+    const response = await api.post(`/fitness/?user_id=${user_id}`, {
       ...bodyData,
       date: datetime,
       exercises: [], // Backend expects exercises array, send empty for now
     });
+    
+    console.log('✅ DEBUG createWorkout - Success:', response.status);
     return response.data;
   }
 
