@@ -30,10 +30,6 @@ const QuickMealLogScreen: React.FC<QuickMealLogScreenProps> = ({
 
   // Form state
   const [foodName, setFoodName] = useState('');
-  const [calories, setCalories] = useState('');
-  const [protein, setProtein] = useState('');
-  const [carbs, setCarbs] = useState('');
-  const [fat, setFat] = useState('');
   const [mealType, setMealType] = useState<'breakfast' | 'lunch' | 'dinner' | 'snack'>('breakfast');
 
   // Recent foods for autofill
@@ -56,10 +52,6 @@ const QuickMealLogScreen: React.FC<QuickMealLogScreenProps> = ({
 
   const handleQuickFill = (food: LocalNutritionLog) => {
     setFoodName(food.food_name);
-    setCalories(food.calories.toString());
-    setProtein(food.protein_g.toString());
-    setCarbs(food.carbs_g.toString());
-    setFat(food.fat_g.toString());
     setMealType(food.meal_type);
   };
 
@@ -69,8 +61,8 @@ const QuickMealLogScreen: React.FC<QuickMealLogScreenProps> = ({
       return;
     }
 
-    if (!foodName.trim() || !calories.trim()) {
-      toastService.error('Error', 'Food name and calories are required');
+    if (!foodName.trim()) {
+      toastService.error('Error', 'Food name is required');
       return;
     }
 
@@ -81,10 +73,10 @@ const QuickMealLogScreen: React.FC<QuickMealLogScreenProps> = ({
         user_id: userState.user.id,
         meal_type: mealType,
         food_name: foodName.trim(),
-        calories: parseInt(calories) || 0,
-        protein_g: parseFloat(protein) || 0,
-        carbs_g: parseFloat(carbs) || 0,
-        fat_g: parseFloat(fat) || 0,
+        calories: 0,
+        protein_g: 0,
+        carbs_g: 0,
+        fat_g: 0,
         date: new Date().toISOString().split('T')[0],
       };
 
@@ -191,52 +183,6 @@ const QuickMealLogScreen: React.FC<QuickMealLogScreenProps> = ({
               placeholder="e.g., Grilled Chicken Breast"
               autoFocus
             />
-          </View>
-
-          <View style={styles.macroRow}>
-            <View style={styles.macroInput}>
-              <Text style={styles.inputLabel}>Calories *</Text>
-              <TextInput
-                style={styles.textInput}
-                value={calories}
-                onChangeText={setCalories}
-                placeholder="250"
-                keyboardType="numeric"
-              />
-            </View>
-            <View style={styles.macroInput}>
-              <Text style={styles.inputLabel}>Protein (g)</Text>
-              <TextInput
-                style={styles.textInput}
-                value={protein}
-                onChangeText={setProtein}
-                placeholder="30"
-                keyboardType="numeric"
-              />
-            </View>
-          </View>
-
-          <View style={styles.macroRow}>
-            <View style={styles.macroInput}>
-              <Text style={styles.inputLabel}>Carbs (g)</Text>
-              <TextInput
-                style={styles.textInput}
-                value={carbs}
-                onChangeText={setCarbs}
-                placeholder="15"
-                keyboardType="numeric"
-              />
-            </View>
-            <View style={styles.macroInput}>
-              <Text style={styles.inputLabel}>Fat (g)</Text>
-              <TextInput
-                style={styles.textInput}
-                value={fat}
-                onChangeText={setFat}
-                placeholder="8"
-                keyboardType="numeric"
-              />
-            </View>
           </View>
         </View>
       </ScrollView>
@@ -426,13 +372,6 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     fontSize: 16,
     color: '#333',
-  },
-  macroRow: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  macroInput: {
-    flex: 1,
   },
 });
 
