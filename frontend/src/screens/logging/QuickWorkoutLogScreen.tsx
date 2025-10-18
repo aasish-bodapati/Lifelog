@@ -605,11 +605,10 @@ const styles = StyleSheet.create({
     borderBottomColor: Colors.border,
   },
   closeButton: {
-    padding: 4,
+    padding: Spacing.xs,
   },
   title: {
-    fontSize: 18,
-    fontWeight: '600',
+    ...Typography.h4,
     color: Colors.text,
     flex: 1,
     textAlign: 'center',
@@ -637,8 +636,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   cancelButtonText: {
-    fontSize: 16,
-    fontWeight: '500',
+    ...Typography.button,
     color: Colors.textSecondary,
   },
   saveButton: {
@@ -653,22 +651,21 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.disabled,
   },
   saveButtonText: {
+    ...Typography.button,
     color: Colors.textLight,
-    fontSize: 16,
-    fontWeight: '600',
   },
   section: {
     marginBottom: Spacing.xxl,
   },
   sectionTitle: {
-    fontSize: 16,
+    ...Typography.body,
     fontWeight: '600',
     color: Colors.text,
     marginBottom: Spacing.md,
   },
   recentWorkoutCard: {
     backgroundColor: Colors.background,
-    padding: 10,
+    padding: Spacing.sm,
     borderRadius: Layout.radiusSmall,
     marginRight: Spacing.sm,
     minWidth: 100,
@@ -677,27 +674,27 @@ const styles = StyleSheet.create({
     borderColor: Colors.border,
   },
   recentWorkoutName: {
-    fontSize: 12,
+    ...Typography.caption,
     fontWeight: '600',
     color: Colors.text,
     textAlign: 'center',
   },
   recentWorkoutDuration: {
-    fontSize: 10,
+    ...Typography.caption,
     color: Colors.textSecondary,
     marginTop: 2,
   },
   inputGroup: {
-    marginBottom: 20,
+    marginBottom: Spacing.xl,
   },
   exerciseDropdown: {
     marginBottom: 0,
   },
   inputLabel: {
-    fontSize: 12,
+    ...Typography.labelSmall,
     fontWeight: '600',
     color: Colors.textSecondary,
-    marginBottom: 4,
+    marginBottom: Spacing.xs,
     textTransform: 'uppercase',
   },
   textInput: {
@@ -706,12 +703,12 @@ const styles = StyleSheet.create({
     borderColor: Colors.border,
     borderRadius: Layout.radiusSmall,
     paddingHorizontal: Spacing.md,
-    paddingVertical: 10,
-    fontSize: 16,
+    paddingVertical: Spacing.sm,
+    ...Typography.body,
   },
   selectedExerciseCard: {
     backgroundColor: Colors.surface,
-    borderRadius: 10,
+    borderRadius: Spacing.sm,
     padding: Spacing.md,
     marginBottom: Spacing.md,
     borderWidth: 1,
@@ -721,7 +718,7 @@ const styles = StyleSheet.create({
   exerciseCardHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 10,
+    marginBottom: Spacing.sm,
   },
   exerciseIconContainer: {
     width: 36,
@@ -730,45 +727,45 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.primaryLight,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 10,
+    marginRight: Spacing.sm,
   },
   exerciseInfo: {
     flex: 1,
   },
   exerciseName: {
-    fontSize: 15,
+    ...Typography.bodySmall,
     fontWeight: '600',
     color: Colors.text,
-    marginBottom: 4,
+    marginBottom: Spacing.xs,
   },
   exerciseMeta: {
     flexDirection: 'row',
-    gap: 6,
+    gap: Spacing.xs + 2,
   },
   categoryBadge: {
-    paddingHorizontal: 6,
+    paddingHorizontal: Spacing.xs + 2,
     paddingVertical: 2,
-    borderRadius: 8,
+    borderRadius: Layout.radiusSmall,
   },
   categoryText: {
-    fontSize: 10,
+    ...Typography.caption,
     fontWeight: '600',
   },
   difficultyBadge: {
-    paddingHorizontal: 6,
+    paddingHorizontal: Spacing.xs + 2,
     paddingVertical: 2,
-    borderRadius: 8,
+    borderRadius: Layout.radiusSmall,
   },
   difficultyText: {
-    fontSize: 10,
+    ...Typography.caption,
     fontWeight: '600',
   },
   removeExerciseButton: {
-    padding: 4,
-    marginLeft: 8,
+    padding: Spacing.xs,
+    marginLeft: Spacing.sm,
   },
   exerciseDescription: {
-    fontSize: 14,
+    ...Typography.bodySmall,
     color: Colors.textSecondary,
     marginBottom: Spacing.md,
     lineHeight: 20,

@@ -415,11 +415,10 @@ const styles = StyleSheet.create({
     borderBottomColor: Colors.border,
   },
   closeButton: {
-    padding: 4,
+    padding: Spacing.xs,
   },
   title: {
-    fontSize: 18,
-    fontWeight: '600',
+    ...Typography.h4,
     color: Colors.text,
     flex: 1,
     textAlign: 'center',
@@ -450,8 +449,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   cancelButtonText: {
-    fontSize: 16,
-    fontWeight: '500',
+    ...Typography.button,
     color: Colors.textSecondary,
   },
   saveButton: {
@@ -466,16 +464,15 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.disabled,
   },
   saveButtonText: {
+    ...Typography.button,
     color: Colors.textLight,
-    fontSize: 16,
-    fontWeight: '600',
   },
   section: {
     marginBottom: Spacing.xxl,
-    zIndex: 1, // Lower z-index so dropdown appears above
+    zIndex: 1,
   },
   sectionTitle: {
-    fontSize: 16,
+    ...Typography.body,
     fontWeight: '600',
     color: Colors.text,
     marginBottom: Spacing.md,
