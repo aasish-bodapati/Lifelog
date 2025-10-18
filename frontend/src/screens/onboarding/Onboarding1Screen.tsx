@@ -313,14 +313,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   title: {
-    fontSize: 28,
+    ...Typography.h1,
     fontWeight: '700',
     color: Colors.text,
     marginBottom: 6,
     textAlign: 'center',
   },
   subtitle: {
-    fontSize: 15,
+    ...Typography.bodySmall,
     color: Colors.textSecondary,
     textAlign: 'center',
     lineHeight: 22,
@@ -334,8 +334,8 @@ const styles = StyleSheet.create({
     borderColor: '#EF5350',
   },
   errorText: {
-    color: '#D32F2F',
-    fontSize: 13,
+    color: Colors.error,
+    ...Typography.caption,
     fontWeight: '500',
     textAlign: 'center',
   },
@@ -350,7 +350,7 @@ const styles = StyleSheet.create({
     ...Layout.shadowSmall,
   },
   cardTitle: {
-    fontSize: 18,
+    ...Typography.h4,
     fontWeight: '600',
     color: Colors.text,
     marginBottom: Spacing.lg,
@@ -366,7 +366,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   inputLabel: {
-    fontSize: 13,
+    ...Typography.labelSmall,
     fontWeight: '600',
     color: Colors.text,
     marginBottom: 6,
