@@ -176,7 +176,7 @@ export const CommonStyles = {
   // Screen container
   screenContainer: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: '#F8F9FA', // Colors.background
   },
   
   // Scroll view
@@ -186,12 +186,12 @@ export const CommonStyles = {
   
   // Content container
   content: {
-    paddingHorizontal: Layout.screenPadding,
+    paddingHorizontal: 16, // Layout.screenPadding
   },
   
   // Section
   section: {
-    marginBottom: Layout.sectionSpacing,
+    marginBottom: 16, // Layout.sectionSpacing
   },
   
   // Section header
@@ -199,58 +199,70 @@ export const CommonStyles = {
     flexDirection: 'row' as const,
     justifyContent: 'space-between' as const,
     alignItems: 'center' as const,
-    marginBottom: Layout.cardSpacing,
+    marginBottom: 12, // Layout.cardSpacing
   },
   
   // Card
   card: {
-    backgroundColor: Colors.surface,
-    borderRadius: Layout.radiusMedium,
-    padding: Layout.cardPadding,
-    marginBottom: Layout.cardSpacing,
-    ...Layout.shadowMedium,
+    backgroundColor: '#FFFFFF', // Colors.surface
+    borderRadius: 12, // Layout.radiusMedium
+    padding: 16, // Layout.cardPadding
+    marginBottom: 12, // Layout.cardSpacing
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
   
   // Card large
   cardLarge: {
-    backgroundColor: Colors.surface,
-    borderRadius: Layout.radiusLarge,
-    padding: Layout.cardPaddingLarge,
-    marginBottom: Layout.cardSpacing,
-    ...Layout.shadowMedium,
+    backgroundColor: '#FFFFFF', // Colors.surface
+    borderRadius: 16, // Layout.radiusLarge
+    padding: 20, // Layout.cardPaddingLarge
+    marginBottom: 12, // Layout.cardSpacing
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
   
   // Grid
   grid: {
     flexDirection: 'row' as const,
     flexWrap: 'wrap' as const,
-    gap: Layout.gridGap,
+    gap: 12, // Layout.gridGap
   },
   
   // Grid small
   gridSmall: {
     flexDirection: 'row' as const,
     flexWrap: 'wrap' as const,
-    gap: Layout.gridGapSmall,
+    gap: 8, // Layout.gridGapSmall
   },
   
   // Button primary
   buttonPrimary: {
-    backgroundColor: Colors.primary,
-    paddingVertical: Spacing.lg,
-    paddingHorizontal: Spacing.xxl,
-    borderRadius: Layout.radiusMedium,
+    backgroundColor: '#007AFF', // Colors.primary
+    paddingVertical: 16, // Spacing.lg
+    paddingHorizontal: 24, // Spacing.xxl
+    borderRadius: 12, // Layout.radiusMedium
     alignItems: 'center' as const,
     justifyContent: 'center' as const,
-    ...Layout.shadowMedium,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
   
   // Button secondary
   buttonSecondary: {
-    backgroundColor: Colors.primaryLight,
-    paddingVertical: Spacing.md,
-    paddingHorizontal: Spacing.lg,
-    borderRadius: Layout.radiusSmall,
+    backgroundColor: '#F0F8FF', // Colors.primaryLight
+    paddingVertical: 12, // Spacing.md
+    paddingHorizontal: 16, // Spacing.lg
+    borderRadius: 8, // Layout.radiusSmall
     alignItems: 'center' as const,
     justifyContent: 'center' as const,
   },
@@ -258,11 +270,11 @@ export const CommonStyles = {
   // Button outline
   buttonOutline: {
     backgroundColor: 'transparent' as const,
-    paddingVertical: Spacing.md,
-    paddingHorizontal: Spacing.lg,
-    borderRadius: Layout.radiusMedium,
+    paddingVertical: 12, // Spacing.md
+    paddingHorizontal: 16, // Spacing.lg
+    borderRadius: 12, // Layout.radiusMedium
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: '#E0E0E0', // Colors.border
     alignItems: 'center' as const,
     justifyContent: 'center' as const,
   },
@@ -271,77 +283,89 @@ export const CommonStyles = {
   buttonText: {
     fontSize: 16,
     fontWeight: '600' as const,
-    color: Colors.textLight,
+    color: '#FFFFFF', // Colors.textLight
   },
   
   // Input styles
   input: {
-    backgroundColor: Colors.surface,
+    backgroundColor: '#FFFFFF', // Colors.surface
     borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: Layout.radiusMedium,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.md,
+    borderColor: '#E0E0E0', // Colors.border
+    borderRadius: 12, // Layout.radiusMedium
+    paddingHorizontal: 12, // Spacing.md
+    paddingVertical: 12, // Spacing.md
     fontSize: 16,
-    color: Colors.text,
+    color: '#1A1A1A', // Colors.text
   },
   
   inputLabel: {
     fontSize: 14,
     fontWeight: '600' as const,
-    color: Colors.text,
-    marginBottom: Spacing.sm,
+    color: '#1A1A1A', // Colors.text
+    marginBottom: 8, // Spacing.sm
   },
   
   // Modal styles
   modalOverlay: {
     flex: 1,
-    backgroundColor: Colors.overlay,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)', // Colors.overlay
     justifyContent: 'center' as const,
     alignItems: 'center' as const,
-    padding: Spacing.xl,
+    padding: 20, // Spacing.xl
   },
   
   modalContainer: {
-    backgroundColor: Colors.surface,
-    borderRadius: Layout.radiusLarge,
-    padding: Spacing.xl,
+    backgroundColor: '#FFFFFF', // Colors.surface
+    borderRadius: 16, // Layout.radiusLarge
+    padding: 20, // Spacing.xl
     width: '100%' as const,
     maxWidth: 400,
-    ...Layout.shadowLarge,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 4,
   },
   
   modalHeader: {
     flexDirection: 'row' as const,
     alignItems: 'center' as const,
     justifyContent: 'space-between' as const,
-    paddingBottom: Spacing.lg,
+    paddingBottom: 16, // Spacing.lg
     borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
+    borderBottomColor: '#E0E0E0', // Colors.border
   },
   
   // Empty state
   emptyState: {
     alignItems: 'center' as const,
-    paddingVertical: Spacing.xxxl,
-    paddingHorizontal: Spacing.xxl,
+    paddingVertical: 32, // Spacing.xxxl
+    paddingHorizontal: 24, // Spacing.xxl
   },
   
   // Card variants
   cardCompact: {
-    backgroundColor: Colors.surface,
-    borderRadius: Layout.radiusMedium,
-    padding: Spacing.md,
-    marginBottom: Layout.cardSpacing,
-    ...Layout.shadowSmall,
+    backgroundColor: '#FFFFFF', // Colors.surface
+    borderRadius: 12, // Layout.radiusMedium
+    padding: 12, // Spacing.md
+    marginBottom: 12, // Layout.cardSpacing
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
   },
   
   cardElevated: {
-    backgroundColor: Colors.surface,
-    borderRadius: Layout.radiusLarge,
-    padding: Layout.cardPadding,
-    marginBottom: Layout.cardSpacing,
-    ...Layout.shadowLarge,
+    backgroundColor: '#FFFFFF', // Colors.surface
+    borderRadius: 16, // Layout.radiusLarge
+    padding: 16, // Layout.cardPadding
+    marginBottom: 12, // Layout.cardSpacing
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 4,
   },
 } as const;
 
