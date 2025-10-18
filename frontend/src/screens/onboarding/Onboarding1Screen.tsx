@@ -12,7 +12,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useOnboarding } from '../../context/OnboardingContext';
 import { OnboardingProfile, OnboardingGoal, OnboardingActivity } from '../../types/onboarding';
 import { calculationService } from '../../services/calculationService';
-import { Colors, Layout, Spacing } from '../../styles/designSystem';
+import { Colors, Layout, Spacing, Typography } from '../../styles/designSystem';
 
 const Onboarding1Screen: React.FC = () => {
   const { nextStep, updateData, data } = useOnboarding();
