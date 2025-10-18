@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { Colors, Typography, Layout, Spacing, getMacroProgressColor } from '../../styles/designSystem';
 
 interface MacrosCardProps {
   calories: number;
@@ -56,14 +57,6 @@ const MacrosCard: React.FC<MacrosCardProps> = ({
     }
   }, [proteinProgress, carbsProgress, fatProgress, isLoading, proteinAnim, carbsAnim, fatAnim]);
 
-  const getMacroColor = (progress: number) => {
-    if (progress < 0.5) return '#FF6B6B';      // Red: Low (<50%)
-    if (progress < 0.8) return '#FFE66D';      // Yellow: Good (50-80%)
-    if (progress < 1) return '#4ECDC4';        // Teal: Great (80-100%)
-    if (progress < 1.2) return '#45B7D1';      // Blue: Complete (100-120%)
-    return '#FF9800';                          // Orange: Over (>120%)
-  };
-
   const MacroBar = ({ 
     label, 
     current, 
@@ -112,19 +105,11 @@ const MacrosCard: React.FC<MacrosCardProps> = ({
     </View>
   );
 
-  const getCalorieColor = (progress: number) => {
-    if (progress < 0.5) return '#FF6B6B';      // Red: Low (<50%)
-    if (progress < 0.8) return '#FFE66D';      // Yellow: Good (50-80%)
-    if (progress < 1) return '#4ECDC4';        // Teal: Great (80-100%)
-    if (progress < 1.2) return '#45B7D1';      // Blue: Complete (100-120%)
-    return '#FF9800';                          // Orange: Over (>120%)
-  };
-
   return (
     <View style={styles.container}>
       <View style={styles.header}>
         <View style={styles.titleContainer}>
-          <Ionicons name="nutrition" size={24} color="#4ECDC4" />
+          <Ionicons name="nutrition" size={24} color={Colors.protein} />
           <Text style={styles.title}>Nutrition</Text>
         </View>
         <Text style={styles.subtitle}>Today's breakdown</Text>
@@ -134,10 +119,10 @@ const MacrosCard: React.FC<MacrosCardProps> = ({
       <View style={styles.caloriesSection}>
         <View style={styles.caloriesHeader}>
           <View style={styles.caloriesTitleContainer}>
-            <Ionicons name="flame" size={20} color={getCalorieColor(caloriesProgress)} />
+            <Ionicons name="flame" size={20} color={getMacroProgressColor(caloriesProgress)} />
             <Text style={styles.caloriesLabel}>Calories</Text>
           </View>
-          <Text style={[styles.caloriesValue, { color: getCalorieColor(caloriesProgress) }]}>
+          <Text style={[styles.caloriesValue, { color: getMacroProgressColor(caloriesProgress) }]}>
             {Math.round(calories)} / {Math.round(caloriesTarget)}
           </Text>
         </View>
@@ -147,7 +132,7 @@ const MacrosCard: React.FC<MacrosCardProps> = ({
               style={[
                 styles.caloriesBarFill,
                 {
-                  backgroundColor: getCalorieColor(caloriesProgress),
+                  backgroundColor: getMacroProgressColor(caloriesProgress),
                   width: `${Math.min(caloriesProgress * 100, 100)}%`,
                 },
               ]}
@@ -167,7 +152,7 @@ const MacrosCard: React.FC<MacrosCardProps> = ({
           current={protein}
           target={proteinTarget}
           progress={proteinProgress}
-          color={getMacroColor(proteinProgress)}
+          color={getMacroProgressColor(proteinProgress)}
           icon="fitness"
           animValue={proteinAnim}
         />
@@ -177,7 +162,7 @@ const MacrosCard: React.FC<MacrosCardProps> = ({
           current={carbs}
           target={carbsTarget}
           progress={carbsProgress}
-          color={getMacroColor(carbsProgress)}
+          color={getMacroProgressColor(carbsProgress)}
           icon="leaf"
           animValue={carbsAnim}
         />
@@ -187,7 +172,7 @@ const MacrosCard: React.FC<MacrosCardProps> = ({
           current={fat}
           target={fatTarget}
           progress={fatProgress}
-          color={getMacroColor(fatProgress)}
+          color={getMacroProgressColor(fatProgress)}
           icon="water"
           animValue={fatAnim}
         />
@@ -210,20 +195,13 @@ const MacrosCard: React.FC<MacrosCardProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 16,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
+    backgroundColor: Colors.surface,
+    borderRadius: Layout.radiusLarge,
+    padding: Layout.cardPadding,
+    ...Layout.shadowMedium,
   },
   header: {
-    marginBottom: 14,
+    marginBottom: Spacing.md,
   },
   titleContainer: {
     flexDirection: 'row',
@@ -231,18 +209,19 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   title: {
+    ...Typography.h4,
     fontSize: 17,
-    fontWeight: '600',
-    color: '#1A1A1A',
-    marginLeft: 8,
+    color: Colors.text,
+    marginLeft: Spacing.sm,
   },
   subtitle: {
+    ...Typography.bodySmall,
     fontSize: 13,
-    color: '#666666',
+    color: Colors.textSecondary,
     marginLeft: 32,
   },
   content: {
-    gap: 12,
+    gap: Spacing.md,
   },
   macroItem: {
     marginBottom: 0,
@@ -251,23 +230,24 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 6,
+    marginBottom: Spacing.xs + 2,
   },
   macroTitleContainer: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   macroLabel: {
+    ...Typography.bodySmall,
     fontSize: 13,
     fontWeight: '600',
-    marginLeft: 6,
+    marginLeft: Spacing.xs + 2,
   },
   macroBarContainer: {
-    marginTop: 6,
+    marginTop: Spacing.xs + 2,
   },
   macroBar: {
     height: 6,
-    backgroundColor: '#F0F0F0',
+    backgroundColor: Colors.borderLight,
     borderRadius: 3,
     overflow: 'hidden',
   },
@@ -277,31 +257,32 @@ const styles = StyleSheet.create({
     transformOrigin: 'left center',
   },
   macroNumbers: {
-    fontSize: 12,
+    ...Typography.caption,
     fontWeight: '600',
     textAlign: 'right',
   },
   caloriesSection: {
-    marginBottom: 12,
+    marginBottom: Spacing.md,
   },
   caloriesHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: Spacing.sm,
   },
   caloriesTitleContainer: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   caloriesLabel: {
+    ...Typography.bodySmall,
     fontSize: 15,
     fontWeight: '600',
-    color: '#1A1A1A',
-    marginLeft: 8,
+    color: Colors.text,
+    marginLeft: Spacing.sm,
   },
   caloriesValue: {
-    fontSize: 16,
+    ...Typography.body,
     fontWeight: '700',
   },
   caloriesBarContainer: {
@@ -312,7 +293,7 @@ const styles = StyleSheet.create({
   caloriesBar: {
     flex: 1,
     height: 10,
-    backgroundColor: '#F0F0F0',
+    backgroundColor: Colors.borderLight,
     borderRadius: 5,
     overflow: 'hidden',
   },
@@ -321,27 +302,29 @@ const styles = StyleSheet.create({
     borderRadius: 5,
   },
   caloriesPercentage: {
+    ...Typography.bodySmall,
     fontSize: 13,
     fontWeight: '700',
-    color: '#666666',
+    color: Colors.textSecondary,
     minWidth: 45,
     textAlign: 'right',
   },
   macrosDivider: {
     height: 1,
-    backgroundColor: '#F0F0F0',
-    marginVertical: 12,
+    backgroundColor: Colors.borderLight,
+    marginVertical: Spacing.md,
   },
   summary: {
-    marginTop: 12,
-    paddingTop: 12,
+    marginTop: Spacing.md,
+    paddingTop: Spacing.md,
     borderTopWidth: 1,
-    borderTopColor: '#F0F0F0',
+    borderTopColor: Colors.borderLight,
   },
   summaryText: {
+    ...Typography.bodySmall,
     fontSize: 13,
     fontWeight: '500',
-    color: '#666666',
+    color: Colors.textSecondary,
     textAlign: 'center',
   },
 });

@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, Animated, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { Colors, Typography, Layout, Spacing, getHydrationProgressColor, getProgressMessage } from '../../styles/designSystem';
 
 interface HydrationCardProps {
   current: number;
@@ -31,27 +32,14 @@ const HydrationCard: React.FC<HydrationCardProps> = ({
     }
   }, [progress, isLoading, progressAnim]);
 
-  const getProgressColor = () => {
-    if (progress < 0.3) return '#FF6B6B';
-    if (progress < 0.6) return '#FFE66D';
-    if (progress < 0.8) return '#4ECDC4';
-    if (progress < 1.2) return '#45B7D1';
-    return '#FF9800';
-  };
-
-  const getStatusText = () => {
-    if (progress < 0.3) return 'Stay hydrated! 💧';
-    if (progress < 0.6) return 'Keep drinking! 💪';
-    if (progress < 0.8) return 'Almost there! 🌊';
-    if (progress < 1) return 'Great job! 🎉';
-    return 'Hydration master! 🏆';
-  };
+  const progressColor = getHydrationProgressColor(progress);
+  const statusText = getProgressMessage(progress, 'hydration');
 
   return (
     <View style={styles.container}>
       <View style={styles.header}>
         <View style={styles.titleContainer}>
-          <Ionicons name="water" size={22} color="#45B7D1" />
+          <Ionicons name="water" size={22} color={Colors.other} />
           <Text style={styles.title}>Hydration</Text>
         </View>
         <Text style={styles.subtitle}>Today's intake</Text>
@@ -60,7 +48,7 @@ const HydrationCard: React.FC<HydrationCardProps> = ({
       {/* Progress Bar */}
       <View style={styles.progressSection}>
         <View style={styles.progressHeader}>
-          <Text style={[styles.progressValue, { color: getProgressColor() }]}>
+          <Text style={[styles.progressValue, { color: progressColor }]}>
             {current.toFixed(1)}L / {target.toFixed(1)}L
           </Text>
           <Text style={styles.percentage}>{percentage}%</Text>
@@ -71,7 +59,7 @@ const HydrationCard: React.FC<HydrationCardProps> = ({
               style={[
                 styles.progressBarFill,
                 {
-                  backgroundColor: getProgressColor(),
+                  backgroundColor: progressColor,
                   width: progressAnim.interpolate({
                     inputRange: [0, 1],
                     outputRange: ['0%', '100%'],
@@ -86,7 +74,7 @@ const HydrationCard: React.FC<HydrationCardProps> = ({
       {/* Remaining */}
       {remaining > 0 && (
         <View style={styles.remainingSection}>
-          <Ionicons name="water-outline" size={16} color="#666666" />
+          <Ionicons name="water-outline" size={16} color={Colors.textSecondary} />
           <Text style={styles.remainingText}>
             {remaining.toFixed(1)}L remaining to reach your goal
           </Text>
@@ -111,8 +99,8 @@ const HydrationCard: React.FC<HydrationCardProps> = ({
 
       {/* Status */}
       <View style={styles.statusSection}>
-        <Text style={[styles.statusText, { color: getProgressColor() }]}>
-          {getStatusText()}
+        <Text style={[styles.statusText, { color: progressColor }]}>
+          {statusText}
         </Text>
       </View>
     </View>
@@ -121,20 +109,13 @@ const HydrationCard: React.FC<HydrationCardProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 16,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
+    backgroundColor: Colors.surface,
+    borderRadius: Layout.radiusLarge,
+    padding: Layout.cardPadding,
+    ...Layout.shadowMedium,
   },
   header: {
-    marginBottom: 14,
+    marginBottom: Spacing.md,
   },
   titleContainer: {
     flexDirection: 'row',
@@ -142,40 +123,42 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   title: {
+    ...Typography.h4,
     fontSize: 17,
-    fontWeight: '600',
-    color: '#1A1A1A',
-    marginLeft: 8,
+    color: Colors.text,
+    marginLeft: Spacing.sm,
   },
   subtitle: {
+    ...Typography.bodySmall,
     fontSize: 13,
-    color: '#666666',
+    color: Colors.textSecondary,
     marginLeft: 30,
   },
   progressSection: {
-    marginBottom: 12,
+    marginBottom: Spacing.md,
   },
   progressHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: Spacing.sm,
   },
   progressValue: {
-    fontSize: 16,
+    ...Typography.body,
     fontWeight: '700',
   },
   percentage: {
+    ...Typography.bodySmall,
     fontSize: 13,
     fontWeight: '700',
-    color: '#666666',
+    color: Colors.textSecondary,
   },
   progressBarContainer: {
     width: '100%',
   },
   progressBar: {
     height: 10,
-    backgroundColor: '#F0F0F0',
+    backgroundColor: Colors.borderLight,
     borderRadius: 5,
     overflow: 'hidden',
   },
@@ -186,48 +169,50 @@ const styles = StyleSheet.create({
   remainingSection: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12,
-    paddingTop: 12,
+    marginBottom: Spacing.md,
+    paddingTop: Spacing.md,
     borderTopWidth: 1,
-    borderTopColor: '#F0F0F0',
-    gap: 6,
+    borderTopColor: Colors.borderLight,
+    gap: Spacing.xs + 2,
   },
   remainingText: {
-    fontSize: 12,
-    color: '#666666',
+    ...Typography.caption,
+    color: Colors.textSecondary,
     flex: 1,
   },
   quickAddSection: {
-    paddingTop: 12,
+    paddingTop: Spacing.md,
     borderTopWidth: 1,
-    borderTopColor: '#F0F0F0',
-    marginBottom: 12,
+    borderTopColor: Colors.borderLight,
+    marginBottom: Spacing.md,
   },
   quickAddButtons: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    gap: 8,
+    gap: Spacing.sm,
   },
   quickAddButton: {
     flex: 1,
-    backgroundColor: '#E3F2FD',
-    paddingVertical: 8,
-    borderRadius: 8,
+    backgroundColor: Colors.primaryLight,
+    paddingVertical: Spacing.sm,
+    borderRadius: Layout.radiusSmall,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#45B7D1',
+    borderColor: Colors.other,
   },
   quickAddText: {
+    ...Typography.bodySmall,
     fontSize: 13,
     fontWeight: '600',
-    color: '#45B7D1',
+    color: Colors.other,
   },
   statusSection: {
-    paddingTop: 12,
+    paddingTop: Spacing.md,
     borderTopWidth: 1,
-    borderTopColor: '#F0F0F0',
+    borderTopColor: Colors.borderLight,
   },
   statusText: {
+    ...Typography.bodySmall,
     fontSize: 13,
     fontWeight: '500',
     textAlign: 'center',
