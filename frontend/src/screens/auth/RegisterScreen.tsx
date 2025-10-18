@@ -163,14 +163,14 @@ const styles = StyleSheet.create({
     paddingVertical: 48,
   },
   title: {
-    fontSize: 32,
+    ...Typography.h1,
     fontWeight: 'bold',
     textAlign: 'center',
     marginBottom: Spacing.sm,
     color: Colors.text,
   },
   subtitle: {
-    fontSize: 16,
+    ...Typography.body,
     textAlign: 'center',
     marginBottom: 48,
     color: Colors.textSecondary,
@@ -184,7 +184,7 @@ const styles = StyleSheet.create({
     borderRadius: Layout.radiusSmall,
     paddingHorizontal: Spacing.lg,
     paddingVertical: Spacing.md,
-    fontSize: 16,
+    ...Typography.body,
     backgroundColor: Colors.background,
   },
   button: {
@@ -198,9 +198,8 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.disabled,
   },
   buttonText: {
+    ...Typography.button,
     color: Colors.textLight,
-    fontSize: 16,
-    fontWeight: '600',
   },
   loginContainer: {
     flexDirection: 'row',
@@ -209,11 +208,11 @@ const styles = StyleSheet.create({
     marginTop: Spacing.xxl,
   },
   loginText: {
-    fontSize: 16,
+    ...Typography.body,
     color: Colors.textSecondary,
   },
   loginLink: {
-    fontSize: 16,
+    ...Typography.body,
     color: Colors.primary,
     fontWeight: '600',
   },
