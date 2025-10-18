@@ -11,7 +11,7 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { useUser } from '../../context/UserContext';
 import { toastService } from '../../services/toastService';
-import { Colors, Layout, Spacing } from '../../styles/designSystem';
+import { Colors, Layout, Spacing, Typography } from '../../styles/designSystem';
 
 const LoginScreen: React.FC = () => {
   const [email, setEmail] = useState('');

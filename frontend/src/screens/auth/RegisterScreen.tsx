@@ -13,7 +13,7 @@ import { useNavigation } from '@react-navigation/native';
 import { useUser } from '../../context/UserContext';
 import { UserCreate } from '../../types';
 import { toastService } from '../../services/toastService';
-import { Colors, Layout, Spacing } from '../../styles/designSystem';
+import { Colors, Layout, Spacing, Typography } from '../../styles/designSystem';
 
 const RegisterScreen: React.FC = () => {
   const [formData, setFormData] = useState<UserCreate>({
