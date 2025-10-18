@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { foodLibraryService, Food } from '../services/foodLibraryService';
-import { Spacing } from '../styles/designSystem';
+import { Colors, Typography, Layout, Spacing } from '../styles/designSystem';
 
 interface FoodSearchDropdownProps {
   value: string;
@@ -86,18 +86,19 @@ const FoodSearchDropdown: React.FC<FoodSearchDropdownProps> = ({
     <View style={[styles.container, style]} pointerEvents="box-none">
       {/* Search Input */}
       <View style={styles.inputContainer} pointerEvents="auto">
-        <Ionicons name="search" size={18} color="#999" style={styles.searchIcon} />
+        <Ionicons name="search" size={18} color={Colors.textSecondary} style={styles.searchIcon} />
         <TextInput
           style={styles.textInput}
           value={searchQuery}
           onChangeText={setSearchQuery}
           placeholder={placeholder}
+          placeholderTextColor={Colors.textSecondary}
           autoCorrect={false}
           autoCapitalize="none"
         />
         {searchQuery.length > 0 && (
           <TouchableOpacity onPress={handleClear} style={styles.clearButton}>
-            <Ionicons name="close-circle" size={18} color="#999" />
+            <Ionicons name="close-circle" size={18} color={Colors.textSecondary} />
           </TouchableOpacity>
         )}
       </View>
@@ -150,7 +151,7 @@ const FoodSearchDropdown: React.FC<FoodSearchDropdownProps> = ({
           </ScrollView>
           ) : (
             <View style={styles.noResultsContainer}>
-              <Ionicons name="search-outline" size={20} color="#CCCCCC" />
+              <Ionicons name="search-outline" size={20} color={Colors.disabled} />
               <Text style={styles.noResultsText}>No foods found</Text>
             </View>
           )}
@@ -163,50 +164,48 @@ const FoodSearchDropdown: React.FC<FoodSearchDropdownProps> = ({
 const styles = StyleSheet.create({
   container: {
     position: 'relative',
-    zIndex: 1000, // Ensure dropdown container is on top
+    zIndex: 1000,
   },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F8F9FA',
+    backgroundColor: Colors.background,
     borderWidth: 1,
-    borderColor: '#E0E0E0',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+    borderColor: Colors.border,
+    borderRadius: Layout.radiusMedium,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    minHeight: 48,
   },
   searchIcon: {
-    marginRight: 8,
+    marginRight: Spacing.sm,
   },
   textInput: {
     flex: 1,
-    fontSize: 16,
-    color: '#333',
+    ...Typography.body,
+    color: Colors.text,
   },
   clearButton: {
-    padding: 4,
+    padding: Spacing.xs,
   },
   dropdownContainer: {
     position: 'absolute',
     top: '100%',
     left: 0,
     right: 0,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: Colors.surface,
     borderWidth: 1,
-    borderColor: '#E0E0E0',
-    borderRadius: 8,
+    borderColor: Colors.border,
+    borderRadius: Layout.radiusMedium,
     zIndex: 1000,
-    elevation: 10, // For Android
+    elevation: 10,
     marginTop: Spacing.xs,
-    height: 260, // Fixed height to show 3 items fully
-    overflow: 'hidden', // Ensure content doesn't overflow
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
+    height: 260,
+    overflow: 'hidden',
+    ...Layout.shadowMedium,
   },
   foodsList: {
-    flex: 1, // Take full height of parent
+    flex: 1,
   },
   foodsListContent: {
     paddingVertical: Spacing.sm,
@@ -214,10 +213,10 @@ const styles = StyleSheet.create({
   foodItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 10,
-    paddingHorizontal: 12,
+    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0',
+    borderBottomColor: Colors.borderLight,
   },
   foodIconContainer: {
     width: 36,
@@ -225,40 +224,40 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 10,
+    marginRight: Spacing.sm,
   },
   foodInfo: {
     flex: 1,
   },
   foodName: {
-    fontSize: 14,
+    ...Typography.bodySmall,
     fontWeight: '600',
-    color: '#333',
-    marginBottom: 4,
+    color: Colors.text,
+    marginBottom: Spacing.xs,
   },
   foodMeta: {
     flexDirection: 'row',
     alignItems: 'center',
     flexWrap: 'wrap',
-    gap: 6,
+    gap: Spacing.xs + 2,
   },
   categoryBadge: {
-    paddingHorizontal: 6,
+    paddingHorizontal: Spacing.xs + 2,
     paddingVertical: 2,
-    borderRadius: 4,
+    borderRadius: Layout.radiusSmall,
   },
   categoryText: {
-    fontSize: 10,
+    ...Typography.caption,
     fontWeight: '600',
     textTransform: 'uppercase',
   },
   servingText: {
-    fontSize: 11,
-    color: '#666',
+    ...Typography.caption,
+    color: Colors.textSecondary,
   },
   caloriesText: {
-    fontSize: 11,
-    color: '#999',
+    ...Typography.caption,
+    color: Colors.textSecondary,
     fontStyle: 'italic',
   },
   noResultsContainer: {
@@ -270,8 +269,8 @@ const styles = StyleSheet.create({
     gap: Spacing.sm,
   },
   noResultsText: {
-    fontSize: 13,
-    color: '#999',
+    ...Typography.bodySmall,
+    color: Colors.textSecondary,
   },
 });
 

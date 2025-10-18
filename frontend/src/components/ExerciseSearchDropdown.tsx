@@ -280,8 +280,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   exerciseName: {
-    ...Typography.label,
-    fontSize: 14,
+    ...Typography.bodySmall,
+    fontWeight: '600',
     marginBottom: 2,
   },
   exerciseMeta: {
@@ -295,7 +295,6 @@ const styles = StyleSheet.create({
   },
   categoryText: {
     ...Typography.caption,
-    fontSize: 10,
     fontWeight: '600',
   },
   difficultyBadge: {
@@ -305,7 +304,6 @@ const styles = StyleSheet.create({
   },
   difficultyText: {
     ...Typography.caption,
-    fontSize: 10,
     fontWeight: '600',
   },
   exerciseDescription: {
