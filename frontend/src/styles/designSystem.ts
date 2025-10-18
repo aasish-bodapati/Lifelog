@@ -124,24 +124,24 @@ export const Typography = {
 
 export const Layout = {
   // Screen padding
-  screenPadding: Spacing.lg, // 16px
+  screenPadding: 16, // Spacing.lg
   
   // Section spacing
-  sectionSpacing: Spacing.lg, // 16px
-  sectionSpacingLarge: Spacing.xl, // 20px
+  sectionSpacing: 16, // Spacing.lg
+  sectionSpacingLarge: 20, // Spacing.xl
   
   // Card spacing
-  cardSpacing: Spacing.md, // 12px
-  cardPadding: Spacing.lg, // 16px
-  cardPaddingLarge: Spacing.xl, // 20px
+  cardSpacing: 12, // Spacing.md
+  cardPadding: 16, // Spacing.lg
+  cardPaddingLarge: 20, // Spacing.xl
   
   // Header
-  headerPadding: Spacing.lg, // 16px
+  headerPadding: 16, // Spacing.lg
   headerHeight: 60,
   
   // Grid gaps
-  gridGap: Spacing.md, // 12px
-  gridGapSmall: Spacing.sm, // 8px
+  gridGap: 12, // Spacing.md
+  gridGapSmall: 8, // Spacing.sm
   
   // Border radius
   radiusSmall: 8,
