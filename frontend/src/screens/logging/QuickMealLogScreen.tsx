@@ -319,7 +319,7 @@ const QuickMealLogScreen: React.FC<QuickMealLogScreenProps> = ({
                       style={styles.servingInput}
                       value={food.servingSize}
                       onChangeText={(value) => handleServingSizeChange(index, value)}
-                      keyboardType="decimal-pad"
+                      keyboardType="numeric"
                       selectTextOnFocus
                     />
                     <Text style={styles.servingUnit}>grams</Text>

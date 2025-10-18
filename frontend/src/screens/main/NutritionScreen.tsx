@@ -91,10 +91,10 @@ const NutritionScreen: React.FC = () => {
     setEditingMealId(meal.local_id);
     setEditValues({
       food_name: meal.food_name,
-      calories: meal.calories?.toString() || '0',
-      protein_g: meal.protein_g?.toString() || '0',
-      carbs_g: meal.carbs_g?.toString() || '0',
-      fat_g: meal.fat_g?.toString() || '0',
+      calories: meal.calories?.toString() || '',
+      protein_g: meal.protein_g?.toString() || '',
+      carbs_g: meal.carbs_g?.toString() || '',
+      fat_g: meal.fat_g?.toString() || '',
     });
   };
 

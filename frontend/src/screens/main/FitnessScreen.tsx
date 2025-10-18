@@ -288,55 +288,45 @@ const FitnessScreen: React.FC = () => {
   const parseWorkoutDetails = (notes: string | undefined | null) => {
     if (!notes) return null;
 
-    // Parse notes like "3 sets × 10 reps • 20kg"
-    const details: Array<{ icon: string; text: string; color: string }> = [];
+    // Parse notes like "3 sets: 10-12-8 reps • 20kg" or "3 sets × 10 reps • 20kg"
+    const parts: string[] = [];
 
-    // Check for sets and reps
-    const setsRepsMatch = notes.match(/(\d+)\s*sets?\s*×\s*(\d+)\s*reps?/i);
-    if (setsRepsMatch) {
-      details.push({
-        icon: 'fitness',
-        text: `Sets: ${setsRepsMatch[1]}`,
-        color: Colors.primary,
-      });
-      details.push({
-        icon: 'repeat',
-        text: `Reps: ${setsRepsMatch[2]}`,
-        color: Colors.primary,
-      });
+    // Check for new format with reps per set (e.g., "3 sets: 10-12-8 reps")
+    const setsRepsPerSetMatch = notes.match(/(\d+)\s*sets?:\s*([\d.-]+)\s*reps?/i);
+    if (setsRepsPerSetMatch) {
+      const setCount = setsRepsPerSetMatch[1];
+      const repsPerSet = setsRepsPerSetMatch[2];
+      
+      parts.push(`Sets: ${setCount}`);
+      parts.push(`Reps: ${repsPerSet}`);
+    } else {
+      // Check for old format (e.g., "3 sets × 10 reps")
+      const setsRepsMatch = notes.match(/(\d+)\s*sets?\s*×\s*(\d+)\s*reps?/i);
+      if (setsRepsMatch) {
+        parts.push(`Sets: ${setsRepsMatch[1]}`);
+        parts.push(`Reps: ${setsRepsMatch[2]}`);
+      }
     }
 
-    // Check for weight
-    const weightMatch = notes.match(/(\d+(?:\.\d+)?)\s*kg/i);
-    if (weightMatch) {
-      details.push({
-        icon: 'barbell',
-        text: `Weight: ${weightMatch[1]} kg`,
-        color: Colors.success,
-      });
+    // Check for weight (single or per-set format with decimals)
+    const weightPerSetMatch = notes.match(/([\d.-]+)\s*kg/i);
+    if (weightPerSetMatch) {
+      parts.push(`Weight: ${weightPerSetMatch[1]}kg`);
     }
 
     // Check for duration (minutes)
     const durationMatch = notes.match(/(\d+)\s*minutes?/i);
     if (durationMatch) {
-      details.push({
-        icon: 'time',
-        text: `Duration: ${durationMatch[1]} min`,
-        color: Colors.info,
-      });
+      parts.push(`Duration: ${durationMatch[1]} min`);
     }
 
     // Check for distance
     const distanceMatch = notes.match(/(\d+(?:\.\d+)?)\s*km/i);
     if (distanceMatch) {
-      details.push({
-        icon: 'location',
-        text: `Distance: ${distanceMatch[1]} km`,
-        color: Colors.warning,
-      });
+      parts.push(`Distance: ${distanceMatch[1]}km`);
     }
 
-    return details.length > 0 ? details : null;
+    return parts.length > 0 ? parts.join('  |  ') : null;
   };
 
   const parseWorkoutValues = (notes: string | undefined | null) => {
@@ -347,10 +337,19 @@ const FitnessScreen: React.FC = () => {
     const setsMatch = notes.match(/(\d+)\s*sets?/i);
     if (setsMatch) values.sets = setsMatch[1];
 
-    const repsMatch = notes.match(/×\s*(\d+)\s*reps?/i);
-    if (repsMatch) values.reps = repsMatch[1];
+    // Check for new format with reps per set (e.g., "10-12-8")
+    const repsPerSetMatch = notes.match(/:\s*([\d-]+)\s*reps?/i);
+    if (repsPerSetMatch) {
+      // Store as-is for display
+      values.reps = repsPerSetMatch[1];
+    } else {
+      // Check for old format (e.g., "× 10 reps")
+      const repsMatch = notes.match(/×\s*(\d+)\s*reps?/i);
+      if (repsMatch) values.reps = repsMatch[1];
+    }
 
-    const weightMatch = notes.match(/(\d+(?:\.\d+)?)\s*kg/i);
+    // Check for weight (single or per-set format with dashes and decimals)
+    const weightMatch = notes.match(/([\d.-]+)\s*kg/i);
     if (weightMatch) values.weight = weightMatch[1];
 
     const durationMatch = notes.match(/(\d+)\s*minutes?/i);
@@ -1036,7 +1035,7 @@ const FitnessScreen: React.FC = () => {
                                   style={styles.editDetailInput}
                                   value={editValues.weight}
                                   onChangeText={(text) => setEditValues({ ...editValues, weight: text })}
-                                  keyboardType="decimal-pad"
+                                  keyboardType="numeric"
                                   selectTextOnFocus
                                 />
                                 <Text style={styles.editDetailUnit}>kg</Text>
@@ -1070,7 +1069,7 @@ const FitnessScreen: React.FC = () => {
                                   style={styles.editDetailInput}
                                   value={editValues.distance}
                                   onChangeText={(text) => setEditValues({ ...editValues, distance: text })}
-                                  keyboardType="decimal-pad"
+                                  keyboardType="numeric"
                                   selectTextOnFocus
                                 />
                                 <Text style={styles.editDetailUnit}>km</Text>
@@ -1078,16 +1077,9 @@ const FitnessScreen: React.FC = () => {
                             )}
                           </View>
                         ) : parseWorkoutDetails(workout.notes) ? (
-                          <View style={styles.workoutDetails}>
-                            {parseWorkoutDetails(workout.notes)!.map((detail, idx) => (
-                              <View key={idx} style={styles.workoutDetailItem}>
-                                <View style={[styles.detailIconContainer, { backgroundColor: detail.color + '20' }]}>
-                                  <Ionicons name={detail.icon as any} size={14} color={detail.color} />
-                                </View>
-                                <Text style={styles.workoutDetailText}>{detail.text}</Text>
-                              </View>
-                            ))}
-                          </View>
+                          <Text style={styles.workoutDetailsText} numberOfLines={2}>
+                            {parseWorkoutDetails(workout.notes)}
+                          </Text>
                         ) : workout.notes ? (
                           <Text style={styles.workoutLogNotes} numberOfLines={2}>
                             {workout.notes}
@@ -1632,6 +1624,16 @@ const styles = StyleSheet.create({
     paddingTop: 12,
     borderTopWidth: 1,
     borderTopColor: Colors.divider,
+  },
+  workoutDetailsText: {
+    ...Typography.body,
+    fontSize: 14,
+    color: Colors.textPrimary,
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: Colors.divider,
+    lineHeight: 20,
   },
   workoutDetails: {
     flexDirection: 'row',

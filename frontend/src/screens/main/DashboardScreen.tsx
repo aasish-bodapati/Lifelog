@@ -19,7 +19,7 @@ import { hapticService } from '../../services/hapticService';
 import { toastService } from '../../services/toastService';
 import { bodyStatsService } from '../../services/bodyStatsService';
 import { advancedAnalyticsService } from '../../services/advancedAnalyticsService';
-import { WorkoutRoutine, RoutineDay } from '../../services/workoutRoutineService';
+import { WorkoutRoutine, RoutineDay, RoutineExercise } from '../../services/workoutRoutineService';
 import { getProgressIcon, getMacroColor, getStreakIcon, getConsistencyColor } from '../../utils';
 import { CommonStyles, Layout, Colors, Typography } from '../../styles/designSystem';
 import SyncIndicator from '../../components/SyncIndicator';
@@ -31,6 +31,7 @@ import WelcomeCard from '../../components/dashboard/WelcomeCard';
 import HydrationCard from '../../components/dashboard/HydrationCard';
 import BodyTrendCard from '../../components/dashboard/BodyTrendCard';
 import ConsistencyCard from '../../components/dashboard/ConsistencyCard';
+import QuickExerciseLogModal from '../../components/QuickExerciseLogModal';
 
 const { width } = Dimensions.get('window');
 const ACTIVE_ROUTINE_KEY = 'activeWorkoutRoutine';
@@ -78,6 +79,8 @@ const DashboardScreen: React.FC = () => {
   const [lastSyncTime, setLastSyncTime] = useState<string | null>(null);
   const [activeRoutine, setActiveRoutine] = useState<WorkoutRoutine | null>(null);
   const [todayRoutineDay, setTodayRoutineDay] = useState<RoutineDay | null>(null);
+  const [showQuickLogModal, setShowQuickLogModal] = useState(false);
+  const [selectedExercise, setSelectedExercise] = useState<RoutineExercise | null>(null);
 
   // Load active routine and find today's workout
   const loadActiveRoutine = useCallback(async () => {
@@ -358,6 +361,81 @@ const DashboardScreen: React.FC = () => {
     navigation.navigate('WorkoutLog');
   };
 
+  const handleExercisePress = (exercise: RoutineExercise, index: number) => {
+    hapticService.light();
+    setSelectedExercise(exercise);
+    setShowQuickLogModal(true);
+  };
+
+  const handleSaveQuickLog = async (
+    exercise: RoutineExercise,
+    repsPerSet: (number | string)[],
+    weightPerSet?: (number | string)[]
+  ) => {
+    if (!userState.user?.id) {
+      toastService.error('Error', 'User not logged in');
+      return;
+    }
+
+    try {
+      // Get current date in local timezone
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      const day = String(now.getDate()).padStart(2, '0');
+      const currentDate = `${year}-${month}-${day}`;
+
+      // Parse string values to numbers and apply defaults
+      const repsWithDefaults = repsPerSet.map(r => {
+        if (r === undefined || r === '') return 10;
+        return typeof r === 'string' ? (parseFloat(r) || 10) : r;
+      });
+
+      // Build notes string
+      const details = [];
+      const repsDisplay = repsWithDefaults.join('-');
+      details.push(`${exercise.sets} sets: ${repsDisplay} reps`);
+
+      // Add weight if available (only for weighted exercises)
+      if (weightPerSet && weightPerSet.length > 0) {
+        // Check if there are any actual weight values (not all undefined/empty)
+        const hasWeightValues = weightPerSet.some(w => w !== undefined && w !== '');
+        
+        if (hasWeightValues) {
+          const weightsWithDefaults = weightPerSet.map(w => {
+            if (w === undefined || w === '') return 20;
+            return typeof w === 'string' ? (parseFloat(w) || 20) : w;
+          });
+          const weightDisplay = weightsWithDefaults.join('-');
+          details.push(`${weightDisplay}kg`);
+        }
+      }
+
+      const notes = details.join(' • ');
+
+      // Create workout data
+      const workoutData = {
+        local_id: `workout_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        user_id: userState.user.id,
+        name: exercise.name,
+        duration_minutes: 10, // Default duration for strength exercises
+        date: currentDate,
+        notes: notes,
+      };
+
+      // Save to local database
+      await databaseService.saveWorkout(workoutData);
+
+      toastService.success('Success', `${exercise.name} logged!`);
+      
+      // Reload data to update the dashboard
+      loadTodayData();
+    } catch (error) {
+      console.error('Error logging workout:', error);
+      toastService.error('Error', 'Failed to log workout');
+    }
+  };
+
   return (
     <SafeAreaView style={CommonStyles.screenContainer}>
       <SyncIndicator />
@@ -412,6 +490,7 @@ const DashboardScreen: React.FC = () => {
                 isLoading={isLoading}
                 todayRoutineDay={todayRoutineDay}
                 hasActiveRoutine={activeRoutine !== null}
+                onExercisePress={handleExercisePress}
               />
             </AnimatedCard>
 
@@ -438,6 +517,14 @@ const DashboardScreen: React.FC = () => {
           </View>
         </View>
       </ScrollView>
+
+      {/* Quick Exercise Log Modal */}
+      <QuickExerciseLogModal
+        visible={showQuickLogModal}
+        exercise={selectedExercise}
+        onClose={() => setShowQuickLogModal(false)}
+        onSave={handleSaveQuickLog}
+      />
     </SafeAreaView>
   );
 };

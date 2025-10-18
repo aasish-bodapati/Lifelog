@@ -124,11 +124,11 @@ const Onboarding1Screen: React.FC = () => {
                 <TextInput
                   style={styles.textInput}
                   value={profile.height?.toString() || ''}
-                  onChangeText={(value) => updateField('height', value ? parseInt(value) || 0 : 0)}
-                  placeholder="175"
+                  onChangeText={(value) => updateField('height', value ? parseFloat(value) || 0 : 0)}
+                  placeholder="175.5"
                   placeholderTextColor="#999"
                   keyboardType="numeric"
-                  maxLength={3}
+                  maxLength={5}
                 />
               </View>
               <View style={styles.inputGroup}>
@@ -136,11 +136,11 @@ const Onboarding1Screen: React.FC = () => {
                 <TextInput
                   style={styles.textInput}
                   value={profile.weight?.toString() || ''}
-                  onChangeText={(value) => updateField('weight', value ? parseInt(value) || 0 : 0)}
-                  placeholder="70"
+                  onChangeText={(value) => updateField('weight', value ? parseFloat(value) || 0 : 0)}
+                  placeholder="70.5"
                   placeholderTextColor="#999"
                   keyboardType="numeric"
-                  maxLength={3}
+                  maxLength={5}
                 />
               </View>
             </View>

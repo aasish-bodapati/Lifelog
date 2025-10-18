@@ -17,6 +17,8 @@ export interface RoutineExercise {
   duration?: number; // in seconds
   rest?: number; // rest between sets in seconds
   notes?: string;
+  category?: 'strength' | 'cardio' | 'flexibility' | 'sports' | 'other';
+  equipment?: 'bodyweight' | 'dumbbells' | 'barbell' | 'machine' | 'cardio' | 'other';
 }
 
 export interface RoutineDay {

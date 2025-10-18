@@ -110,12 +110,19 @@ const CreateRoutineModal: React.FC<CreateRoutineModalProps> = ({
   React.useEffect(() => {
     if (dayExercises.length === 0) return;
 
+    // Apply defaults for any undefined values before saving
+    const exercisesWithDefaults = dayExercises.map(ex => ({
+      ...ex,
+      sets: ex.sets ?? 3,
+      reps: ex.reps ?? 10,
+    }));
+
     const newDay: RoutineDay = {
       dayNumber: currentDayNumber,
       title: getDayName(currentDayNumber),
       focus: 'Workout',
       warmup: '',
-      exercises: dayExercises,
+      exercises: exercisesWithDefaults,
     };
 
     const existingDayIndex = days.findIndex(d => d.dayNumber === currentDayNumber);
@@ -136,6 +143,8 @@ const CreateRoutineModal: React.FC<CreateRoutineModalProps> = ({
       name: exercise.name,
       sets: 3,
       reps: 10,
+      category: exercise.category,
+      equipment: exercise.equipment,
     };
 
     setDayExercises([...dayExercises, newExercise]);
@@ -145,6 +154,17 @@ const CreateRoutineModal: React.FC<CreateRoutineModalProps> = ({
   const handleRemoveExercise = (index: number) => {
     setDayExercises(dayExercises.filter((_, i) => i !== index));
     hapticService.light();
+  };
+
+  const handleUpdateExercise = (index: number, field: 'sets' | 'reps', value: string) => {
+    // Allow empty string, store actual number or default to prevent 0
+    const numValue = value === '' ? undefined : (parseInt(value) || undefined);
+    const updatedExercises = [...dayExercises];
+    updatedExercises[index] = {
+      ...updatedExercises[index],
+      [field]: numValue,
+    };
+    setDayExercises(updatedExercises);
   };
 
   const handleSaveRoutine = async () => {
@@ -267,6 +287,33 @@ const CreateRoutineModal: React.FC<CreateRoutineModalProps> = ({
                     >
                       <Ionicons name="close-circle" size={24} color={Colors.error} />
                     </TouchableOpacity>
+                  </View>
+                  
+                  {/* Sets and Reps Inputs */}
+                  <View style={styles.exerciseInputsRow}>
+                    <View style={styles.exerciseInputGroup}>
+                      <Text style={styles.exerciseInputLabel}>Sets</Text>
+                      <TextInput
+                        style={styles.exerciseInput}
+                        value={exercise.sets?.toString() || ''}
+                        onChangeText={(value) => handleUpdateExercise(index, 'sets', value)}
+                        keyboardType="numeric"
+                        maxLength={2}
+                        placeholder="3"
+                      />
+                    </View>
+                    
+                    <View style={styles.exerciseInputGroup}>
+                      <Text style={styles.exerciseInputLabel}>Reps</Text>
+                      <TextInput
+                        style={styles.exerciseInput}
+                        value={exercise.reps?.toString() || ''}
+                        onChangeText={(value) => handleUpdateExercise(index, 'reps', value)}
+                        keyboardType="numeric"
+                        maxLength={3}
+                        placeholder="10"
+                      />
+                    </View>
                   </View>
                 </View>
               ))}
@@ -500,6 +547,32 @@ const styles = StyleSheet.create({
   },
   removeButton: {
     padding: 4,
+  },
+  exerciseInputsRow: {
+    flexDirection: 'row',
+    marginTop: 16,
+    gap: 12,
+    paddingLeft: 52, // Align with exercise name
+  },
+  exerciseInputGroup: {
+    flex: 1,
+  },
+  exerciseInputLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: Colors.textSecondary,
+    marginBottom: 6,
+  },
+  exerciseInput: {
+    backgroundColor: Colors.background,
+    borderRadius: Layout.radiusSmall,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    padding: 10,
+    fontSize: 16,
+    fontWeight: '600',
+    color: Colors.text,
+    textAlign: 'center',
   },
 });
 

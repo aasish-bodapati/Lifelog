@@ -254,7 +254,7 @@ const QuickBodyStatLogScreen: React.FC<QuickBodyStatLogScreenProps> = ({
                 style={styles.textInput}
                 value={waist}
                 onChangeText={setWaist}
-                placeholder="82"
+                placeholder="82.5"
                 keyboardType="numeric"
               />
             </View>
@@ -267,7 +267,7 @@ const QuickBodyStatLogScreen: React.FC<QuickBodyStatLogScreenProps> = ({
                 style={styles.textInput}
                 value={chest}
                 onChangeText={setChest}
-                placeholder="102"
+                placeholder="102.5"
                 keyboardType="numeric"
               />
             </View>
@@ -277,7 +277,7 @@ const QuickBodyStatLogScreen: React.FC<QuickBodyStatLogScreenProps> = ({
                 style={styles.textInput}
                 value={arm}
                 onChangeText={setArm}
-                placeholder="35"
+                placeholder="35.5"
                 keyboardType="numeric"
               />
             </View>
@@ -290,7 +290,7 @@ const QuickBodyStatLogScreen: React.FC<QuickBodyStatLogScreenProps> = ({
                 style={styles.textInput}
                 value={thigh}
                 onChangeText={setThigh}
-                placeholder="58"
+                placeholder="58.5"
                 keyboardType="numeric"
               />
             </View>

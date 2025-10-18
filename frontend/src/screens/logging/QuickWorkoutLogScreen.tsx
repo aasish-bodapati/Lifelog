@@ -37,8 +37,10 @@ const QuickWorkoutLogScreen: React.FC<QuickWorkoutLogScreenProps> = ({
   // Form state
   const [selectedExercises, setSelectedExercises] = useState<Array<Exercise & { 
     sets?: number;
-    reps?: number;
-    weight?: number;
+    reps?: number; // Keep for backward compatibility with routine exercises
+    repsPerSet?: (number | string)[]; // Array of reps for each set (string during editing)
+    weight?: number; // Keep for backward compatibility
+    weightPerSet?: (number | string)[]; // Array of weights for each set (string during editing)
     duration?: number;
     distance?: number;
   }>>([]);
@@ -83,10 +85,11 @@ const QuickWorkoutLogScreen: React.FC<QuickWorkoutLogScreenProps> = ({
     
     switch (exercise.category) {
       case 'strength':
+        const defaultWeight = exercise.equipment === 'bodyweight' ? 0 : 20;
         defaultData = {
           sets: 3,
-          reps: 10,
-          weight: exercise.equipment === 'bodyweight' ? 0 : 20, // 0 for bodyweight, 20kg for weights
+          repsPerSet: [10, 10, 10], // Default 10 reps for each of the 3 sets
+          weightPerSet: exercise.equipment === 'bodyweight' ? [] : [defaultWeight, defaultWeight, defaultWeight],
         };
         break;
       case 'cardio':
@@ -176,8 +179,32 @@ const QuickWorkoutLogScreen: React.FC<QuickWorkoutLogScreenProps> = ({
         
         // Build detailed notes for this exercise
         let details = [];
-        if (exercise.sets && exercise.reps) details.push(`${exercise.sets} sets × ${exercise.reps} reps`);
-        if (exercise.weight && exercise.weight > 0) details.push(`${exercise.weight}kg`);
+        
+        // For strength exercises with repsPerSet array
+        if (exercise.sets && exercise.repsPerSet && exercise.repsPerSet.length > 0) {
+          // Parse string values to numbers and apply defaults for any undefined/empty values
+          const repsWithDefaults = exercise.repsPerSet.map(r => {
+            if (r === undefined || r === '') return 10;
+            return typeof r === 'string' ? (parseFloat(r) || 10) : r;
+          });
+          const repsDisplay = repsWithDefaults.join('-');
+          details.push(`${exercise.sets} sets: ${repsDisplay} reps`);
+          
+          // Add weight per set if available (for weighted exercises)
+          if (exercise.weightPerSet && exercise.weightPerSet.length > 0) {
+            const weightsWithDefaults = exercise.weightPerSet.map(w => {
+              if (w === undefined || w === '') return 20;
+              return typeof w === 'string' ? (parseFloat(w) || 20) : w;
+            });
+            const weightDisplay = weightsWithDefaults.join('-');
+            details.push(`${weightDisplay}kg`);
+          }
+        } else if (exercise.sets && exercise.reps) {
+          // Fallback for backward compatibility
+          details.push(`${exercise.sets} sets × ${exercise.reps} reps`);
+          if (exercise.weight && exercise.weight > 0) details.push(`${exercise.weight}kg`);
+        }
+        
         if (exercise.duration) details.push(`${exercise.duration} minutes`);
         if (exercise.distance && exercise.distance > 0) details.push(`${exercise.distance}km`);
         
@@ -311,52 +338,122 @@ const QuickWorkoutLogScreen: React.FC<QuickWorkoutLogScreenProps> = ({
                   {/* Dynamic Inputs - Outside of header */}
                   <View style={styles.exerciseInputs}>
                       {exercise.category === 'strength' && (
-                        <View style={styles.inputRow}>
-                          <View style={styles.inputField}>
-                            <Text style={styles.inputLabel}>Sets</Text>
-                            <TextInput
-                              style={styles.numberInput}
-                              value={exercise.sets?.toString() || ''}
-                              onChangeText={(text) => {
-                                const updatedExercises = [...selectedExercises];
-                                updatedExercises[index].sets = parseInt(text) || 0;
-                                setSelectedExercises(updatedExercises);
-                              }}
-                              keyboardType="numeric"
-                              selectTextOnFocus
-                            />
-                          </View>
-                          <View style={styles.inputField}>
-                            <Text style={styles.inputLabel}>Reps</Text>
-                            <TextInput
-                              style={styles.numberInput}
-                              value={exercise.reps?.toString() || ''}
-                              onChangeText={(text) => {
-                                const updatedExercises = [...selectedExercises];
-                                updatedExercises[index].reps = parseInt(text) || 0;
-                                setSelectedExercises(updatedExercises);
-                              }}
-                              keyboardType="numeric"
-                              selectTextOnFocus
-                            />
-                          </View>
-                          {exercise.equipment !== 'bodyweight' && (
+                        <>
+                          <View style={styles.inputRow}>
                             <View style={styles.inputField}>
-                              <Text style={styles.inputLabel}>Weight (kg)</Text>
+                              <Text style={styles.inputLabel}>Sets</Text>
                               <TextInput
                                 style={styles.numberInput}
-                                value={exercise.weight?.toString() || ''}
+                                value={exercise.sets?.toString() || ''}
                                 onChangeText={(text) => {
+                                  // If empty or invalid, set to 0 (which will hide reps inputs)
+                                  if (!text || text.trim() === '') {
+                                    const updatedExercises = [...selectedExercises];
+                                    updatedExercises[index].sets = 0;
+                                    updatedExercises[index].repsPerSet = [];
+                                    updatedExercises[index].weightPerSet = [];
+                                    setSelectedExercises(updatedExercises);
+                                    return;
+                                  }
+                                  
+                                  const newSets = parseInt(text);
+                                  
+                                  // If parsing failed, don't update
+                                  if (isNaN(newSets) || newSets < 0) {
+                                    return;
+                                  }
+                                  
                                   const updatedExercises = [...selectedExercises];
-                                  updatedExercises[index].weight = parseInt(text) || 0;
+                                  const oldSets = updatedExercises[index].sets || 0;
+                                  const oldRepsPerSet = updatedExercises[index].repsPerSet || [];
+                                  const oldWeightPerSet = updatedExercises[index].weightPerSet || [];
+                                  const isWeighted = updatedExercises[index].equipment !== 'bodyweight';
+                                  
+                                  // Adjust repsPerSet and weightPerSet arrays based on new sets count
+                                  if (newSets > oldSets) {
+                                    // Add new entries with default values
+                                    const newRepsPerSet = [...oldRepsPerSet];
+                                    const newWeightPerSet = [...oldWeightPerSet];
+                                    for (let i = oldSets; i < newSets; i++) {
+                                      newRepsPerSet.push(10);
+                                      if (isWeighted) {
+                                        newWeightPerSet.push(20);
+                                      }
+                                    }
+                                    updatedExercises[index].repsPerSet = newRepsPerSet;
+                                    updatedExercises[index].weightPerSet = newWeightPerSet;
+                                  } else if (newSets < oldSets) {
+                                    // Remove excess entries
+                                    updatedExercises[index].repsPerSet = oldRepsPerSet.slice(0, newSets);
+                                    updatedExercises[index].weightPerSet = oldWeightPerSet.slice(0, newSets);
+                                  }
+                                  
+                                  updatedExercises[index].sets = newSets;
                                   setSelectedExercises(updatedExercises);
                                 }}
                                 keyboardType="numeric"
                                 selectTextOnFocus
+                                placeholder="3"
                               />
                             </View>
+                          </View>
+                          
+                          {/* Reps and Weight inputs for each set */}
+                          {exercise.sets && exercise.sets > 0 && (
+                            <View style={styles.repsPerSetContainer}>
+                              <Text style={styles.repsPerSetLabel}>
+                                {exercise.equipment !== 'bodyweight' ? 'Reps & Weight per Set' : 'Reps per Set'}
+                              </Text>
+                              <View style={styles.repsPerSetRow}>
+                                {Array.from({ length: exercise.sets }).map((_, setIndex) => (
+                                  <View key={setIndex} style={styles.setInputCard}>
+                                    <Text style={styles.setLabel}>Set {setIndex + 1}</Text>
+                                    <View style={styles.setInputRow}>
+                                      <View style={styles.setInputField}>
+                                        <Text style={styles.setInputLabel}>Reps</Text>
+                                          <TextInput
+                                            style={styles.setInput}
+                                            value={exercise.repsPerSet?.[setIndex]?.toString() || ''}
+                                            onChangeText={(text) => {
+                                              const updatedExercises = [...selectedExercises];
+                                              const repsPerSet = updatedExercises[index].repsPerSet || [];
+                                              // Store as string to preserve partial inputs like "15."
+                                              repsPerSet[setIndex] = text || undefined;
+                                              updatedExercises[index].repsPerSet = repsPerSet;
+                                              setSelectedExercises(updatedExercises);
+                                            }}
+                                            keyboardType="numeric"
+                                            selectTextOnFocus
+                                            placeholder="10"
+                                          />
+                                      </View>
+                                      {exercise.equipment !== 'bodyweight' && (
+                                        <View style={styles.setInputField}>
+                                          <Text style={styles.setInputLabel}>kg</Text>
+                                          <TextInput
+                                            style={styles.setInput}
+                                            value={exercise.weightPerSet?.[setIndex]?.toString() || ''}
+                                            onChangeText={(text) => {
+                                              const updatedExercises = [...selectedExercises];
+                                              const weightPerSet = updatedExercises[index].weightPerSet || [];
+                                              // Store as string to preserve partial inputs like "15."
+                                              weightPerSet[setIndex] = text || undefined;
+                                              updatedExercises[index].weightPerSet = weightPerSet;
+                                              setSelectedExercises(updatedExercises);
+                                            }}
+                                            keyboardType="numeric"
+                                            selectTextOnFocus
+                                            placeholder="20"
+                                          />
+                                        </View>
+                                      )}
+                                    </View>
+                                  </View>
+                                ))}
+                              </View>
+                            </View>
                           )}
-                        </View>
+                        </>
                       )}
                       
                       {exercise.category === 'cardio' && (
@@ -777,6 +874,65 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.sm,
     fontSize: 14,
     fontWeight: '600',
+    textAlign: 'center',
+    color: Colors.text,
+  },
+  repsPerSetContainer: {
+    marginTop: 12,
+  },
+  repsPerSetLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: Colors.textSecondary,
+    marginBottom: 8,
+    textTransform: 'uppercase',
+  },
+  repsPerSetRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  setInputCard: {
+    minWidth: 120,
+    flex: 1,
+    backgroundColor: Colors.surface,
+    borderRadius: Layout.radiusSmall,
+    padding: 10,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  setLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: Colors.primary,
+    marginBottom: 8,
+    textAlign: 'center',
+    textTransform: 'uppercase',
+  },
+  setInputRow: {
+    flexDirection: 'row',
+    gap: 6,
+  },
+  setInputField: {
+    flex: 1,
+  },
+  setInputLabel: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: Colors.textSecondary,
+    marginBottom: 4,
+    textAlign: 'center',
+    textTransform: 'uppercase',
+  },
+  setInput: {
+    backgroundColor: Colors.background,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 8,
+    fontSize: 15,
+    fontWeight: '700',
     textAlign: 'center',
     color: Colors.text,
   },

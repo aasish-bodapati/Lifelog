@@ -1,8 +1,8 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Typography, Layout, Spacing } from '../../styles/designSystem';
-import { RoutineDay } from '../../services/workoutRoutineService';
+import { RoutineDay, RoutineExercise } from '../../services/workoutRoutineService';
 
 interface WorkoutLogCardProps {
   onPress: () => void;
@@ -10,6 +10,7 @@ interface WorkoutLogCardProps {
   isLoading?: boolean;
   todayRoutineDay?: RoutineDay | null;
   hasActiveRoutine?: boolean;
+  onExercisePress?: (exercise: RoutineExercise, index: number) => void;
 }
 
 const getDayName = (dayNumber: number): string => {
@@ -23,6 +24,7 @@ const WorkoutLogCard: React.FC<WorkoutLogCardProps> = ({
   isLoading = false,
   todayRoutineDay = null,
   hasActiveRoutine = false,
+  onExercisePress,
 }) => {
   const hasExercises = todayRoutineDay && todayRoutineDay.exercises && todayRoutineDay.exercises.length > 0;
 
@@ -45,24 +47,29 @@ const WorkoutLogCard: React.FC<WorkoutLogCardProps> = ({
           )}
 
           {hasExercises ? (
-            <View style={styles.exercisesContainer}>
-              {todayRoutineDay.exercises.slice(0, 3).map((exercise, index) => (
-                <View key={index} style={styles.exerciseRow}>
-                  <View style={styles.exerciseDot} />
+            <ScrollView 
+              style={styles.exercisesScrollContainer}
+              contentContainerStyle={styles.exercisesContentContainer}
+              showsVerticalScrollIndicator={true}
+              nestedScrollEnabled={true}
+            >
+              {todayRoutineDay.exercises.map((exercise, index) => (
+                <TouchableOpacity 
+                  key={index} 
+                  style={styles.exerciseButton}
+                  onPress={() => onExercisePress?.(exercise, index)}
+                  activeOpacity={0.7}
+                >
                   <Text style={styles.exerciseName} numberOfLines={1}>
                     {exercise.name}
                   </Text>
                   <Text style={styles.exerciseDetails}>
                     {exercise.sets} × {exercise.reps ? `${exercise.reps}` : `${exercise.duration}s`}
                   </Text>
-                </View>
+                  <Ionicons name="chevron-forward" size={18} color={Colors.textSecondary} />
+                </TouchableOpacity>
               ))}
-              {todayRoutineDay.exercises.length > 3 && (
-                <Text style={styles.moreExercises}>
-                  +{todayRoutineDay.exercises.length - 3} more
-                </Text>
-              )}
-            </View>
+            </ScrollView>
           ) : (
             <View style={styles.emptyState}>
               <Ionicons name="calendar-outline" size={24} color={Colors.textSecondary} />
@@ -145,44 +152,40 @@ const styles = StyleSheet.create({
     color: Colors.text,
     flex: 1,
   },
-  exercisesContainer: {
+  exercisesScrollContainer: {
+    height: 260, // Fixed height to show ~5 exercises
+  },
+  exercisesContentContainer: {
     gap: 8,
   },
-  exerciseRow: {
+  exerciseButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
     gap: 12,
-  },
-  exerciseDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: Colors.primary,
+    backgroundColor: Colors.background,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'transparent',
   },
   exerciseName: {
     flex: 1,
-    fontSize: 14,
+    fontSize: 15,
     color: Colors.text,
-    fontWeight: '500',
+    fontWeight: '600',
   },
   exerciseDetails: {
-    fontSize: 13,
+    fontSize: 14,
     color: Colors.textSecondary,
-    fontWeight: '500',
-  },
-  moreExercises: {
-    fontSize: 13,
-    color: Colors.primary,
     fontWeight: '600',
-    marginTop: 8,
-    marginLeft: 18,
   },
   emptyState: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     gap: 12,
-    paddingVertical: 16,
+    height: 260, // Match the exercises container height
     paddingHorizontal: 12,
     backgroundColor: Colors.background,
     borderRadius: 8,
