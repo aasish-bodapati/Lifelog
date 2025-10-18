@@ -403,8 +403,7 @@ const styles = StyleSheet.create({
     padding: 4,
   },
   title: {
-    fontSize: 18,
-    fontWeight: '600',
+    ...Typography.h4,
     color: Colors.text,
     flex: 1,
     textAlign: 'center',
@@ -435,8 +434,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   cancelButtonText: {
-    fontSize: 16,
-    fontWeight: '500',
+    ...Typography.button,
     color: Colors.textSecondary,
   },
   saveButton: {
@@ -451,30 +449,29 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.disabled,
   },
   saveButtonText: {
+    ...Typography.button,
     color: Colors.textLight,
-    fontSize: 16,
-    fontWeight: '600',
   },
   inputGroup: {
     marginBottom: Spacing.lg,
   },
   label: {
-    fontSize: 14,
+    ...Typography.label,
     fontWeight: '600',
     color: Colors.text,
-    marginBottom: 8,
+    marginBottom: Spacing.sm,
   },
   input: {
     backgroundColor: Colors.background,
     borderRadius: Layout.radiusMedium,
     borderWidth: 1,
     borderColor: Colors.border,
-    padding: 12,
-    fontSize: 16,
+    padding: Spacing.md,
+    ...Typography.body,
     color: Colors.text,
   },
   sectionTitle: {
-    fontSize: 16,
+    ...Typography.body,
     fontWeight: '600',
     color: Colors.text,
     marginBottom: Spacing.md,

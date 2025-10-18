@@ -13,6 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { repeatYesterdayService, YesterdayData } from '../services/repeatYesterdayService';
 import { useUser } from '../context/UserContext';
 import { useSync } from '../context/SyncContext';
+import { Colors, Typography, Layout, Spacing } from '../styles/designSystem';
 
 interface RepeatYesterdayModalProps {
   visible: boolean;
@@ -136,7 +137,7 @@ const RepeatYesterdayModal: React.FC<RepeatYesterdayModalProps> = ({
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
           <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-            <Ionicons name="close" size={24} color="#666" />
+            <Ionicons name="close" size={24} color={Colors.textSecondary} />
           </TouchableOpacity>
           <Text style={styles.title}>Repeat Yesterday</Text>
           <View style={styles.placeholder} />
@@ -145,12 +146,12 @@ const RepeatYesterdayModal: React.FC<RepeatYesterdayModalProps> = ({
         <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
           {isLoading && !yesterdayData ? (
             <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color="#007AFF" />
+              <ActivityIndicator size="large" color={Colors.primary} />
               <Text style={styles.loadingText}>Loading yesterday's data...</Text>
             </View>
           ) : !hasAnyData ? (
             <View style={styles.emptyContainer}>
-              <Ionicons name="calendar-outline" size={64} color="#CCCCCC" />
+              <Ionicons name="calendar-outline" size={64} color={Colors.disabled} />
               <Text style={styles.emptyTitle}>No Data Found</Text>
               <Text style={styles.emptyText}>
                 No workouts, meals, or body stats were logged yesterday.
@@ -163,19 +164,19 @@ const RepeatYesterdayModal: React.FC<RepeatYesterdayModalProps> = ({
                 <Text style={styles.summaryTitle}>Yesterday's Summary</Text>
                 <View style={styles.summaryRow}>
                   <View style={styles.summaryItem}>
-                    <Ionicons name="fitness" size={20} color="#E74C3C" />
+                    <Ionicons name="fitness" size={20} color={Colors.error} />
                     <Text style={styles.summaryText}>
                       {summary.workoutCount} workout{summary.workoutCount !== 1 ? 's' : ''}
                     </Text>
                   </View>
                   <View style={styles.summaryItem}>
-                    <Ionicons name="restaurant" size={20} color="#27AE60" />
+                    <Ionicons name="restaurant" size={20} color={Colors.success} />
                     <Text style={styles.summaryText}>
                       {summary.nutritionCount} meal{summary.nutritionCount !== 1 ? 's' : ''}
                     </Text>
                   </View>
                   <View style={styles.summaryItem}>
-                    <Ionicons name="body" size={20} color="#E67E22" />
+                    <Ionicons name="body" size={20} color={Colors.warning} />
                     <Text style={styles.summaryText}>
                       {summary.bodyStatCount} measurement{summary.bodyStatCount !== 1 ? 's' : ''}
                     </Text>
@@ -190,49 +191,49 @@ const RepeatYesterdayModal: React.FC<RepeatYesterdayModalProps> = ({
                   onPress={handleRepeatAll}
                   disabled={isLoading}
                 >
-                  <Ionicons name="refresh" size={24} color="#FFFFFF" />
+                  <Ionicons name="refresh" size={24} color={Colors.textLight} />
                   <Text style={styles.actionButtonText}>Repeat All</Text>
                 </TouchableOpacity>
 
                 <View style={styles.individualActions}>
                   {summary.hasWorkouts && (
-                    <TouchableOpacity
-                      style={[styles.actionButton, styles.workoutButton]}
-                      onPress={handleRepeatWorkouts}
-                      disabled={isLoading}
-                    >
-                      <Ionicons name="fitness" size={20} color="#FFFFFF" />
-                      <Text style={styles.actionButtonText}>
-                        Repeat Workouts ({summary.workoutCount})
-                      </Text>
-                    </TouchableOpacity>
-                  )}
+                  <TouchableOpacity
+                    style={[styles.actionButton, styles.workoutButton]}
+                    onPress={handleRepeatWorkouts}
+                    disabled={isLoading}
+                  >
+                    <Ionicons name="fitness" size={20} color={Colors.textLight} />
+                    <Text style={styles.actionButtonText}>
+                      Repeat Workouts ({summary.workoutCount})
+                    </Text>
+                  </TouchableOpacity>
+                )}
 
-                  {summary.hasNutrition && (
-                    <TouchableOpacity
-                      style={[styles.actionButton, styles.nutritionButton]}
-                      onPress={handleRepeatNutrition}
-                      disabled={isLoading}
-                    >
-                      <Ionicons name="restaurant" size={20} color="#FFFFFF" />
-                      <Text style={styles.actionButtonText}>
-                        Repeat Meals ({summary.nutritionCount})
-                      </Text>
-                    </TouchableOpacity>
-                  )}
+                {summary.hasNutrition && (
+                  <TouchableOpacity
+                    style={[styles.actionButton, styles.nutritionButton]}
+                    onPress={handleRepeatNutrition}
+                    disabled={isLoading}
+                  >
+                    <Ionicons name="restaurant" size={20} color={Colors.textLight} />
+                    <Text style={styles.actionButtonText}>
+                      Repeat Meals ({summary.nutritionCount})
+                    </Text>
+                  </TouchableOpacity>
+                )}
 
-                  {summary.hasBodyStats && (
-                    <TouchableOpacity
-                      style={[styles.actionButton, styles.bodyStatButton]}
-                      onPress={handleRepeatBodyStats}
-                      disabled={isLoading}
-                    >
-                      <Ionicons name="body" size={20} color="#FFFFFF" />
-                      <Text style={styles.actionButtonText}>
-                        Repeat Measurements ({summary.bodyStatCount})
-                      </Text>
-                    </TouchableOpacity>
-                  )}
+                {summary.hasBodyStats && (
+                  <TouchableOpacity
+                    style={[styles.actionButton, styles.bodyStatButton]}
+                    onPress={handleRepeatBodyStats}
+                    disabled={isLoading}
+                  >
+                    <Ionicons name="body" size={20} color={Colors.textLight} />
+                    <Text style={styles.actionButtonText}>
+                      Repeat Measurements ({summary.bodyStatCount})
+                    </Text>
+                  </TouchableOpacity>
+                )}
                 </View>
               </View>
 
@@ -303,32 +304,31 @@ const RepeatYesterdayModal: React.FC<RepeatYesterdayModalProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8F9FA',
+    backgroundColor: Colors.background,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: '#FFFFFF',
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.md,
+    backgroundColor: Colors.surface,
     borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
+    borderBottomColor: Colors.border,
   },
   closeButton: {
-    padding: 8,
+    padding: Spacing.sm,
   },
   title: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#333',
+    ...Typography.h4,
+    color: Colors.text,
   },
   placeholder: {
     width: 40,
   },
   content: {
     flex: 1,
-    padding: 16,
+    padding: Spacing.lg,
   },
   loadingContainer: {
     flex: 1,
@@ -337,9 +337,9 @@ const styles = StyleSheet.create({
     paddingVertical: 64,
   },
   loadingText: {
-    marginTop: 16,
-    fontSize: 16,
-    color: '#666',
+    marginTop: Spacing.lg,
+    ...Typography.body,
+    color: Colors.textSecondary,
   },
   emptyContainer: {
     flex: 1,
@@ -348,34 +348,29 @@ const styles = StyleSheet.create({
     paddingVertical: 64,
   },
   emptyTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#333',
-    marginTop: 16,
-    marginBottom: 8,
+    ...Typography.h3,
+    color: Colors.text,
+    marginTop: Spacing.lg,
+    marginBottom: Spacing.sm,
   },
   emptyText: {
-    fontSize: 16,
-    color: '#666',
+    ...Typography.body,
+    color: Colors.textSecondary,
     textAlign: 'center',
     lineHeight: 24,
   },
   summaryCard: {
-    backgroundColor: '#FFFFFF',
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    backgroundColor: Colors.surface,
+    padding: Spacing.lg,
+    borderRadius: Layout.radiusMedium,
+    marginBottom: Spacing.xl,
+    ...Layout.shadowMedium,
   },
   summaryTitle: {
-    fontSize: 16,
+    ...Typography.body,
     fontWeight: '600',
-    color: '#333',
-    marginBottom: 12,
+    color: Colors.text,
+    marginBottom: Spacing.md,
   },
   summaryRow: {
     flexDirection: 'row',
@@ -385,82 +380,77 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   summaryText: {
-    marginTop: 4,
-    fontSize: 12,
-    color: '#666',
+    marginTop: Spacing.xs,
+    ...Typography.caption,
+    color: Colors.textSecondary,
   },
   actionsContainer: {
-    marginBottom: 20,
+    marginBottom: Spacing.xl,
   },
   actionButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 16,
-    paddingHorizontal: 24,
-    borderRadius: 12,
-    marginBottom: 12,
+    paddingVertical: Spacing.lg,
+    paddingHorizontal: Spacing.xxl,
+    borderRadius: Layout.radiusMedium,
+    marginBottom: Spacing.md,
   },
   repeatAllButton: {
     backgroundColor: '#8E44AD',
   },
   individualActions: {
-    gap: 8,
+    gap: Spacing.sm,
   },
   workoutButton: {
-    backgroundColor: '#E74C3C',
+    backgroundColor: Colors.error,
   },
   nutritionButton: {
-    backgroundColor: '#27AE60',
+    backgroundColor: Colors.success,
   },
   bodyStatButton: {
-    backgroundColor: '#E67E22',
+    backgroundColor: Colors.warning,
   },
   actionButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
-    marginLeft: 8,
+    color: Colors.textLight,
+    ...Typography.button,
+    marginLeft: Spacing.sm,
   },
   detailsContainer: {
-    backgroundColor: '#FFFFFF',
-    padding: 16,
-    borderRadius: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    backgroundColor: Colors.surface,
+    padding: Spacing.lg,
+    borderRadius: Layout.radiusMedium,
+    ...Layout.shadowMedium,
   },
   detailsTitle: {
-    fontSize: 16,
+    ...Typography.body,
     fontWeight: '600',
-    color: '#333',
-    marginBottom: 16,
+    color: Colors.text,
+    marginBottom: Spacing.lg,
   },
   detailsSection: {
-    marginBottom: 16,
+    marginBottom: Spacing.lg,
   },
   detailsSectionTitle: {
-    fontSize: 14,
+    ...Typography.bodySmall,
     fontWeight: '600',
-    color: '#666',
-    marginBottom: 8,
+    color: Colors.textSecondary,
+    marginBottom: Spacing.sm,
     textTransform: 'uppercase',
   },
   detailsItem: {
-    paddingVertical: 8,
+    paddingVertical: Spacing.sm,
     borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0',
+    borderBottomColor: Colors.borderLight,
   },
   detailsItemText: {
-    fontSize: 14,
-    color: '#333',
+    ...Typography.bodySmall,
+    color: Colors.text,
     fontWeight: '500',
   },
   detailsItemSubtext: {
-    fontSize: 12,
-    color: '#666',
+    ...Typography.caption,
+    color: Colors.textSecondary,
     marginTop: 2,
   },
 });
