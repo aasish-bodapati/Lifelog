@@ -108,6 +108,18 @@ export const Typography = {
     fontWeight: '500' as const,
     lineHeight: 16,
   },
+  
+  // Button text
+  button: {
+    fontSize: 16,
+    fontWeight: '600' as const,
+    lineHeight: 22,
+  },
+  buttonSmall: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+    lineHeight: 20,
+  },
 } as const;
 
 export const Layout = {
@@ -314,4 +326,98 @@ export const CommonStyles = {
     paddingVertical: Spacing.xxxl,
     paddingHorizontal: Spacing.xxl,
   },
+  
+  // Card variants
+  cardCompact: {
+    backgroundColor: Colors.surface,
+    borderRadius: Layout.radiusMedium,
+    padding: Spacing.md,
+    marginBottom: Layout.cardSpacing,
+    ...Layout.shadowSmall,
+  },
+  
+  cardElevated: {
+    backgroundColor: Colors.surface,
+    borderRadius: Layout.radiusLarge,
+    padding: Layout.cardPadding,
+    marginBottom: Layout.cardSpacing,
+    ...Layout.shadowLarge,
+  },
 } as const;
+
+// Progress/Status Colors
+export const ProgressColors = {
+  veryLow: '#FF6B6B',    // Red: < 30%
+  low: '#FF6B6B',        // Red: < 50%
+  medium: '#FFE66D',     // Yellow: 50-80%
+  good: '#4ECDC4',       // Teal: 80-100%
+  complete: '#45B7D1',   // Blue: 100-120%
+  over: '#FF9800',       // Orange: > 120%
+} as const;
+
+// Utility Functions
+
+/**
+ * Get color based on progress percentage (0-1 scale)
+ * @param progress - Progress value between 0 and 1+ (e.g., 0.5 for 50%, 1.2 for 120%)
+ * @returns Hex color string
+ */
+export const getProgressColor = (progress: number): string => {
+  if (progress < 0.5) return ProgressColors.low;
+  if (progress < 0.8) return ProgressColors.medium;
+  if (progress < 1) return ProgressColors.good;
+  if (progress < 1.2) return ProgressColors.complete;
+  return ProgressColors.over;
+};
+
+/**
+ * Get color based on macro/calorie progress with same logic
+ * Alias for getProgressColor for backward compatibility
+ */
+export const getMacroProgressColor = getProgressColor;
+
+/**
+ * Get color based on hydration progress
+ * Uses slightly different thresholds for water intake
+ */
+export const getHydrationProgressColor = (progress: number): string => {
+  if (progress < 0.3) return ProgressColors.veryLow;
+  if (progress < 0.6) return ProgressColors.low;
+  if (progress < 0.8) return ProgressColors.medium;
+  if (progress < 1) return ProgressColors.good;
+  if (progress < 1.2) return ProgressColors.complete;
+  return ProgressColors.over;
+};
+
+/**
+ * Get status message based on progress
+ * @param progress - Progress value between 0 and 1+
+ * @param type - Type of progress (general, hydration, macro)
+ * @returns Motivational status message
+ */
+export const getProgressMessage = (
+  progress: number, 
+  type: 'general' | 'hydration' | 'macro' = 'general'
+): string => {
+  if (type === 'hydration') {
+    if (progress < 0.3) return 'Stay hydrated! 💧';
+    if (progress < 0.6) return 'Keep drinking! 💪';
+    if (progress < 0.8) return 'Almost there! 🌊';
+    if (progress < 1) return 'Great job! 🎉';
+    return 'Hydration master! 🏆';
+  }
+  
+  if (type === 'macro') {
+    if (progress < 0.5) return 'Keep going! 💪';
+    if (progress < 0.8) return 'Good progress! 👍';
+    if (progress < 1) return 'Almost there! 🎯';
+    if (progress < 1.2) return 'Target reached! 🎉';
+    return 'Excellent! 🏆';
+  }
+  
+  // General progress
+  if (progress < 0.5) return 'Getting started! 🚀';
+  if (progress < 0.8) return 'Making progress! 💪';
+  if (progress < 1) return 'Almost done! 🎯';
+  return 'Completed! 🎉';
+};
