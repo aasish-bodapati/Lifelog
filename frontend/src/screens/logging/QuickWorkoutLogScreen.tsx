@@ -19,7 +19,7 @@ import { toastService } from '../../services/toastService';
 import ExerciseSearchDropdown from '../../components/ExerciseSearchDropdown';
 import { Exercise } from '../../services/exerciseLibraryService';
 import { getWorkoutIcon, getWorkoutColor } from '../../utils';
-import { Colors, Layout, Spacing } from '../../styles/designSystem';
+import { Colors, Layout, Spacing, Typography } from '../../styles/designSystem';
 
 interface QuickWorkoutLogScreenProps {
   onClose: () => void;

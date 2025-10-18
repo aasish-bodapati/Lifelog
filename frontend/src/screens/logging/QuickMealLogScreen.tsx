@@ -18,7 +18,7 @@ import { useSync } from '../../context/SyncContext';
 import { toastService } from '../../services/toastService';
 import FoodSearchDropdown from '../../components/FoodSearchDropdown';
 import { Food } from '../../services/foodLibraryService';
-import { Colors, Layout, Spacing } from '../../styles/designSystem';
+import { Colors, Layout, Spacing, Typography } from '../../styles/designSystem';
 
 interface QuickMealLogScreenProps {
   onClose: () => void;
