@@ -7,17 +7,15 @@ import { weatherService, WeatherData } from '../../services/weatherService';
 
 interface WelcomeCardProps {
   userName: string;
-  streak?: number;
 }
 
-const WelcomeCard: React.FC<WelcomeCardProps> = ({ userName, streak = 0 }) => {
+const WelcomeCard: React.FC<WelcomeCardProps> = ({ userName }) => {
   const [weather, setWeather] = useState<WeatherData | null>(null);
   const [isLoadingWeather, setIsLoadingWeather] = useState(true);
 
   // Get current date info
   const now = new Date();
-  const dayOfWeek = now.toLocaleDateString('en-US', { weekday: 'long' });
-  const date = now.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  const date = now.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
   
   // Get time-based greeting
   const getGreeting = () => {
@@ -87,19 +85,17 @@ const WelcomeCard: React.FC<WelcomeCardProps> = ({ userName, streak = 0 }) => {
         ) : null}
       </View>
 
-      {/* Bottom Row: Date and Streak */}
+      {/* Bottom Row: Date and Location */}
       <View style={styles.bottomRow}>
         <View style={styles.dateInfo}>
           <Ionicons name="calendar-outline" size={16} color={Colors.textSecondary} />
-          <Text style={styles.dateText}>
-            {dayOfWeek}, {date}
-          </Text>
+          <Text style={styles.dateText}>{date}</Text>
         </View>
 
-        {streak > 0 && (
-          <View style={styles.streakBadge}>
-            <Ionicons name="flame" size={16} color="#FF6B35" />
-            <Text style={styles.streakText}>{streak} day streak</Text>
+        {weather && (
+          <View style={styles.locationInfo}>
+            <Ionicons name="location-outline" size={16} color={Colors.textSecondary} />
+            <Text style={styles.locationText}>{weather.city}</Text>
           </View>
         )}
       </View>
@@ -177,19 +173,15 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
     fontWeight: '500',
   },
-  streakBadge: {
+  locationInfo: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFF5F0',
-    paddingVertical: 6,
-    paddingHorizontal: 10,
-    borderRadius: 12,
     gap: 4,
   },
-  streakText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#FF6B35',
+  locationText: {
+    fontSize: 13,
+    color: Colors.textSecondary,
+    fontWeight: '500',
   },
 });
 

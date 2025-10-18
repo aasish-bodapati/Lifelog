@@ -29,17 +29,18 @@ const FoodSearchDropdown: React.FC<FoodSearchDropdownProps> = ({
   const [searchResults, setSearchResults] = useState<Food[]>([]);
 
   useEffect(() => {
-    // Debounce search - wait 500ms after user stops typing
+    // Debounce search - wait 300ms after user stops typing
     const timer = setTimeout(() => {
       if (searchQuery.trim()) {
-        const results = foodLibraryService.searchFoods(searchQuery);
+        const results = foodLibraryService.searchFoods(searchQuery, 3);
+        console.log('Food search results for "' + searchQuery + '":', results.length, 'foods');
         setSearchResults(results);
         setIsOpen(true); // Always open when there's a search query
       } else {
         setSearchResults([]);
         setIsOpen(false);
       }
-    }, 500);
+    }, 300); // Reduced from 500ms
 
     return () => clearTimeout(timer);
   }, [searchQuery]);
@@ -82,9 +83,9 @@ const FoodSearchDropdown: React.FC<FoodSearchDropdownProps> = ({
   };
 
   return (
-    <View style={[styles.container, style]}>
+    <View style={[styles.container, style]} pointerEvents="box-none">
       {/* Search Input */}
-      <View style={styles.inputContainer}>
+      <View style={styles.inputContainer} pointerEvents="auto">
         <Ionicons name="search" size={18} color="#999" style={styles.searchIcon} />
         <TextInput
           style={styles.textInput}
@@ -103,12 +104,19 @@ const FoodSearchDropdown: React.FC<FoodSearchDropdownProps> = ({
 
       {/* Dropdown Results */}
       {isOpen && (
-        <View style={styles.dropdownContainer}>
+        <View style={styles.dropdownContainer} pointerEvents="auto">
           {searchResults.length > 0 ? (
             <ScrollView
               style={styles.foodsList}
+              contentContainerStyle={styles.foodsListContent}
+              showsVerticalScrollIndicator={true}
               nestedScrollEnabled={true}
               keyboardShouldPersistTaps="handled"
+              scrollEnabled={true}
+              bounces={true}
+              alwaysBounceVertical={false}
+              overScrollMode="never"
+              removeClippedSubviews={false}
             >
               {searchResults.map((food) => (
               <TouchableOpacity
@@ -155,6 +163,7 @@ const FoodSearchDropdown: React.FC<FoodSearchDropdownProps> = ({
 const styles = StyleSheet.create({
   container: {
     position: 'relative',
+    zIndex: 1000, // Ensure dropdown container is on top
   },
   inputContainer: {
     flexDirection: 'row',
@@ -186,17 +195,20 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#E0E0E0',
     borderRadius: 8,
+    zIndex: 1000,
+    elevation: 10, // For Android
     marginTop: Spacing.xs,
-    maxHeight: 250,
+    height: 260, // Fixed height to show 3 items fully
+    overflow: 'hidden', // Ensure content doesn't overflow
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
     shadowRadius: 8,
-    elevation: 5,
-    zIndex: 1000,
   },
   foodsList: {
-    maxHeight: 180,
+    flex: 1, // Take full height of parent
+  },
+  foodsListContent: {
     paddingVertical: Spacing.sm,
   },
   foodItem: {

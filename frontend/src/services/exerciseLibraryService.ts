@@ -67,6 +67,26 @@ class ExerciseLibraryService {
       description: 'Isometric core exercise',
       instructions: ['Start in push-up position', 'Hold body straight', 'Engage core throughout']
     },
+    {
+      id: 'pike-push-ups',
+      name: 'Pike Push-ups',
+      category: 'strength',
+      muscleGroups: ['shoulders', 'triceps'],
+      equipment: 'bodyweight',
+      difficulty: 'intermediate',
+      description: 'Bodyweight shoulder exercise',
+      instructions: ['Start in downward dog position', 'Bend elbows to lower head toward ground', 'Push back up']
+    },
+    {
+      id: 'handstand-push-ups',
+      name: 'Handstand Push-ups',
+      category: 'strength',
+      muscleGroups: ['shoulders', 'triceps', 'core'],
+      equipment: 'bodyweight',
+      difficulty: 'advanced',
+      description: 'Advanced bodyweight shoulder press',
+      instructions: ['Kick up into handstand against wall', 'Lower head to ground', 'Press back up']
+    },
 
     // Strength Training - Dumbbells
     {
@@ -99,6 +119,36 @@ class ExerciseLibraryService {
       description: 'Weighted squat variation',
       instructions: ['Hold dumbbells at sides', 'Perform squat motion', 'Keep chest up']
     },
+    {
+      id: 'dumbbell-shoulder-press',
+      name: 'Dumbbell Shoulder Press',
+      category: 'strength',
+      muscleGroups: ['shoulders', 'triceps'],
+      equipment: 'dumbbells',
+      difficulty: 'beginner',
+      description: 'Overhead pressing exercise for shoulders',
+      instructions: ['Hold dumbbells at shoulder height', 'Press weights overhead', 'Lower with control']
+    },
+    {
+      id: 'lateral-raises',
+      name: 'Lateral Raises',
+      category: 'strength',
+      muscleGroups: ['shoulders'],
+      equipment: 'dumbbells',
+      difficulty: 'beginner',
+      description: 'Isolation exercise for side delts',
+      instructions: ['Hold dumbbells at sides', 'Raise arms to shoulder height', 'Lower slowly']
+    },
+    {
+      id: 'front-raises',
+      name: 'Front Raises',
+      category: 'strength',
+      muscleGroups: ['shoulders'],
+      equipment: 'dumbbells',
+      difficulty: 'beginner',
+      description: 'Isolation exercise for front delts',
+      instructions: ['Hold dumbbells in front of thighs', 'Raise arms to shoulder height', 'Lower with control']
+    },
 
     // Strength Training - Barbell
     {
@@ -130,6 +180,16 @@ class ExerciseLibraryService {
       difficulty: 'advanced',
       description: 'Full body compound movement',
       instructions: ['Stand with feet hip-width apart', 'Bend at hips and knees', 'Lift bar by extending hips and knees']
+    },
+    {
+      id: 'barbell-shoulder-press',
+      name: 'Barbell Shoulder Press',
+      category: 'strength',
+      muscleGroups: ['shoulders', 'triceps'],
+      equipment: 'barbell',
+      difficulty: 'intermediate',
+      description: 'Overhead barbell press',
+      instructions: ['Start with bar at shoulder height', 'Press bar overhead', 'Lower to shoulders']
     },
 
     // Cardio
@@ -271,6 +331,7 @@ class ExerciseLibraryService {
 
     const searchTerm = query.toLowerCase().trim();
     
+    // Filter and sort results - prioritize name matches
     return this.exercises
       .filter(exercise => 
         exercise.name.toLowerCase().includes(searchTerm) ||
@@ -278,6 +339,28 @@ class ExerciseLibraryService {
         exercise.muscleGroups.some(muscle => muscle.toLowerCase().includes(searchTerm)) ||
         exercise.equipment.toLowerCase().includes(searchTerm)
       )
+      .sort((a, b) => {
+        const aName = a.name.toLowerCase();
+        const bName = b.name.toLowerCase();
+        
+        // Prioritize exercises with search term in name
+        const aInName = aName.includes(searchTerm);
+        const bInName = bName.includes(searchTerm);
+        
+        if (aInName && !bInName) return -1;
+        if (!aInName && bInName) return 1;
+        
+        // If both have it in name, prioritize those starting with the search term
+        if (aInName && bInName) {
+          const aStarts = aName.startsWith(searchTerm);
+          const bStarts = bName.startsWith(searchTerm);
+          if (aStarts && !bStarts) return -1;
+          if (!aStarts && bStarts) return 1;
+        }
+        
+        // Otherwise maintain original order
+        return 0;
+      })
       .slice(0, limit);
   }
 

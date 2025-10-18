@@ -219,7 +219,6 @@ const QuickMealLogScreen: React.FC<QuickMealLogScreenProps> = ({
             contentContainerStyle={styles.scrollContent}
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
-            nestedScrollEnabled={true}
           >
         {/* Recent Foods */}
         {recentFoods.length > 0 && (
@@ -267,10 +266,10 @@ const QuickMealLogScreen: React.FC<QuickMealLogScreenProps> = ({
         </View>
 
         {/* Food Details */}
-        <View style={styles.section}>
+        <View style={styles.section} pointerEvents="box-none">
           <Text style={styles.sectionTitle}>Food Details</Text>
           
-          <View style={styles.inputGroup}>
+          <View style={styles.inputGroup} pointerEvents="box-none">
             <Text style={styles.inputLabel}>Search and select a food *</Text>
             <FoodSearchDropdown
               value=""
@@ -473,6 +472,7 @@ const styles = StyleSheet.create({
   },
   section: {
     marginBottom: Spacing.xxl,
+    zIndex: 1, // Lower z-index so dropdown appears above
   },
   sectionTitle: {
     fontSize: 16,
@@ -559,6 +559,7 @@ const styles = StyleSheet.create({
   },
   selectedFoodsContainer: {
     marginTop: Spacing.xl,
+    zIndex: 1, // Lower z-index so dropdown appears above
   },
   selectedFoodsTitle: {
     fontSize: 16,

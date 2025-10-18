@@ -110,7 +110,7 @@ class ApiService {
   }
 
   async getWorkouts(userId: number, limit: number = 50) {
-    const response = await api.get(`/fitness?user_id=${userId}&limit=${limit}`);
+    const response = await api.get(`/fitness/?user_id=${userId}&limit=${limit}`); // Added trailing slash
     return response.data;
   }
 

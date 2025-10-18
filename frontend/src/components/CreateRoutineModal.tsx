@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -7,10 +7,12 @@ import {
   ScrollView,
   TouchableOpacity,
   TextInput,
-  Alert,
+  Dimensions,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors, Typography, Layout } from '../styles/designSystem';
+import { Colors, Typography, Layout, Spacing } from '../styles/designSystem';
 import { hapticService } from '../services/hapticService';
 import { toastService } from '../services/toastService';
 import {
@@ -28,6 +30,11 @@ interface CreateRoutineModalProps {
   onSave: () => void;
   editingRoutine?: WorkoutRoutine | null;
 }
+
+const getDayName = (dayNumber: number): string => {
+  const dayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+  return dayNames[dayNumber - 1] || `Day ${dayNumber}`;
+};
 
 const CreateRoutineModal: React.FC<CreateRoutineModalProps> = ({
   visible,
@@ -51,23 +58,40 @@ const CreateRoutineModal: React.FC<CreateRoutineModalProps> = ({
       setDays([]);
     }
     setCurrentDayNumber(1);
+    setDayExercises([]);
   };
+
+  // Reset form when modal closes
+  useEffect(() => {
+    if (!visible) {
+      // Reset form after a short delay to avoid visual glitches
+      setTimeout(() => {
+        resetForm();
+      }, 300);
+    }
+  }, [visible]);
 
   // Get current day data
   const getCurrentDay = () => {
     return days.find(d => d.dayNumber === currentDayNumber);
   };
 
-  // Navigate days
+  // Navigate days (circular, max 7 days)
   const handlePreviousDay = () => {
-    if (currentDayNumber > 1) {
+    if (currentDayNumber === 1) {
+      setCurrentDayNumber(7);
+    } else {
       setCurrentDayNumber(currentDayNumber - 1);
-      hapticService.light();
     }
+    hapticService.light();
   };
 
   const handleNextDay = () => {
-    setCurrentDayNumber(currentDayNumber + 1);
+    if (currentDayNumber === 7) {
+      setCurrentDayNumber(1);
+    } else {
+      setCurrentDayNumber(currentDayNumber + 1);
+    }
     hapticService.light();
   };
 
@@ -82,13 +106,13 @@ const CreateRoutineModal: React.FC<CreateRoutineModalProps> = ({
     }
   }, [currentDayNumber]);
 
-  // Auto-save current day whenever exercises change
+  // Auto-save current day whenever exercises change (NOT when day changes)
   React.useEffect(() => {
     if (dayExercises.length === 0) return;
 
     const newDay: RoutineDay = {
       dayNumber: currentDayNumber,
-      title: `Day ${currentDayNumber}`,
+      title: getDayName(currentDayNumber),
       focus: 'Workout',
       warmup: '',
       exercises: dayExercises,
@@ -105,22 +129,7 @@ const CreateRoutineModal: React.FC<CreateRoutineModalProps> = ({
       // Add new day
       setDays([...days, newDay]);
     }
-  }, [dayExercises, currentDayNumber]);
-
-  const handleDeleteCurrentDay = () => {
-    Alert.alert('Delete Day', 'Are you sure you want to delete this workout day?', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Delete',
-        style: 'destructive',
-        onPress: () => {
-          setDays(days.filter(d => d.dayNumber !== currentDayNumber));
-          hapticService.medium();
-          toastService.success('Success', 'Day deleted');
-        },
-      },
-    ]);
-  };
+  }, [dayExercises]); // Removed currentDayNumber from dependencies
 
   const handleExerciseSelect = (exercise: Exercise) => {
     const newExercise: RoutineExercise = {
@@ -180,9 +189,11 @@ const CreateRoutineModal: React.FC<CreateRoutineModalProps> = ({
 
     return (
       <ScrollView 
-        style={styles.stepContainer} 
+        style={styles.stepContainer}
+        contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
+        scrollEnabled={true}
       >
         {/* Routine Name Input */}
         <View style={styles.inputGroup}>
@@ -200,24 +211,17 @@ const CreateRoutineModal: React.FC<CreateRoutineModalProps> = ({
         <View style={styles.dayNavigationContainer}>
           <TouchableOpacity 
             onPress={handlePreviousDay}
-            style={[styles.dayNavButton, currentDayNumber === 1 && styles.dayNavButtonDisabled]}
-            disabled={currentDayNumber === 1}
+            style={styles.dayNavButton}
           >
             <Ionicons 
               name="chevron-back" 
               size={24} 
-              color={currentDayNumber === 1 ? Colors.border : Colors.primary} 
+              color={Colors.primary} 
             />
           </TouchableOpacity>
           
           <View style={styles.dayDisplay}>
-            <Text style={styles.dayDisplayText}>Day {currentDayNumber}</Text>
-            {isDaySaved && (
-              <View style={styles.savedIndicator}>
-                <Ionicons name="checkmark-circle" size={16} color={Colors.success} />
-                <Text style={styles.savedText}>Saved</Text>
-              </View>
-            )}
+            <Text style={styles.dayDisplayText}>{getDayName(currentDayNumber)}</Text>
           </View>
           
           <TouchableOpacity 
@@ -230,12 +234,8 @@ const CreateRoutineModal: React.FC<CreateRoutineModalProps> = ({
 
         {/* Day Form */}
         <>
-          <Text style={styles.stepTitle}>
-            {isDaySaved ? 'Edit' : 'Add'} Exercises for Day {currentDayNumber}
-          </Text>
-
           {/* Exercise Search */}
-          <View style={styles.searchSection}>
+          <View style={styles.searchSection} pointerEvents="box-none">
             <Text style={styles.sectionTitle}>Add Exercise</Text>
             <ExerciseSearchDropdown
               value=""
@@ -273,184 +273,164 @@ const CreateRoutineModal: React.FC<CreateRoutineModalProps> = ({
             </View>
           )}
 
-          {/* Day Actions */}
-          {isDaySaved && dayExercises.length > 0 && (
-            <TouchableOpacity style={styles.deleteDayButton} onPress={handleDeleteCurrentDay}>
-              <Ionicons name="trash-outline" size={20} color={Colors.error} />
-              <Text style={styles.deleteDayButtonText}>Delete All Exercises</Text>
-            </TouchableOpacity>
-          )}
-
-          {/* Save Routine Button */}
-          {days.length > 0 && (
-            <TouchableOpacity style={styles.saveRoutineButton} onPress={handleSaveRoutine}>
-              <Ionicons name="checkmark-circle" size={24} color={Colors.textLight} />
-              <Text style={styles.saveRoutineButtonText}>
-                Save Routine ({days.length} day{days.length > 1 ? 's' : ''})
-              </Text>
-            </TouchableOpacity>
-          )}
         </>
       </ScrollView>
     );
   };
 
   return (
-    <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
-      <View style={styles.container}>
-        {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-            <Ionicons name="close" size={28} color={Colors.primary} />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>
-            {editingRoutine ? 'Edit Routine' : 'Create Routine'}
-          </Text>
-          <View style={{ width: 28 }} />
-        </View>
+    <Modal visible={visible} animationType="fade" transparent onRequestClose={onClose}>
+      <KeyboardAvoidingView 
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.keyboardAvoidingView}
+      >
+        <View style={styles.overlay}>
+          <View style={styles.popupContainer}>
+            {/* Header */}
+            <View style={styles.header}>
+              <Text style={styles.title}>
+                {editingRoutine ? 'Edit Routine' : 'Create Routine'}
+              </Text>
+              <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+                <Ionicons name="close" size={24} color="#666" />
+              </TouchableOpacity>
+            </View>
 
-        {/* Content */}
-        {renderContent()}
-      </View>
+            {/* Content */}
+            {renderContent()}
+
+            {/* Footer */}
+            <View style={styles.footer}>
+              <TouchableOpacity style={styles.cancelButton} onPress={onClose}>
+                <Text style={styles.cancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={[styles.saveButton, days.length === 0 && styles.saveButtonDisabled]} 
+                onPress={handleSaveRoutine}
+                disabled={days.length === 0}
+              >
+                <Text style={styles.saveButtonText}>
+                  Save Routine {days.length > 0 && `(${days.length} day${days.length > 1 ? 's' : ''})`}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 };
 
+const { height: screenHeight } = Dimensions.get('window');
+
 const styles = StyleSheet.create({
-  container: {
+  keyboardAvoidingView: {
     flex: 1,
-    backgroundColor: Colors.background,
+  },
+  overlay: {
+    flex: 1,
+    backgroundColor: Colors.overlay,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: Spacing.xl,
+  },
+  popupContainer: {
+    width: '100%',
+    maxWidth: 450,
+    maxHeight: screenHeight * 0.9,
+    minHeight: screenHeight * 0.6,
+    backgroundColor: Colors.surface,
+    borderRadius: Layout.radiusLarge,
+    ...Layout.shadowLarge,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
+    paddingHorizontal: Spacing.xl,
+    paddingVertical: Spacing.xl,
     borderBottomWidth: 1,
     borderBottomColor: Colors.border,
-    backgroundColor: Colors.surface,
   },
   closeButton: {
     padding: 4,
   },
-  headerTitle: {
-    ...Typography.h3,
-    color: Colors.textPrimary,
+  title: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: Colors.text,
+    flex: 1,
+    textAlign: 'center',
   },
   stepContainer: {
     flex: 1,
-    padding: 20,
+    paddingHorizontal: Spacing.xl,
+    paddingTop: Spacing.lg,
   },
-  stepTitle: {
-    ...Typography.h2,
-    color: Colors.textPrimary,
-    marginBottom: 20,
+  scrollContent: {
+    paddingBottom: 400, // Extra padding to allow comfortable scrolling
   },
-  inputGroup: {
-    marginBottom: 20,
+  footer: {
+    flexDirection: 'row',
+    paddingHorizontal: Spacing.xl,
+    paddingVertical: Spacing.xl,
+    borderTopWidth: 1,
+    borderTopColor: Colors.border,
+    gap: Spacing.md,
   },
-  label: {
-    ...Typography.label,
-    color: Colors.textPrimary,
-    marginBottom: 8,
+  cancelButton: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: Layout.radiusSmall,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cancelButtonText: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: Colors.textSecondary,
+  },
+  saveButton: {
+    flex: 2,
+    backgroundColor: Colors.primary,
+    paddingVertical: 14,
+    borderRadius: Layout.radiusSmall,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  saveButtonDisabled: {
+    backgroundColor: Colors.disabled,
+  },
+  saveButtonText: {
+    color: Colors.textLight,
+    fontSize: 16,
     fontWeight: '600',
   },
+  inputGroup: {
+    marginBottom: Spacing.lg,
+  },
+  label: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: Colors.text,
+    marginBottom: 8,
+  },
   input: {
-    backgroundColor: Colors.surface,
+    backgroundColor: Colors.background,
     borderRadius: Layout.radiusMedium,
     borderWidth: 1,
     borderColor: Colors.border,
     padding: 12,
-    ...Typography.body,
-    color: Colors.textPrimary,
+    fontSize: 16,
+    color: Colors.text,
   },
-  textArea: {
-    height: 80,
-    textAlignVertical: 'top',
-  },
-  goalTypeContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  goalTypeButton: {
-    flex: 1,
-    minWidth: '45%',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: Layout.radiusMedium,
-    backgroundColor: Colors.surface,
-    borderWidth: 2,
-    borderColor: Colors.border,
-    alignItems: 'center',
-  },
-  goalTypeButtonActive: {
-    backgroundColor: Colors.primary,
-    borderColor: Colors.primary,
-  },
-  goalTypeText: {
-    ...Typography.label,
-    color: Colors.textPrimary,
-  },
-  goalTypeTextActive: {
-    color: Colors.textLight,
-    fontWeight: '700',
-  },
-  daysContainer: {
-    flexDirection: 'row',
-    gap: 8,
-    flexWrap: 'wrap',
-  },
-  dayButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: Colors.surface,
-    borderWidth: 2,
-    borderColor: Colors.border,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  dayButtonActive: {
-    backgroundColor: Colors.primary,
-    borderColor: Colors.primary,
-  },
-  dayButtonText: {
-    ...Typography.label,
-    color: Colors.textPrimary,
+  sectionTitle: {
+    fontSize: 16,
     fontWeight: '600',
-  },
-  dayButtonTextActive: {
-    color: Colors.textLight,
-  },
-  addItemRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  addButton: {
-    padding: 4,
-  },
-  chipContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginTop: 12,
-  },
-  chip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: Colors.primaryLight,
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 16,
-  },
-  chipText: {
-    ...Typography.bodySmall,
-    color: Colors.primary,
-    fontWeight: '500',
+    color: Colors.text,
+    marginBottom: Spacing.md,
   },
   // Day Navigation Styles
   dayNavigationContainer: {
@@ -469,9 +449,6 @@ const styles = StyleSheet.create({
     borderRadius: Layout.radiusMedium,
     backgroundColor: Colors.background,
   },
-  dayNavButtonDisabled: {
-    opacity: 0.3,
-  },
   dayDisplay: {
     alignItems: 'center',
     flex: 1,
@@ -482,44 +459,14 @@ const styles = StyleSheet.create({
     color: Colors.primary,
     fontWeight: '700',
   },
-  savedIndicator: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  savedText: {
-    ...Typography.caption,
-    color: Colors.success,
-    fontSize: 11,
-    fontWeight: '600',
-  },
-  saveRoutineButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    backgroundColor: Colors.success,
-    paddingVertical: 16,
-    borderRadius: Layout.radiusMedium,
-    marginTop: 20,
-  },
-  saveRoutineButtonText: {
-    ...Typography.label,
-    color: Colors.textLight,
-    fontSize: 16,
-    fontWeight: '700',
-  },
   searchSection: {
     marginTop: 20,
     marginBottom: 12,
-  },
-  sectionTitle: {
-    ...Typography.h4,
-    color: Colors.textPrimary,
-    marginBottom: 12,
+    zIndex: 1000, // Ensure dropdown appears above other elements
   },
   exerciseList: {
     marginTop: 20,
+    zIndex: 1, // Lower z-index so it doesn't cover the dropdown
   },
   exerciseCard: {
     backgroundColor: Colors.surface,
@@ -547,31 +494,12 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   exerciseCardName: {
-    ...Typography.body,
-    color: Colors.textPrimary,
+    color: Colors.text,
     fontWeight: '600',
     fontSize: 16,
   },
   removeButton: {
     padding: 4,
-  },
-  deleteDayButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    paddingVertical: 14,
-    paddingHorizontal: 20,
-    borderRadius: Layout.radiusMedium,
-    backgroundColor: Colors.surface,
-    borderWidth: 2,
-    borderColor: Colors.error,
-    marginTop: 24,
-  },
-  deleteDayButtonText: {
-    ...Typography.label,
-    color: Colors.error,
-    fontWeight: '600',
   },
 });
 

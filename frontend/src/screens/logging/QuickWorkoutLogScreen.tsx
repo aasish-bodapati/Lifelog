@@ -232,6 +232,7 @@ const QuickWorkoutLogScreen: React.FC<QuickWorkoutLogScreenProps> = ({
             style={styles.content} 
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
+            scrollEnabled={true}
           >
         {/* Recent Workouts */}
         {recentWorkouts.length > 0 && (
@@ -256,11 +257,11 @@ const QuickWorkoutLogScreen: React.FC<QuickWorkoutLogScreenProps> = ({
 
 
         {/* Add New Exercise */}
-        <View style={styles.section}>
-          <View style={styles.addExerciseSection}>
+        <View style={styles.section} pointerEvents="box-none">
+          <View style={styles.addExerciseSection} pointerEvents="box-none">
             <Text style={styles.addExerciseTitle}>Add Exercise</Text>
           
-            <View style={styles.inputGroup}>
+            <View style={styles.inputGroup} pointerEvents="box-none">
               <ExerciseSearchDropdown
                 value=""
                 onSelect={handleExerciseSelect}

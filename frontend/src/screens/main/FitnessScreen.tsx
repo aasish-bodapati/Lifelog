@@ -32,6 +32,13 @@ import ExerciseProgressCard from '../../components/dashboard/ExerciseProgressCar
 import { useOnboarding } from '../../context/OnboardingContext';
 import CreateRoutineModal from '../../components/CreateRoutineModal';
 
+const ACTIVE_ROUTINE_KEY = 'activeWorkoutRoutine';
+
+const getDayName = (dayNumber: number): string => {
+  const dayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+  return dayNames[dayNumber - 1] || `Day ${dayNumber}`;
+};
+
 const FitnessScreen: React.FC = () => {
   const { state: userState } = useUser();
   const { data: onboardingData, isComplete: onboardingComplete } = useOnboarding();
@@ -54,6 +61,81 @@ const FitnessScreen: React.FC = () => {
   const [allRoutines, setAllRoutines] = useState<WorkoutRoutine[]>([]);
   const [showCreateRoutine, setShowCreateRoutine] = useState(false);
 
+  // Toggle active routine
+  const handleToggleActiveRoutine = async (routine: WorkoutRoutine) => {
+    try {
+      const isCurrentlyActive = selectedRoutine?.id === routine.id;
+      
+      if (isCurrentlyActive) {
+        // Deactivate the routine
+        setSelectedRoutine(null);
+        await AsyncStorage.removeItem(ACTIVE_ROUTINE_KEY);
+        toastService.success('Routine Deactivated', `${routine.name} is no longer active`);
+      } else {
+        // Activate the routine
+        setSelectedRoutine(routine);
+        await AsyncStorage.setItem(ACTIVE_ROUTINE_KEY, JSON.stringify(routine));
+        toastService.success('Routine Activated', `Now using ${routine.name}`);
+      }
+      
+      hapticService.medium();
+    } catch (error) {
+      console.error('Error toggling active routine:', error);
+      toastService.error('Error', 'Failed to toggle routine');
+    }
+  };
+
+  // Delete custom routine
+  const handleDeleteRoutine = async (routine: WorkoutRoutine) => {
+    Alert.alert(
+      'Delete Routine',
+      `Are you sure you want to delete "${routine.name}"?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await workoutRoutineService.deleteCustomRoutine(routine.id);
+              const updatedRoutines = await workoutRoutineService.getAllRoutines();
+              setAllRoutines(updatedRoutines);
+              
+              // If the deleted routine was active, deactivate it
+              if (selectedRoutine?.id === routine.id) {
+                setSelectedRoutine(null);
+                await AsyncStorage.removeItem(ACTIVE_ROUTINE_KEY);
+              }
+              
+              hapticService.success();
+              toastService.success('Success', 'Routine deleted');
+            } catch (error) {
+              console.error('Error deleting routine:', error);
+              toastService.error('Error', 'Failed to delete routine');
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  // Load active routine from AsyncStorage on mount
+  React.useEffect(() => {
+    const loadActiveRoutine = async () => {
+      try {
+        const savedRoutine = await AsyncStorage.getItem(ACTIVE_ROUTINE_KEY);
+        if (savedRoutine) {
+          const routine = JSON.parse(savedRoutine);
+          setSelectedRoutine(routine);
+          console.log('Loaded active routine from AsyncStorage:', routine.name);
+        }
+      } catch (error) {
+        console.error('Error loading active routine:', error);
+      }
+    };
+    
+    loadActiveRoutine();
+  }, []);
 
   // Load routine based on user's goal and all available routines
   React.useEffect(() => {
@@ -632,94 +714,37 @@ const FitnessScreen: React.FC = () => {
                 <Text style={styles.createRoutineButtonText}>Create Custom Routine</Text>
               </TouchableOpacity>
 
-              {/* Current Routine (if selected) */}
-              {selectedRoutine && (
-                <>
-                  <Text style={styles.sectionTitle}>Current Routine</Text>
-                  <TouchableOpacity 
-                    style={[styles.routineCard, styles.currentRoutineCard]}
-                    onPress={() => {
-                      hapticService.light();
-                      setShowRoutineDetails(true);
-                    }}
-                  >
-                    <View style={styles.routineCardHeader}>
-                      <Text style={styles.routineGoalBadge}>
-                        {selectedRoutine.goalType === 'maintain' ? '⚖️ Maintain' :
-                         selectedRoutine.goalType === 'gain' ? '💪 Gain' :
-                         selectedRoutine.goalType === 'lose' ? '🔥 Lose' : '✨ Custom'}
-                      </Text>
-                      {selectedRoutine.isCustom && (
-                        <View style={styles.customBadge}>
-                          <Text style={styles.customBadgeText}>Custom</Text>
-                        </View>
-                      )}
-                    </View>
-                    <Text style={styles.routineCardName}>{selectedRoutine.name}</Text>
-                    <Text style={styles.routineCardDescription}>{selectedRoutine.description}</Text>
-                    
-                    <View style={styles.routineMetaRow}>
-                      <View style={styles.routineMetaItem}>
-                        <Ionicons name="calendar-outline" size={16} color={Colors.primary} />
-                        <Text style={styles.routineMetaText}>{selectedRoutine.daysPerWeek} days/week</Text>
-                      </View>
-                      <View style={styles.routineMetaItem}>
-                        <Ionicons name="fitness-outline" size={16} color={Colors.primary} />
-                        <Text style={styles.routineMetaText}>{selectedRoutine.days.length} workouts</Text>
-                      </View>
-                    </View>
-
-                    <Text style={styles.tapToViewText}>Tap to view full workout plan</Text>
-                  </TouchableOpacity>
-                </>
-              )}
-
-              {/* Custom Routines Only */}
+              {/* Pre-Built Routines */}
               <Text style={styles.sectionTitle}>
-                My Custom Routines
+                Recommended Routine
               </Text>
               
-              {allRoutines.filter(r => r.isCustom).length > 0 ? (
-                <View style={styles.routinesList}>
-                  {allRoutines.filter(r => r.isCustom).map((routine) => (
+              <View style={styles.routinesList}>
+                {allRoutines
+                  .filter(r => {
+                    // Only show pre-built routines
+                    if (r.isCustom) return false;
+                    
+                    // If user has a goal from onboarding, only show matching routine
+                    if (onboardingData?.goal?.type) {
+                      return r.goalType === onboardingData.goal.type;
+                    }
+                    
+                    // Otherwise show all pre-built routines (fallback)
+                    return true;
+                  })
+                  .map((routine) => (
+                  <View key={routine.id} style={styles.routineCardWrapper}>
                     <TouchableOpacity 
-                      key={routine.id}
                       style={[
                         styles.routineCard,
                         selectedRoutine?.id === routine.id && styles.activeRoutineCard
                       ]}
                       onPress={() => {
-                        hapticService.medium();
+                        hapticService.light();
                         setSelectedRoutine(routine);
-                        toastService.success('Routine Selected', `Now using ${routine.name}`);
-                      }}
-                      onLongPress={() => {
-                        if (routine.isCustom) {
-                          Alert.alert(
-                            'Manage Routine',
-                            `What would you like to do with "${routine.name}"?`,
-                            [
-                              { text: 'Cancel', style: 'cancel' },
-                              {
-                                text: 'Delete',
-                                style: 'destructive',
-                                onPress: async () => {
-                                  try {
-                                    await workoutRoutineService.deleteCustomRoutine(routine.id);
-                                    const updatedRoutines = await workoutRoutineService.getAllRoutines();
-                                    setAllRoutines(updatedRoutines);
-                                    if (selectedRoutine?.id === routine.id) {
-                                      setSelectedRoutine(null);
-                                    }
-                                    toastService.success('Success', 'Routine deleted');
-                                  } catch (error) {
-                                    toastService.error('Error', 'Failed to delete routine');
-                                  }
-                                },
-                              },
-                            ]
-                          );
-                        }
+                        setSelectedDay(routine.days[0]?.dayNumber || 1);
+                        setShowRoutineDetails(true);
                       }}
                     >
                       <View style={styles.routineCardHeader}>
@@ -728,14 +753,6 @@ const FitnessScreen: React.FC = () => {
                            routine.goalType === 'gain' ? '💪 Gain' :
                            routine.goalType === 'lose' ? '🔥 Lose' : '✨ Custom'}
                         </Text>
-                        {routine.isCustom && (
-                          <View style={styles.customBadge}>
-                            <Text style={styles.customBadgeText}>Custom</Text>
-                          </View>
-                        )}
-                        {selectedRoutine?.id === routine.id && (
-                          <Ionicons name="checkmark-circle" size={24} color={Colors.success} />
-                        )}
                       </View>
                       <Text style={styles.routineCardName}>{routine.name}</Text>
                       <Text style={styles.routineCardDescription} numberOfLines={2}>
@@ -752,11 +769,107 @@ const FitnessScreen: React.FC = () => {
                           <Text style={styles.routineMetaTextSmall}>{routine.days.length} workouts</Text>
                         </View>
                       </View>
-
-                      {routine.isCustom && (
-                        <Text style={styles.longPressHint}>Long press to delete</Text>
-                      )}
                     </TouchableOpacity>
+                    
+                    {/* Action Buttons */}
+                    <View style={styles.routineCardActions}>
+                      {/* Play/Pause Button */}
+                      <TouchableOpacity
+                        style={[
+                          styles.routineActionButton,
+                          selectedRoutine?.id === routine.id && styles.routineActionButtonActive
+                        ]}
+                        onPress={() => handleToggleActiveRoutine(routine)}
+                      >
+                        <Ionicons 
+                          name={selectedRoutine?.id === routine.id ? "pause" : "play"} 
+                          size={20} 
+                          color={selectedRoutine?.id === routine.id ? Colors.textLight : Colors.primary} 
+                        />
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                ))}
+              </View>
+
+              {/* Custom Routines */}
+              <Text style={styles.sectionTitle}>
+                My Custom Routines
+              </Text>
+              
+              {allRoutines.filter(r => r.isCustom).length > 0 ? (
+                <View style={styles.routinesList}>
+                  {allRoutines.filter(r => r.isCustom).map((routine) => (
+                    <View key={routine.id} style={styles.routineCardWrapper}>
+                      <TouchableOpacity 
+                        style={[
+                          styles.routineCard,
+                          selectedRoutine?.id === routine.id && styles.activeRoutineCard
+                        ]}
+                        onPress={() => {
+                          hapticService.light();
+                          setSelectedRoutine(routine);
+                          setSelectedDay(routine.days[0]?.dayNumber || 1);
+                          setShowRoutineDetails(true);
+                        }}
+                      >
+                        <View style={styles.routineCardHeader}>
+                          <Text style={styles.routineGoalBadge}>
+                            {routine.goalType === 'maintain' ? '⚖️ Maintain' :
+                             routine.goalType === 'gain' ? '💪 Gain' :
+                             routine.goalType === 'lose' ? '🔥 Lose' : '✨ Custom'}
+                          </Text>
+                          {routine.isCustom && (
+                            <View style={styles.customBadge}>
+                              <Text style={styles.customBadgeText}>Custom</Text>
+                            </View>
+                          )}
+                        </View>
+                        <Text style={styles.routineCardName}>{routine.name}</Text>
+                        <Text style={styles.routineCardDescription} numberOfLines={2}>
+                          {routine.description}
+                        </Text>
+                        
+                        <View style={styles.routineMetaRow}>
+                          <View style={styles.routineMetaItem}>
+                            <Ionicons name="calendar-outline" size={14} color={Colors.textSecondary} />
+                            <Text style={styles.routineMetaTextSmall}>{routine.daysPerWeek} days/week</Text>
+                          </View>
+                          <View style={styles.routineMetaItem}>
+                            <Ionicons name="fitness-outline" size={14} color={Colors.textSecondary} />
+                            <Text style={styles.routineMetaTextSmall}>{routine.days.length} workouts</Text>
+                          </View>
+                        </View>
+                      </TouchableOpacity>
+                      
+                      {/* Action Buttons */}
+                      <View style={styles.routineCardActions}>
+                        {/* Play/Pause Button */}
+                        <TouchableOpacity
+                          style={[
+                            styles.routineActionButton,
+                            selectedRoutine?.id === routine.id && styles.routineActionButtonActive
+                          ]}
+                          onPress={() => handleToggleActiveRoutine(routine)}
+                        >
+                          <Ionicons 
+                            name={selectedRoutine?.id === routine.id ? "pause" : "play"} 
+                            size={20} 
+                            color={selectedRoutine?.id === routine.id ? Colors.textLight : Colors.primary} 
+                          />
+                        </TouchableOpacity>
+                        
+                        {/* Delete Button (only for custom) */}
+                        {routine.isCustom && (
+                          <TouchableOpacity
+                            style={styles.routineActionButton}
+                            onPress={() => handleDeleteRoutine(routine)}
+                          >
+                            <Ionicons name="trash-outline" size={20} color={Colors.error} />
+                          </TouchableOpacity>
+                        )}
+                      </View>
+                    </View>
                   ))}
                 </View>
               ) : (
@@ -1085,31 +1198,53 @@ const FitnessScreen: React.FC = () => {
                   </View>
                 </View>
 
-                {/* Day Selector */}
-                <View style={styles.daySelectorContainer}>
-                  <Text style={styles.daySelectorTitle}>Select Workout Day:</Text>
-                  <View style={styles.daySelector}>
-                    {selectedRoutine.days.map((day) => (
-                      <TouchableOpacity
-                        key={day.dayNumber}
-                        style={[
-                          styles.dayButton,
-                          selectedDay === day.dayNumber && styles.dayButtonActive,
-                        ]}
-                        onPress={() => {
-                          hapticService.light();
-                          setSelectedDay(day.dayNumber);
-                        }}
-                      >
-                        <Text style={[
-                          styles.dayButtonText,
-                          selectedDay === day.dayNumber && styles.dayButtonTextActive,
-                        ]}>
-                          Day {day.dayNumber}
-                        </Text>
-                      </TouchableOpacity>
-                    ))}
+                {/* Day Navigation */}
+                <View style={styles.dayNavigationContainer}>
+                  <TouchableOpacity 
+                    onPress={() => {
+                      const currentIndex = selectedRoutine.days.findIndex(d => d.dayNumber === selectedDay);
+                      if (currentIndex > 0) {
+                        setSelectedDay(selectedRoutine.days[currentIndex - 1].dayNumber);
+                      }
+                      hapticService.light();
+                    }}
+                    style={[
+                      styles.dayNavButton,
+                      selectedDay === selectedRoutine.days[0]?.dayNumber && styles.dayNavButtonDisabled
+                    ]}
+                    disabled={selectedDay === selectedRoutine.days[0]?.dayNumber}
+                  >
+                    <Ionicons 
+                      name="chevron-back" 
+                      size={24} 
+                      color={selectedDay === selectedRoutine.days[0]?.dayNumber ? Colors.disabled : Colors.primary} 
+                    />
+                  </TouchableOpacity>
+                  
+                  <View style={styles.dayDisplay}>
+                    <Text style={styles.dayDisplayText}>{getDayName(selectedDay)}</Text>
                   </View>
+                  
+                  <TouchableOpacity 
+                    onPress={() => {
+                      const currentIndex = selectedRoutine.days.findIndex(d => d.dayNumber === selectedDay);
+                      if (currentIndex < selectedRoutine.days.length - 1) {
+                        setSelectedDay(selectedRoutine.days[currentIndex + 1].dayNumber);
+                      }
+                      hapticService.light();
+                    }}
+                    style={[
+                      styles.dayNavButton,
+                      selectedDay === selectedRoutine.days[selectedRoutine.days.length - 1]?.dayNumber && styles.dayNavButtonDisabled
+                    ]}
+                    disabled={selectedDay === selectedRoutine.days[selectedRoutine.days.length - 1]?.dayNumber}
+                  >
+                    <Ionicons 
+                      name="chevron-forward" 
+                      size={24} 
+                      color={selectedDay === selectedRoutine.days[selectedRoutine.days.length - 1]?.dayNumber ? Colors.disabled : Colors.primary} 
+                    />
+                  </TouchableOpacity>
                 </View>
 
                 {/* Selected Day Workout */}
@@ -1172,18 +1307,6 @@ const FitnessScreen: React.FC = () => {
                           <Text style={styles.workoutSectionText}>{currentDay.cooldown}</Text>
                         </View>
                       )}
-
-                      {/* Start Workout Button */}
-                      <TouchableOpacity
-                        style={styles.startWorkoutButton}
-                        onPress={() => {
-                          hapticService.medium();
-                          toastService.info('Coming Soon', 'Guided workout will be available soon!');
-                        }}
-                      >
-                        <Ionicons name="play-circle" size={24} color={Colors.textLight} />
-                        <Text style={styles.startWorkoutButtonText}>Start This Workout</Text>
-                      </TouchableOpacity>
                     </View>
                   );
                 })()}
@@ -1740,41 +1863,34 @@ const styles = StyleSheet.create({
     ...Typography.bodySmall,
     color: Colors.textPrimary,
   },
-  daySelectorContainer: {
-    paddingHorizontal: Layout.screenPadding,
-    marginBottom: Layout.cardSpacing,
-  },
-  daySelectorTitle: {
-    ...Typography.label,
-    color: Colors.textPrimary,
-    fontWeight: '600',
-    marginBottom: 12,
-  },
-  daySelector: {
+  dayNavigationContainer: {
     flexDirection: 'row',
-    gap: 12,
-  },
-  dayButton: {
-    flex: 1,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: Layout.radiusMedium,
-    backgroundColor: Colors.surface,
-    borderWidth: 2,
-    borderColor: Colors.border,
     alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    backgroundColor: Colors.surface,
+    borderRadius: Layout.radiusMedium,
+    marginHorizontal: Layout.screenPadding,
+    marginBottom: Layout.cardSpacing,
+    ...Layout.shadowSmall,
   },
-  dayButtonActive: {
-    backgroundColor: Colors.primary,
-    borderColor: Colors.primary,
+  dayNavButton: {
+    padding: 8,
+    borderRadius: Layout.radiusMedium,
+    backgroundColor: Colors.background,
   },
-  dayButtonText: {
-    ...Typography.label,
-    color: Colors.textPrimary,
-    fontWeight: '600',
+  dayNavButtonDisabled: {
+    opacity: 0.5,
   },
-  dayButtonTextActive: {
-    color: Colors.textLight,
+  dayDisplay: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  dayDisplayText: {
+    ...Typography.h3,
+    color: Colors.primary,
+    fontWeight: '700',
   },
   workoutDayCard: {
     backgroundColor: Colors.surface,
@@ -1873,23 +1989,6 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.background,
     borderRadius: Layout.radiusSmall,
   },
-  startWorkoutButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    backgroundColor: Colors.primary,
-    paddingVertical: 16,
-    borderRadius: Layout.radiusMedium,
-    marginTop: 20,
-    ...Layout.shadowMedium,
-  },
-  startWorkoutButtonText: {
-    ...Typography.label,
-    color: Colors.textLight,
-    fontSize: 16,
-    fontWeight: '700',
-  },
   // Custom Routine Styles
   createRoutineButton: {
     flexDirection: 'row',
@@ -1911,11 +2010,14 @@ const styles = StyleSheet.create({
   routinesList: {
     gap: 12,
   },
+  routineCardWrapper: {
+    position: 'relative',
+    marginBottom: Layout.cardSpacing,
+  },
   routineCard: {
     backgroundColor: Colors.surface,
     borderRadius: Layout.radiusMedium,
     padding: Layout.cardPadding,
-    marginBottom: Layout.cardSpacing,
     borderWidth: 2,
     borderColor: Colors.border,
     ...Layout.shadowSmall,
@@ -1961,13 +2063,27 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
     fontSize: 11,
   },
-  longPressHint: {
-    ...Typography.caption,
-    color: Colors.textSecondary,
-    fontStyle: 'italic',
-    textAlign: 'center',
-    marginTop: 8,
-    fontSize: 11,
+  routineCardActions: {
+    position: 'absolute',
+    top: 12,
+    right: 12,
+    flexDirection: 'row',
+    gap: 8,
+  },
+  routineActionButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: Colors.background,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: Colors.border,
+    ...Layout.shadowSmall,
+  },
+  routineActionButtonActive: {
+    backgroundColor: Colors.primary,
+    borderColor: Colors.primary,
   },
 });
 

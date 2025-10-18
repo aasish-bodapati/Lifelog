@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useUser } from '../../context/UserContext';
 import { useSync } from '../../context/SyncContext';
 import { useOnboarding } from '../../context/OnboardingContext';
@@ -18,6 +19,7 @@ import { hapticService } from '../../services/hapticService';
 import { toastService } from '../../services/toastService';
 import { bodyStatsService } from '../../services/bodyStatsService';
 import { advancedAnalyticsService } from '../../services/advancedAnalyticsService';
+import { WorkoutRoutine, RoutineDay } from '../../services/workoutRoutineService';
 import { getProgressIcon, getMacroColor, getStreakIcon, getConsistencyColor } from '../../utils';
 import { CommonStyles, Layout, Colors, Typography } from '../../styles/designSystem';
 import SyncIndicator from '../../components/SyncIndicator';
@@ -31,6 +33,7 @@ import BodyTrendCard from '../../components/dashboard/BodyTrendCard';
 import ConsistencyCard from '../../components/dashboard/ConsistencyCard';
 
 const { width } = Dimensions.get('window');
+const ACTIVE_ROUTINE_KEY = 'activeWorkoutRoutine';
 
 interface DailyTotals {
   calories: number;
@@ -47,6 +50,13 @@ interface DailyTargets {
   fat: number;
   hydration: number;
 }
+
+// Get today's day number (1 = Monday, 7 = Sunday)
+const getTodayDayNumber = (): number => {
+  const today = new Date().getDay(); // 0 = Sunday, 6 = Saturday
+  // Convert to Monday=1, Sunday=7
+  return today === 0 ? 7 : today;
+};
 
 const DashboardScreen: React.FC = () => {
   const { state: userState } = useUser();
@@ -66,6 +76,39 @@ const DashboardScreen: React.FC = () => {
   const [todayWorkoutCount, setTodayWorkoutCount] = useState(0);
   const [streak, setStreak] = useState(0);
   const [lastSyncTime, setLastSyncTime] = useState<string | null>(null);
+  const [activeRoutine, setActiveRoutine] = useState<WorkoutRoutine | null>(null);
+  const [todayRoutineDay, setTodayRoutineDay] = useState<RoutineDay | null>(null);
+
+  // Load active routine and find today's workout
+  const loadActiveRoutine = useCallback(async () => {
+    try {
+      const savedRoutine = await AsyncStorage.getItem(ACTIVE_ROUTINE_KEY);
+      console.log('📋 Saved routine from storage:', savedRoutine ? 'found' : 'not found');
+      
+      if (savedRoutine) {
+        const routine: WorkoutRoutine = JSON.parse(savedRoutine);
+        setActiveRoutine(routine);
+        
+        console.log('📋 Routine loaded:', routine.name);
+        console.log('📋 Routine days:', routine.days.map(d => ({ dayNumber: d.dayNumber, title: d.title })));
+        
+        // Find today's workout
+        const todayDayNum = getTodayDayNumber();
+        console.log('📅 Today\'s day number:', todayDayNum);
+        
+        const routineDay = routine.days.find(d => d.dayNumber === todayDayNum);
+        console.log('📋 Found routine for today:', routineDay ? routineDay.title : 'none');
+        
+        setTodayRoutineDay(routineDay || null);
+      } else {
+        console.log('📋 No active routine in storage');
+        setActiveRoutine(null);
+        setTodayRoutineDay(null);
+      }
+    } catch (error) {
+      console.error('Error loading active routine:', error);
+    }
+  }, []);
 
   // Calculate daily targets from onboarding data
   const calculateTargets = useCallback(() => {
@@ -197,6 +240,7 @@ const DashboardScreen: React.FC = () => {
       calculateTargets();
       loadTodayData();
       loadStreak();
+      loadActiveRoutine(); // Load active routine on mount
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userState.user?.id]); // Only depend on user ID to prevent duplicate calls
@@ -219,8 +263,9 @@ const DashboardScreen: React.FC = () => {
       }
       if (userState.user?.id) {
         loadTodayData();
+        loadActiveRoutine();
       }
-    }, [userState.user?.id, loadTodayData])
+    }, [userState.user?.id, loadTodayData, loadActiveRoutine])
   );
 
   const handleRefresh = async () => {
@@ -331,7 +376,6 @@ const DashboardScreen: React.FC = () => {
             <AnimatedCard delay={50}>
               <WelcomeCard
                 userName={userState.user?.full_name || userState.user?.username || 'there'}
-                streak={streak}
               />
             </AnimatedCard>
 
@@ -350,22 +394,24 @@ const DashboardScreen: React.FC = () => {
               />
             </AnimatedCard>
 
-            {/* Workout Log Card */}
-            <AnimatedCard delay={150}>
-              <WorkoutLogCard
-                onPress={handleWorkoutPress}
-                todayWorkoutCount={todayWorkoutCount}
-                isLoading={isLoading}
-              />
-            </AnimatedCard>
-
             {/* Hydration Card */}
-            <AnimatedCard delay={200}>
+            <AnimatedCard delay={150}>
               <HydrationCard
                 current={dailyTotals.water}
                 target={dailyTargets?.hydration || 0}
                 isLoading={isLoading}
                 onAddWater={handleAddWater}
+              />
+            </AnimatedCard>
+
+            {/* Workout Log Card */}
+            <AnimatedCard delay={200}>
+              <WorkoutLogCard
+                onPress={handleWorkoutPress}
+                todayWorkoutCount={todayWorkoutCount}
+                isLoading={isLoading}
+                todayRoutineDay={todayRoutineDay}
+                hasActiveRoutine={activeRoutine !== null}
               />
             </AnimatedCard>
 

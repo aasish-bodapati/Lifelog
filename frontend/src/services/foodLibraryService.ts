@@ -68,27 +68,53 @@ class FoodLibraryService {
     { id: 'smoothie', name: 'Fruit Smoothie', category: 'beverages', commonServing: '1 cup', estimatedCalories: 150, searchTerms: ['smoothie', 'fruit', 'blend'] },
   ];
 
-  searchFoods(query: string): Food[] {
+  searchFoods(query: string, limit: number = 20): Food[] {
     if (!query.trim()) {
-      return this.getPopularFoods();
+      return this.getPopularFoods().slice(0, limit);
     }
 
     const lowerQuery = query.toLowerCase();
-    return this.foods.filter(food => {
-      // Search in name
-      if (food.name.toLowerCase().includes(lowerQuery)) {
-        return true;
-      }
-      // Search in search terms
-      if (food.searchTerms?.some(term => term.includes(lowerQuery))) {
-        return true;
-      }
-      // Search in category
-      if (food.category.toLowerCase().includes(lowerQuery)) {
-        return true;
-      }
-      return false;
-    });
+    
+    // Filter and sort results - prioritize name matches
+    return this.foods
+      .filter(food => {
+        // Search in name
+        if (food.name.toLowerCase().includes(lowerQuery)) {
+          return true;
+        }
+        // Search in search terms
+        if (food.searchTerms?.some(term => term.includes(lowerQuery))) {
+          return true;
+        }
+        // Search in category
+        if (food.category.toLowerCase().includes(lowerQuery)) {
+          return true;
+        }
+        return false;
+      })
+      .sort((a, b) => {
+        const aName = a.name.toLowerCase();
+        const bName = b.name.toLowerCase();
+        
+        // Prioritize foods with search term in name
+        const aInName = aName.includes(lowerQuery);
+        const bInName = bName.includes(lowerQuery);
+        
+        if (aInName && !bInName) return -1;
+        if (!aInName && bInName) return 1;
+        
+        // If both have it in name, prioritize those starting with the search term
+        if (aInName && bInName) {
+          const aStarts = aName.startsWith(lowerQuery);
+          const bStarts = bName.startsWith(lowerQuery);
+          if (aStarts && !bStarts) return -1;
+          if (!aStarts && bStarts) return 1;
+        }
+        
+        // Otherwise maintain original order
+        return 0;
+      })
+      .slice(0, limit);
   }
 
   getFoodsByCategory(category: Food['category']): Food[] {

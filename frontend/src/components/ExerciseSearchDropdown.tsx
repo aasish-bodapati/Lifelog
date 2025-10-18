@@ -42,14 +42,15 @@ const ExerciseSearchDropdown: React.FC<ExerciseSearchDropdownProps> = ({
 
     searchTimeoutRef.current = setTimeout(() => {
       if (searchQuery.trim()) {
-        const results = exerciseLibraryService.searchExercises(searchQuery, 20);
+        const results = exerciseLibraryService.searchExercises(searchQuery, 3);
+        console.log('Search results for "' + searchQuery + '":', results.length, 'exercises');
         setSearchResults(results);
         setIsOpen(true); // Always open when there's a search query
       } else {
         setSearchResults([]);
         setIsOpen(false);
       }
-    }, 500);
+    }, 300); // Reduced from 500ms to 300ms
 
     return () => {
       if (searchTimeoutRef.current) {
@@ -103,8 +104,8 @@ const ExerciseSearchDropdown: React.FC<ExerciseSearchDropdownProps> = ({
 
 
   return (
-    <View style={[styles.container, style]}>
-      <View style={styles.inputContainer}>
+    <View style={[styles.container, style]} pointerEvents="box-none">
+      <View style={styles.inputContainer} pointerEvents="auto">
         <View style={styles.inputContent}>
           <Ionicons name="search" size={20} color={Colors.textSecondary} />
           <TextInput
@@ -126,13 +127,18 @@ const ExerciseSearchDropdown: React.FC<ExerciseSearchDropdownProps> = ({
       </View>
 
       {isOpen && (
-        <View style={styles.dropdownContainer}>
+        <View style={styles.dropdownContainer} pointerEvents="auto">
           <ScrollView
             style={styles.exercisesList}
+            contentContainerStyle={styles.exercisesListContent}
             showsVerticalScrollIndicator={true}
             nestedScrollEnabled={true}
             keyboardShouldPersistTaps="handled"
             scrollEnabled={true}
+            bounces={true}
+            alwaysBounceVertical={false}
+            overScrollMode="never"
+            removeClippedSubviews={false}
           >
             {searchResults.length > 0 ? (
               searchResults.map((item) => (
@@ -193,6 +199,7 @@ const ExerciseSearchDropdown: React.FC<ExerciseSearchDropdownProps> = ({
 const styles = StyleSheet.create({
   container: {
     width: '100%',
+    zIndex: 1000, // Ensure dropdown container is on top
   },
   inputContainer: {
     flexDirection: 'row',
@@ -238,10 +245,15 @@ const styles = StyleSheet.create({
     borderColor: Colors.border,
     ...Layout.shadowMedium,
     zIndex: 1000,
+    elevation: 10, // For Android
     marginTop: Spacing.xs,
+    height: 260, // Fixed height to show 3 items fully
+    overflow: 'hidden', // Ensure content doesn't overflow
   },
   exercisesList: {
-    maxHeight: 280,
+    flex: 1, // Take full height of parent
+  },
+  exercisesListContent: {
     paddingVertical: Spacing.sm,
   },
   exerciseItem: {
